@@ -87,20 +87,50 @@ export async function showHooksManagementMenu(guidedMode: boolean = false): Prom
     
     switch (action) {
       case 'track-all':
-        await configureTrackAll();
-        hooksWereInstalled = true;
+        try {
+          await configureTrackAll();
+          hooksWereInstalled = true;
+        } catch (error) {
+          const { displayError } = await import('../../utils/errors');
+          displayError(error);
+          await inquirer.prompt({
+            type: 'input',
+            name: 'continue',
+            message: ' '
+          });
+        }
         break;
         
       case 'track-selected':
-        await configureTrackSelected();
-        const newStatus = await getHooksStatus();
-        if (newStatus.sessionStartHook.installed || newStatus.preCompactHook.installed) {
-          hooksWereInstalled = true;
+        try {
+          await configureTrackSelected();
+          const newStatus = await getHooksStatus();
+          if (newStatus.sessionStartHook.installed || newStatus.preCompactHook.installed) {
+            hooksWereInstalled = true;
+          }
+        } catch (error) {
+          const { displayError } = await import('../../utils/errors');
+          displayError(error);
+          await inquirer.prompt({
+            type: 'input',
+            name: 'continue',
+            message: ' '
+          });
         }
         break;
         
       case 'track-none':
-        await disableAllTracking(status, stats);
+        try {
+          await disableAllTracking(status, stats);
+        } catch (error) {
+          const { displayError } = await import('../../utils/errors');
+          displayError(error);
+          await inquirer.prompt({
+            type: 'input',
+            name: 'continue',
+            message: ' '
+          });
+        }
         break;
         
       case 'test':
@@ -745,7 +775,7 @@ async function offerInitialSync(options: {
       // Sync all sessions for global hooks
       showInfo('Syncing all existing sessions from all projects...');
       console.log('');
-      await sendWithTimeout({ all: true });
+      await sendWithTimeout({ all: true, fromMenu: true });
     } else if (options.selectedProjects) {
       // For selected projects, directly load their sessions (like manual sync does)
       const { readClaudeSessions } = await import('../readers/claude');
@@ -791,7 +821,7 @@ async function offerInitialSync(options: {
         console.log(colors.dim('Preparing sessions for privacy-safe upload...'));
         
         // This will show the loading, redaction count, and upload UI
-        await sendWithTimeout({ selectedSessions });
+        await sendWithTimeout({ selectedSessions, fromMenu: true });
       } else {
         console.log(colors.warning('No sessions found in selected projects'));
         showInfo('You can sync sessions later using "vibe-log send"');
@@ -805,7 +835,19 @@ async function offerInitialSync(options: {
   } catch (error) {
     spinner.fail('Failed to sync sessions');
     console.log('');
-    showError(error instanceof Error ? error.message : 'Unknown error occurred');
-    showInfo('You can try syncing again from the main menu using "vibe-log send"');
+    
+    // Use displayError for better error handling
+    const { displayError } = await import('../../utils/errors');
+    displayError(error);
+    
+    console.log('');
+    showInfo('You can try syncing again from the main menu using "Send sessions"');
+    
+    // Wait for user to acknowledge the error
+    await inquirer.prompt({
+      type: 'input',
+      name: 'continue',
+      message: ' '
+    });
   }
 }
