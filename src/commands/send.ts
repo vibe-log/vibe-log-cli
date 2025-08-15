@@ -10,6 +10,7 @@ import { countTotalRedactions } from '../lib/ui/sanitization-display';
 import { showUploadResults } from '../lib/ui';
 import { VibelogError } from '../utils/errors';
 import { logger } from '../utils/logger';
+import chalk from 'chalk';
 
 /**
  * Send session data to Vibelog API
@@ -94,6 +95,12 @@ async function executeInteractiveSend(options: SendOptions): Promise<void> {
         progressUI.showProgress(i + 1, sessions.length, 'Processing');
       }
       progressUI.completeProgress();
+    }
+
+    // Check if sessions were filtered
+    const filteredCount = sessions.length - apiSessions.length;
+    if (filteredCount > 0) {
+      console.log(chalk.yellow(`\n⚠️  Filtered out ${filteredCount} session(s) shorter than 4 minutes`));
     }
 
     // Show upload summary
@@ -208,6 +215,9 @@ function handleSendError(error: unknown, options: SendOptions): void {
     // In silent mode, never throw - just exit gracefully
     return;
   }
+
+  // Always throw errors so they can be caught and displayed properly
+  // The menu will catch these and display them with displayError()
 
   if (error instanceof VibelogError) {
     throw error;

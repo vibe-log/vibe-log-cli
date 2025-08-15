@@ -29,6 +29,7 @@ export interface SendOptions {
   selectedSessions?: SelectedSessionInfo[];
   skipActionMenu?: boolean;
   claudeProjectDir?: string;
+  fromMenu?: boolean;  // Indicates call is from interactive menu
 }
 
 // Use Session type from api-client for consistency
@@ -228,8 +229,19 @@ export class SendOrchestrator {
 
   async sanitizeSessions(sessions: SessionData[]): Promise<ApiSession[]> {
     const apiSessions: ApiSession[] = [];
+    const MIN_DURATION_SECONDS = 240; // 4 minutes minimum as required by server
+    
+    // Track filtered sessions for logging
+    let filteredCount = 0;
     
     for (const session of sessions) {
+      // Filter out sessions that are too short
+      if (session.duration < MIN_DURATION_SECONDS) {
+        filteredCount++;
+        logger.debug(`Filtering out short session (${session.duration}s < ${MIN_DURATION_SECONDS}s) from ${session.projectPath}`);
+        continue;
+      }
+      
       const sanitizedMessages = this.sanitizer.sanitizeMessages(session.messages);
       const projectName = parseProjectName(session.projectPath);
       
@@ -247,6 +259,19 @@ export class SendOrchestrator {
           },
         },
       });
+    }
+    
+    // Log if sessions were filtered
+    if (filteredCount > 0) {
+      logger.info(`Filtered out ${filteredCount} session(s) shorter than 4 minutes`);
+      
+      // If all sessions were filtered, throw a clear error
+      if (apiSessions.length === 0) {
+        throw new VibelogError(
+          `All ${filteredCount} session(s) were shorter than 4 minutes. Sessions must be at least 4 minutes long to upload.`,
+          'VALIDATION_ERROR'
+        );
+      }
     }
     
     return apiSessions;

@@ -120,8 +120,42 @@ class SecureApiClient {
         });
         
         // Also log to console for 400 errors to see server validation messages
-        if (error.response?.status === 400 && process.env.VIBELOG_DEBUG === 'true') {
-          console.log('[DEBUG] 400 Error Response:', JSON.stringify(error.response?.data, null, 2));
+        if (error.response?.status === 400) {
+          if (process.env.VIBELOG_DEBUG === 'true') {
+            console.log('[DEBUG] 400 Error Response:', JSON.stringify(error.response?.data, null, 2));
+          }
+          
+          // Extract validation message if available
+          const responseData = error.response?.data as any;
+          const validationMessage = responseData?.message || responseData?.error;
+          
+          // Check for specific validation errors
+          if (validationMessage) {
+            // Check for duration validation error
+            if (validationMessage.includes('duration') && validationMessage.includes('240')) {
+              throw new VibelogError(
+                'Sessions must be at least 4 minutes long to be uploaded. Short sessions were rejected by the server.',
+                'VALIDATION_ERROR'
+              );
+            }
+            
+            // Check for ZodError format
+            if (validationMessage.includes('ZodError') || validationMessage.includes('Too small')) {
+              // Try to extract the meaningful part
+              if (validationMessage.includes('duration')) {
+                throw new VibelogError(
+                  'Sessions must be at least 4 minutes long. Please select longer sessions to upload.',
+                  'VALIDATION_ERROR'
+                );
+              }
+            }
+            
+            // Generic validation error
+            throw new VibelogError(
+              `Validation error: ${validationMessage}`,
+              'VALIDATION_ERROR'
+            );
+          }
         }
         
         // Sanitize error messages
@@ -129,23 +163,48 @@ class SecureApiClient {
         
         if (error.response?.status === 401) {
           throw new VibelogError(
-            'Authentication required',
-            'AUTH_REQUIRED'
+            'Your session has expired. Please authenticate again',
+            'AUTH_EXPIRED'
+          );
+        } else if (error.response?.status === 403) {
+          throw new VibelogError(
+            'Access denied. Please check your permissions',
+            'ACCESS_DENIED'
           );
         } else if (error.response?.status === 429) {
           const retryAfter = error.response.headers['retry-after'];
           throw new VibelogError(
-            `Rate limit exceeded. Retry after ${retryAfter || '60'} seconds`,
+            `Too many requests. Please wait ${retryAfter || '60'} seconds before trying again`,
             'RATE_LIMITED'
           );
-        } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+        } else if (error.response?.status === 500) {
           throw new VibelogError(
-            `Cannot connect to server at ${error.config?.baseURL}`,
+            'Server error. The vibe-log service is having issues. Please try again later',
+            'SERVER_ERROR'
+          );
+        } else if (error.response?.status === 502 || error.response?.status === 503) {
+          throw new VibelogError(
+            'Service temporarily unavailable. Please try again in a few moments',
+            'SERVICE_UNAVAILABLE'
+          );
+        } else if (error.code === 'ENOTFOUND') {
+          throw new VibelogError(
+            'Cannot reach vibe-log servers. Please check your internet connection',
             'NETWORK_ERROR'
+          );
+        } else if (error.code === 'ECONNREFUSED') {
+          throw new VibelogError(
+            'Connection refused. The server might be down or your firewall is blocking the connection',
+            'CONNECTION_REFUSED'
+          );
+        } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+          throw new VibelogError(
+            'Request timed out. Your connection might be slow or the server is not responding',
+            'TIMEOUT'
           );
         } else if (error.response?.status === 404) {
           throw new VibelogError(
-            `API endpoint not found: ${error.config?.url}`,
+            'API endpoint not found. You might need to update your CLI',
             'ENDPOINT_NOT_FOUND'
           );
         }

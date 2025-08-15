@@ -9,7 +9,17 @@ import { sendWithTimeout } from '../../commands/send';
 import { status } from '../../commands/status';
 import { auth } from '../../commands/auth';
 import { logout } from '../../commands/logout';
+import { displayError } from '../../utils/errors';
 import open from 'open';
+
+// Helper to wait for Enter key
+async function waitForEnter(): Promise<void> {
+  await inquirer.prompt({
+    type: 'input',
+    name: 'continue',
+    message: ' '
+  });
+}
 
 export async function showMainMenu(state: StateDetails): Promise<void> {
   // Handle FIRST_TIME and PARTIAL_SETUP states with welcome screen
@@ -159,30 +169,46 @@ export async function showMainMenu(state: StateDetails): Promise<void> {
 async function handleMenuAction(action: string, state: StateDetails): Promise<void> {
   switch (action) {
     case 'init':
-      await init({});
+      try {
+        await init({});
+      } catch (error) {
+        displayError(error);
+        await waitForEnter();
+      }
       break;
       
     case 'auth':
-      // For first-time users selecting cloud mode, show privacy notice first
-      const { showPrivacyNotice: showNotice } = await import('./privacy-notice');
-      const userAccepted = await showNotice();
-      
-      if (userAccepted) {
-        console.log(colors.info('\nAuthenticating with GitHub...'));
-        await auth({});
-      } else {
-        console.log(colors.warning('\nCloud setup cancelled.'));
+      try {
+        // For first-time users selecting cloud mode, show privacy notice first
+        const { showPrivacyNotice: showNotice } = await import('./privacy-notice');
+        const userAccepted = await showNotice();
+        
+        if (userAccepted) {
+          console.log(colors.info('\nAuthenticating with GitHub...'));
+          await auth({});
+        } else {
+          console.log(colors.warning('\nCloud setup cancelled.'));
+        }
+      } catch (error) {
+        displayError(error);
+        await waitForEnter();
       }
       break;
       
     case 'send':
-      await sendWithTimeout({});
+      try {
+        await sendWithTimeout({ fromMenu: true });
+      } catch (error) {
+        displayError(error);
+        await waitForEnter();
+      }
       break;
     
     case 'manual-sync':
-      // Show manual sync menu
-      const { showManualSyncMenu } = await import('./manual-sync-menu');
-      const syncOption = await showManualSyncMenu();
+      try {
+        // Show manual sync menu
+        const { showManualSyncMenu } = await import('./manual-sync-menu');
+        const syncOption = await showManualSyncMenu();
       
       switch (syncOption.type) {
         case 'selected':
@@ -191,7 +217,8 @@ async function handleMenuAction(action: string, state: StateDetails): Promise<vo
           console.log(colors.dim('Preparing sessions for privacy-safe upload...'));
           
           await sendWithTimeout({ 
-            selectedSessions: syncOption.sessions
+            selectedSessions: syncOption.sessions,
+            fromMenu: true
           });
           break;
           
@@ -236,7 +263,8 @@ async function handleMenuAction(action: string, state: StateDetails): Promise<vo
                 timestamp: s.timestamp,
                 duration: s.duration,
                 messageCount: s.messages.length
-              }))
+              })),
+              fromMenu: true
             });
           } else {
             console.log(colors.warning('No sessions found in selected projects'));
@@ -246,17 +274,26 @@ async function handleMenuAction(action: string, state: StateDetails): Promise<vo
         case 'all':
           // Send all projects
           console.log(colors.info('\nSyncing all projects...'));
-          await sendWithTimeout({ all: true });
+          await sendWithTimeout({ all: true, fromMenu: true });
           break;
           
         case 'cancel':
           // User cancelled
           break;
       }
+      } catch (error) {
+        displayError(error);
+        await waitForEnter();
+      }
       break;
       
     case 'status':
-      await status();
+      try {
+        await status();
+      } catch (error) {
+        displayError(error);
+        await waitForEnter();
+      }
       break;
       
     case 'dashboard':
@@ -268,8 +305,13 @@ async function handleMenuAction(action: string, state: StateDetails): Promise<vo
       
       
     case 'report':
-      const { generateLocalReportInteractive } = await import('./local-report-generator');
-      await generateLocalReportInteractive();
+      try {
+        const { generateLocalReportInteractive } = await import('./local-report-generator');
+        await generateLocalReportInteractive();
+      } catch (error) {
+        displayError(error);
+        await waitForEnter();
+      }
       break;
       
     case 'install-agents':
@@ -294,20 +336,30 @@ async function handleMenuAction(action: string, state: StateDetails): Promise<vo
       break;
       
     case 'switch-cloud':
-      const { showPrivacyNotice } = await import('./privacy-notice');
-      const accepted = await showPrivacyNotice();
-      
-      if (accepted) {
-        console.log(colors.info('\nAuthenticating with GitHub...'));
-        await auth({});
-      } else {
-        console.log(colors.warning('\nCloud setup cancelled.'));
+      try {
+        const { showPrivacyNotice } = await import('./privacy-notice');
+        const accepted = await showPrivacyNotice();
+        
+        if (accepted) {
+          console.log(colors.info('\nAuthenticating with GitHub...'));
+          await auth({});
+        } else {
+          console.log(colors.warning('\nCloud setup cancelled.'));
+        }
+      } catch (error) {
+        displayError(error);
+        await waitForEnter();
       }
       break;
       
       
     case 'logout':
-      await logout();
+      try {
+        await logout();
+      } catch (error) {
+        displayError(error);
+        await waitForEnter();
+      }
       break;
       
     case 'help':
