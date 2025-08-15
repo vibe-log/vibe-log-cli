@@ -1,0 +1,435 @@
+import axios, { AxiosInstance, AxiosError } from 'axios';
+import { getToken, getApiUrl } from './config';
+import { VibelogError } from '../utils/errors';
+import { validateUrl } from './input-validator';
+import { logger } from '../utils/logger';
+import crypto from 'crypto';
+
+export interface Session {
+  tool: 'claude_code' | 'cursor' | 'vscode';
+  timestamp: string;
+  duration: number;
+  data: {
+    projectName: string;  // Changed from projectPath to projectName
+    // Privacy-preserving: We don't send actual message content
+    messageSummary: string;  // JSON string with aggregated stats
+    messageCount: number;
+    metadata: {
+      files_edited: number;
+      languages: string[];
+    };
+  };
+}
+
+export interface StreakInfo {
+  current: number;
+  points: number;
+  longestStreak: number;
+  totalSessions: number;
+  todaySessions: number;
+}
+
+export interface UploadResult {
+  success: boolean;
+  sessionsProcessed: number;
+  analysisPreview?: string;
+  streak?: StreakInfo;
+}
+
+// Request ID for tracking
+function generateRequestId(): string {
+  return crypto.randomBytes(16).toString('hex');
+}
+
+class SecureApiClient {
+  private client: AxiosInstance;
+  private requestCount = 0;
+  private windowStart = Date.now();
+  private readonly MAX_REQUESTS_PER_MINUTE = 60;
+
+  constructor() {
+    this.client = axios.create({
+      timeout: 30000,
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'vibe-log-CLI/0.6.0',
+        'X-Client-Version': '1.0.0',
+      },
+      // Prevent automatic redirects to avoid SSRF
+      maxRedirects: 0,
+      // Validate response status
+      validateStatus: (status) => status >= 200 && status < 300,
+    });
+
+    this.setupInterceptors();
+  }
+
+  private setupInterceptors(): void {
+    // Request interceptor
+    this.client.interceptors.request.use(
+      async (config) => {
+        // Rate limiting
+        this.enforceRateLimit();
+        
+        // Set secure headers
+        config.headers['X-Request-ID'] = generateRequestId();
+        config.headers['X-Timestamp'] = new Date().toISOString();
+        
+        // Validate and set base URL
+        const apiUrl = await this.getValidatedApiUrl();
+        // Remove trailing slash from base URL to avoid double slashes
+        config.baseURL = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
+        
+        // Add authentication
+        const token = await getToken();
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        
+        // Log request (sanitized)
+        logger.debug(`API Request: ${config.method?.toUpperCase()} ${config.url}`, {
+          fullUrl: `${config.baseURL}${config.url}`,
+          method: config.method?.toUpperCase(),
+          hasAuth: !!config.headers.Authorization
+        });
+        
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      }
+    );
+
+    // Response interceptor
+    this.client.interceptors.response.use(
+      (response) => {
+        // Validate response headers
+        this.validateResponseHeaders(response.headers);
+        return response;
+      },
+      async (error: AxiosError) => {
+        // Log detailed error for debugging
+        logger.debug('API Error Details', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          code: error.code,
+          message: error.message,
+          url: error.config?.url,
+          baseURL: error.config?.baseURL
+        });
+        
+        // Also log to console for 400 errors to see server validation messages
+        if (error.response?.status === 400 && process.env.VIBELOG_DEBUG === 'true') {
+          console.log('[DEBUG] 400 Error Response:', JSON.stringify(error.response?.data, null, 2));
+        }
+        
+        // Sanitize error messages
+        const safeError = this.sanitizeError(error);
+        
+        if (error.response?.status === 401) {
+          throw new VibelogError(
+            'Authentication required',
+            'AUTH_REQUIRED'
+          );
+        } else if (error.response?.status === 429) {
+          const retryAfter = error.response.headers['retry-after'];
+          throw new VibelogError(
+            `Rate limit exceeded. Retry after ${retryAfter || '60'} seconds`,
+            'RATE_LIMITED'
+          );
+        } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+          throw new VibelogError(
+            `Cannot connect to server at ${error.config?.baseURL}`,
+            'NETWORK_ERROR'
+          );
+        } else if (error.response?.status === 404) {
+          throw new VibelogError(
+            `API endpoint not found: ${error.config?.url}`,
+            'ENDPOINT_NOT_FOUND'
+          );
+        }
+        
+        throw safeError;
+      }
+    );
+  }
+
+  private enforceRateLimit(): void {
+    const now = Date.now();
+    const windowAge = now - this.windowStart;
+    
+    // Reset window after 1 minute
+    if (windowAge > 60000) {
+      this.requestCount = 0;
+      this.windowStart = now;
+    }
+    
+    this.requestCount++;
+    
+    if (this.requestCount > this.MAX_REQUESTS_PER_MINUTE) {
+      throw new VibelogError(
+        'Client rate limit exceeded. Please wait before making more requests.',
+        'CLIENT_RATE_LIMITED'
+      );
+    }
+  }
+
+  private async getValidatedApiUrl(): Promise<string> {
+    const url = getApiUrl();
+    try {
+      return validateUrl(url);
+    } catch (error) {
+      console.error('Invalid API URL, using default');
+      return 'https://vibe-log.dev';
+    }
+  }
+
+  private validateResponseHeaders(headers: any): void {
+    // Check for security headers
+    const requiredHeaders = ['x-content-type-options', 'x-frame-options'];
+    
+    for (const header of requiredHeaders) {
+      if (!headers[header]) {
+        console.warn(`Missing security header: ${header}`);
+      }
+    }
+  }
+
+  private sanitizeError(error: AxiosError): Error {
+    // Remove sensitive data from errors
+    const errorData = error.response?.data as any;
+    const sanitized = new Error(
+      errorData?.message || 
+      error.message || 
+      'An error occurred'
+    );
+    
+    // Copy safe properties
+    (sanitized as any).code = error.code;
+    (sanitized as any).status = error.response?.status;
+    
+    return sanitized;
+  }
+
+  async createAuthSession(): Promise<{ authUrl: string; token: string }> {
+    const response = await this.client.post('/api/auth/cli/session', {
+      timestamp: new Date().toISOString(),
+    });
+    
+    // Validate response - React Router v7 returns sessionId as the token
+    if (!response.data.authUrl || typeof response.data.authUrl !== 'string') {
+      throw new Error('Invalid auth response');
+    }
+    
+    // Handle both 'token' and 'sessionId' for compatibility
+    const token = response.data.token || response.data.sessionId;
+    if (!token || typeof token !== 'string') {
+      throw new Error('Server did not return token');
+    }
+    
+    return {
+      authUrl: response.data.authUrl,
+      token: token
+    };
+  }
+
+  async checkAuthCompletion(token: string): Promise<{ success: boolean; userId?: number }> {
+    try {
+      // Use GET to check status without consuming the token
+      const response = await this.client.get(`/api/auth/cli/complete?token=${token}`);
+      
+      return {
+        success: response.data.success,
+        userId: response.data.userId
+      };
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return { success: false }; // Token not found or not completed yet
+      }
+      if (error.response?.status === 409) {
+        throw new Error('Token already completed');
+      }
+      throw error;
+    }
+  }
+
+  // Removed pollAuthSession - now using SSE streaming instead
+
+  async verifyToken(): Promise<{ valid: boolean; user?: any }> {
+    try {
+      const response = await this.client.get('/api/auth/cli/verify');
+      
+      // Don't return raw user data
+      return {
+        valid: true,
+        user: {
+          id: response.data.user?.id,
+          // Only return necessary fields
+        },
+      };
+    } catch (error) {
+      return { valid: false };
+    }
+  }
+
+  async uploadSessions(
+    sessions: Session[], 
+    onProgress?: (current: number, total: number, sizeKB?: number) => void
+  ): Promise<any> {
+    // Validate and sanitize sessions
+    const sanitizedSessions = sessions.map(session => this.sanitizeSession(session));
+    
+    // Chunk large uploads
+    // Using 10 for good progress granularity without too many API calls
+    const CHUNK_SIZE = 10;
+    const chunks = [];
+    
+    for (let i = 0; i < sanitizedSessions.length; i += CHUNK_SIZE) {
+      chunks.push(sanitizedSessions.slice(i, i + CHUNK_SIZE));
+    }
+    
+    const results = [];
+    let uploadedCount = 0;
+    let uploadedSizeKB = 0;
+    
+    // Calculate total size
+    const totalSize = Buffer.byteLength(JSON.stringify(sanitizedSessions)) / 1024;
+    if (process.env.VIBELOG_DEBUG === 'true') {
+      console.log('[DEBUG] Uploading in', chunks.length, 'chunks', `(Total: ${totalSize.toFixed(2)} KB)`);
+    }
+    
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      const payload = { 
+        sessions: chunk,
+        checksum: this.calculateChecksum(chunk),
+      };
+      
+      // Calculate payload size in kilobytes
+      const payloadSize = Buffer.byteLength(JSON.stringify(payload)) / 1024;
+      
+      if (process.env.VIBELOG_DEBUG === 'true') {
+        console.log('[DEBUG] Uploading chunk', i + 1, 'of', chunks.length, 'with', chunk.length, 'sessions', `(${payloadSize.toFixed(2)} KB)`);
+        
+        // Log first session of each chunk to debug validation issues
+        if (chunk.length > 0) {
+          console.log('[DEBUG] First session in chunk:', JSON.stringify(chunk[0], null, 2).substring(0, 500) + '...');
+        }
+      }
+      
+      // Log the actual HTTP request data
+      logger.debug(`📤 API Request ${i + 1}/${chunks.length}: POST /cli/sessions`, {
+        sessionsCount: chunk.length,
+        firstSession: chunk[0] ? {
+          tool: chunk[0].tool,
+          timestamp: chunk[0].timestamp,
+          duration: chunk[0].duration
+        } : null,
+        checksum: payload.checksum
+      });
+      
+      // Add retry logic for network failures
+      let lastError: any;
+      let retryCount = 0;
+      const MAX_RETRIES = 1; // Basic retry - just one attempt
+      
+      while (retryCount <= MAX_RETRIES) {
+        try {
+          // Use /cli/sessions endpoint for CLI uploads (bearer token auth)
+          const response = await this.client.post('/cli/sessions', payload);
+          results.push(response.data);
+          
+          // Update progress after successful chunk upload
+          uploadedCount += chunk.length;
+          uploadedSizeKB += payloadSize;
+          if (process.env.VIBELOG_DEBUG === 'true') {
+            console.log('[DEBUG] Progress reported:', uploadedCount, '/', sanitizedSessions.length, `(${uploadedSizeKB.toFixed(2)} KB)`);
+          }
+          if (onProgress) {
+            onProgress(uploadedCount, sanitizedSessions.length, uploadedSizeKB);
+          }
+          
+          // Add a small delay between chunks to avoid overwhelming the server
+          if (i < chunks.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+          
+          break; // Success, exit retry loop
+        } catch (error) {
+          lastError = error;
+          retryCount++;
+          
+          // Only retry on network errors, not on client errors (4xx)
+          const isNetworkError = error instanceof AxiosError && 
+            (!error.response || error.response.status >= 500 || error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT');
+          
+          if (!isNetworkError || retryCount > MAX_RETRIES) {
+            throw error; // Don't retry, throw immediately
+          }
+          
+          logger.debug(`Network error, retrying (${retryCount}/${MAX_RETRIES})...`, { error: error.message });
+          // Wait a bit before retrying
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+        }
+      }
+      
+      if (retryCount > MAX_RETRIES && lastError) {
+        throw lastError;
+      }
+    }
+    
+    return this.mergeResults(results);
+  }
+
+  private sanitizeSession(session: Session): Session {
+    // Remove or sanitize sensitive data
+    return {
+      ...session,
+      data: {
+        ...session.data,
+        projectName: session.data?.projectName || '', // Project name is already sanitized in send.ts
+        // Message content is already sanitized at this point
+        // Just ensure the summary doesn't contain sensitive data
+        messageSummary: session.data?.messageSummary ? session.data.messageSummary.slice(0, 5000) : '',
+      },
+    };
+  }
+
+  private calculateChecksum(data: any): string {
+    const json = JSON.stringify(data);
+    return crypto.createHash('sha256').update(json).digest('hex');
+  }
+
+  private mergeResults(results: any[]): any {
+    // Merge chunked upload results
+    return {
+      success: results.every(r => r.success),
+      sessionsProcessed: results.reduce((sum, r) => sum + (r.sessionsProcessed || 0), 0),
+      analysisPreview: results[0]?.analysisPreview,
+      streak: results[results.length - 1]?.streak,
+    };
+  }
+
+  async getStreak(): Promise<StreakInfo> {
+    const response = await this.client.get('/api/user/streak');
+    return response.data;
+  }
+
+  async getRecentSessions(limit: number = 10): Promise<any[]> {
+    // Validate limit
+    const safeLimit = Math.min(Math.max(1, limit), 100);
+    
+    const response = await this.client.get('/api/sessions/recent', {
+      params: { limit: safeLimit },
+    });
+    
+    return response.data;
+  }
+  
+  getBaseUrl(): string {
+    return this.client.defaults.baseURL || 'http://localhost:3000';
+  }
+}
+
+export const apiClient = new SecureApiClient();

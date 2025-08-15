@@ -1,0 +1,179 @@
+#!/usr/bin/env node
+import { Command } from 'commander';
+import { sendWithTimeout } from './commands/send';
+import { config } from './commands/config';
+import { logout } from './commands/logout';
+import { privacy } from './commands/privacy';
+import { showLogo } from './lib/ui';
+import { handleError } from './utils/errors';
+import { logger } from './utils/logger';
+import { detectSetupState } from './lib/detector';
+import { showMainMenu } from './lib/ui/main-menu';
+import { colors } from './lib/ui/styles';
+
+const program = new Command();
+
+program
+  .name('vibe-log')
+  .description('Track your building journey with vibe-log')
+  .version('1.0.0')
+  .option('-v, --verbose', 'Enable verbose logging')
+  .helpOption(false) // Disable default help
+  .hook('preAction', async (thisCommand) => {
+    // Enable debug logging if verbose flag is set
+    const options = thisCommand.opts();
+    if (options.verbose) {
+      logger.setLevel('debug');
+    }
+    // Skip logo in silent mode - check command line args directly since --silent is command-specific
+    const isSilent = process.argv.includes('--silent');
+    // Only show logo if a command is specified (not the default interactive menu)
+    const hasCommand = process.argv.length > 2 && !process.argv[2].startsWith('-');
+    if (!isSilent && hasCommand) {
+      await showLogo();
+    }
+  });
+
+// Hidden command for hooks - not shown in help
+program
+  .command('send', { hidden: true })
+  .description('Send session data from current project to vibe-log')
+  .option('-d, --dry', 'Show what would be sent without uploading')
+  .option('-a, --all', 'Send sessions from all projects (default: current project only)')
+  .option('--silent', 'Run in silent mode (for hook execution)')
+  .option('--background', 'Run upload in background (for hooks)')
+  .option('--hook-trigger <type>', 'Hook that triggered this command (stop, precompact)')
+  .option('--hook-version <version>', 'Hook version (for tracking hook updates)')
+  .option('--test', 'Test mode for hook validation (exits without processing)')
+  .option('--claude-project-dir <dir>', 'Claude project directory from $CLAUDE_PROJECT_DIR')
+  .action(async (options) => {
+    try {
+      await sendWithTimeout(options);
+    } catch (error) {
+      handleError(error);
+    }
+  });
+
+// Auth command - shown in help for direct cloud setup
+program
+  .command('auth', { hidden: true })
+  .description('Sign in with GitHub to enable cloud sync, web dashboard, and streak tracking')
+  .action(async () => {
+    try {
+      // Use the guided cloud setup wizard for complete experience
+      const { guidedCloudSetup } = await import('./lib/ui/cloud-setup-wizard');
+      await guidedCloudSetup();
+    } catch (error) {
+      handleError(error);
+    }
+  });
+
+// Hidden command for advanced users
+program
+  .command('config', { hidden: true })
+  .description('Manage vibe-log configuration')
+  .option('-l, --list', 'List all configuration values')
+  .option('-s, --set <key=value>', 'Set a configuration value')
+  .option('-g, --get <key>', 'Get a configuration value')
+  .action(async (options) => {
+    try {
+      await config(options);
+    } catch (error) {
+      handleError(error);
+    }
+  });
+
+program
+  .command('logout', { hidden: true })
+  .description('Clear authentication and logout')
+  .action(async () => {
+    try {
+      await logout();
+    } catch (error) {
+      handleError(error);
+    }
+  });
+
+// Hidden command for advanced users
+program
+  .command('privacy', { hidden: true })
+  .description('Preview and review data privacy (see what gets sent)')
+  .option('-e, --export <path>', 'Export sanitized data to file')
+  .action(async (options) => {
+    try {
+      await privacy(options);
+    } catch (error) {
+      handleError(error);
+    }
+  });
+
+// Custom help function
+function showHelp(): void {
+  console.log('');
+  console.log('Usage: npx vibe-log');
+  console.log('');
+  console.log('Track your building journey with vibe-log');
+  console.log('');
+  console.log('Main usage:');
+  console.log('  npx vibe-log              Interactive menu (recommended)');
+  console.log('');
+  console.log('Quick actions:');
+  console.log('  npx vibe-log auth         Sign in to enable cloud sync & web dashboard');
+  console.log('  npx vibe-log send         Manually sync sessions to cloud');
+  console.log('  npx vibe-log privacy      Preview what data gets sent (privacy first!)');
+  console.log('');
+  console.log('For hooks (automatic sync):');
+  console.log('  npx vibe-log send --silent    Used by Claude Code hooks');
+  console.log('');
+  console.log('Learn more at: https://vibe-log.dev');
+  console.log('');
+  process.exit(0);
+}
+
+// Handle --help flag
+if (process.argv.includes('--help') || process.argv.includes('-h')) {
+  showHelp();
+}
+
+// Custom help handler for commander
+program.on('option:help', showHelp);
+
+// Show interactive menu when no command is provided
+program.action(async () => {
+  let state;
+  
+  try {
+    // Try to detect current setup state
+    state = await detectSetupState();
+  } catch (error) {
+    // If detection fails, show menu with ERROR state
+    logger.debug('State detection failed:', error);
+    state = {
+      state: 'ERROR' as const,
+      hasConfig: false,
+      hasAuth: false,
+      hasAgents: false,
+      agentCount: 0,
+      totalAgents: 8,
+      hasHooks: false,
+      trackingMode: 'none' as const,
+      trackedProjectCount: 0,
+      errors: [error instanceof Error ? error.message : 'Unknown error']
+    };
+  }
+  
+  // Always show the interactive menu, even on error
+  try {
+    await showMainMenu(state);
+  } catch (menuError) {
+    // Only if menu itself fails, show simple fallback
+    console.error(colors.error('\nFailed to display interactive menu'));
+    console.log(colors.subdued('Run "npx vibe-log" to get started'));
+    
+    if (menuError instanceof Error) {
+      logger.debug('Menu display error:', menuError);
+    }
+  }
+});
+
+program.parseAsync(process.argv).catch(handleError);

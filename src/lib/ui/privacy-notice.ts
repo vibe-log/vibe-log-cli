@@ -1,0 +1,82 @@
+import inquirer from 'inquirer';
+import { colors, icons, box } from './styles';
+
+/**
+ * Display privacy notice and get user confirmation for cloud mode
+ * Returns true if user accepts, false if they decline
+ */
+export async function showPrivacyNotice(): Promise<boolean> {
+  console.clear();
+  
+  // Header
+  console.log(colors.primary(box.doubleTopLeft + box.doubleHorizontal.repeat(58) + box.doubleTopRight));
+  console.log(
+    colors.primary(box.doubleVertical) + 
+    colors.highlight('  Setting up vibe-log cloud mode...                   ') +
+    colors.primary(box.doubleVertical)
+  );
+  console.log(colors.primary(box.tLeft + box.horizontal.repeat(58) + box.tRight));
+  console.log('');
+  
+  // Advantages section
+  console.log(colors.accent('  Cloud Mode Advantages:'));
+  console.log(colors.success(`  ${icons.check} Uses 0 tokens (our infrastructure)`));
+  console.log(colors.success(`  ${icons.check} Auto-analyzes after each session`));
+  console.log(colors.success(`  ${icons.check} Interactive dashboard`));
+  console.log(colors.success(`  ${icons.check} Community insights`));
+  console.log('');
+  
+  // Privacy section
+  console.log(colors.primary(box.tLeft + box.horizontal.repeat(58) + box.tRight));
+  console.log('');
+  console.log(colors.accent('  🔒 Privacy Notice:'));
+  console.log('');
+  console.log('  vibe-log cloud will:');
+  console.log(colors.success(`  ${icons.check} Analyze sessions on our infrastructure (0 tokens used)`));
+  console.log(colors.success(`  ${icons.check} Store anonymized metrics for insights`));
+  console.log(colors.error(`  ${icons.cross} Never store your actual code or personal data`));
+  console.log('');
+  console.log(colors.subdued('  Your code and sensitive information stay private.'));
+  console.log(colors.subdued('  We only track productivity metrics and patterns.'));
+  console.log('');
+  console.log(colors.subdued('  Read our privacy policy: ') + colors.primary('https://vibe-log.dev/privacy'));
+  console.log('');
+  console.log(colors.primary(box.bottomLeft + box.horizontal.repeat(58) + box.bottomRight));
+  console.log('');
+  
+  // Confirmation prompt
+  const { accept } = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'accept',
+      message: colors.highlight('Do you accept these terms?'),
+      default: true
+    }
+  ]);
+  
+  return accept;
+}
+
+/**
+ * Show a brief privacy reminder (for users who have seen it before)
+ */
+export async function showPrivacyReminder(): Promise<boolean> {
+  console.log('');
+  console.log(colors.accent('🔒 Privacy Reminder:'));
+  console.log(colors.subdued('• Cloud mode uses our infrastructure (0 tokens)'));
+  console.log(colors.subdued('• We store anonymized metrics only'));
+  console.log(colors.subdued('• Your code remains private'));
+  console.log(colors.subdued('• Privacy policy: https://vibe-log.dev/privacy'));
+  console.log('');
+  
+  const { proceed } = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'proceed',
+      message: 'Continue with cloud setup?',
+      default: true
+    }
+  ]);
+  
+  return proceed;
+}

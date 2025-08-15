@@ -1,0 +1,377 @@
+import inquirer from 'inquirer';
+import { StateDetails } from '../detector';
+import { parseProjectName } from './project-display';
+import { colors, icons } from './styles';
+import { createStatusDashboard } from './status-sections';
+import { generateMenuItems, MenuContext } from './menu-builder';
+import { init } from '../../commands/init';
+import { sendWithTimeout } from '../../commands/send';
+import { status } from '../../commands/status';
+import { auth } from '../../commands/auth';
+import { logout } from '../../commands/logout';
+import open from 'open';
+
+export async function showMainMenu(state: StateDetails): Promise<void> {
+  // Handle FIRST_TIME and PARTIAL_SETUP states with welcome screen
+  if (state.state === 'FIRST_TIME' || state.state === 'PARTIAL_SETUP') {
+    // Clear console and show logo for first-time experience
+    console.clear();
+    const { showLogo } = await import('../ui');
+    await showLogo();
+    
+    const { showFirstTimeWelcome, showSetupMessage } = await import('./first-time-welcome');
+    const choice = await showFirstTimeWelcome();
+    
+    switch (choice) {
+      case 'local':
+        showSetupMessage('local');
+        // Track that this is first-time setup
+        const wasFirstTime = state.agentCount === 0;
+        await manageAgents();
+        
+        // After agents installation, check if we should prompt for report
+        // Get fresh state to check if agents were installed
+        const { detectSetupState: detectStateAfterAgents } = await import('../detector');
+        const stateAfterAgents = await detectStateAfterAgents();
+        
+        // If this was first-time and all agents are now installed
+        if (wasFirstTime && stateAfterAgents.agentCount === stateAfterAgents.totalAgents) {
+          // The prompt for report generation is already handled in sub-agents-installer.ts
+          // when it detects a successful first-time installation
+        }
+        break;
+      
+      case 'cloud':
+        showSetupMessage('cloud');
+        // Start guided cloud setup flow
+        const { guidedCloudSetup } = await import('./cloud-setup-wizard');
+        await guidedCloudSetup();
+        break;
+      
+      case 'help':
+        showHelp();
+        // Show welcome again after help
+        await showMainMenu(state);
+        return;
+      
+      case 'exit':
+        console.log(colors.muted('\nGoodbye! 👋\n'));
+        process.exit(0);
+        break;
+    }
+    
+    // After setup, refresh state and show main menu
+    const { detectSetupState } = await import('../detector');
+    const newState = await detectSetupState();
+    
+    // If still FIRST_TIME or PARTIAL_SETUP (user cancelled), show welcome again
+    if (newState.state === 'FIRST_TIME' || newState.state === 'PARTIAL_SETUP') {
+      await showMainMenu(newState);
+    } else {
+      // Setup successful, show the main menu
+      await showMainMenu(newState);
+    }
+    return;
+  }
+  
+  // Regular main menu for non-FIRST_TIME states
+  console.clear();
+  
+  // Show the logo after clearing console
+  const { showLogo } = await import('../ui');
+  await showLogo();
+  
+  // Show status dashboard with converted parameters
+  const cloudStatus = {
+    connected: state.hasAuth,
+    hooksEnabled: state.hasHooks,
+    syncStatus: 'synced' as const,  // Not used anymore, kept for compatibility
+    lastSync: state.lastSync,
+    lastSyncProject: state.lastSyncProject,
+    pendingChanges: 0,
+    trackingMode: state.trackingMode,
+    trackedProjectCount: state.trackedProjectCount
+  };
+  
+  const installStatus: 'not-installed' | 'installed' | 'partial' = 
+    state.agentCount === 0 ? 'not-installed' :
+    state.agentCount === state.totalAgents ? 'installed' :
+    'partial';
+  
+  const localEngine = {
+    installStatus,
+    subAgentsInstalled: state.agentCount,
+    totalSubAgents: state.totalAgents,
+    configPath: '~/.claude/config'
+  };
+  
+  console.log(createStatusDashboard(cloudStatus, localEngine));
+  console.log('');
+  
+  // Build context-aware menu
+  const context: MenuContext = {
+    state: state.state,
+    isAuthenticated: state.hasAuth,
+    hasAgents: state.hasAgents,
+    hasHooks: state.hasHooks,
+    projectCount: state.projectCount,
+    sessionCount: state.sessionCount,
+    lastSync: state.lastSync || undefined,
+    agentCount: state.agentCount,
+    totalAgents: state.totalAgents
+  };
+  const menuItems = generateMenuItems(context);
+  
+  // Map menu items to inquirer choices, including separators
+  const choices = menuItems
+    .map(item => {
+      if (item.separator) {
+        return new inquirer.Separator('─────────────────────');
+      }
+      return {
+        name: item.label,
+        value: item.action || item.id,  // Use action if available, otherwise id
+        disabled: item.disabled
+      };
+    });
+  
+  // Add exit option
+  choices.push({
+    name: `${icons.cross} Exit`,
+    value: 'exit',
+    disabled: false
+  });
+  
+  const { action } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'action',
+      message: 'What would you like to do?',
+      choices,
+      pageSize: 10
+    }
+  ]);
+  
+  // Handle actions
+  await handleMenuAction(action, state);
+}
+
+async function handleMenuAction(action: string, state: StateDetails): Promise<void> {
+  switch (action) {
+    case 'init':
+      await init({});
+      break;
+      
+    case 'auth':
+      // For first-time users selecting cloud mode, show privacy notice first
+      const { showPrivacyNotice: showNotice } = await import('./privacy-notice');
+      const userAccepted = await showNotice();
+      
+      if (userAccepted) {
+        console.log(colors.info('\nAuthenticating with GitHub...'));
+        await auth({});
+      } else {
+        console.log(colors.warning('\nCloud setup cancelled.'));
+      }
+      break;
+      
+    case 'send':
+      await sendWithTimeout({});
+      break;
+    
+    case 'manual-sync':
+      // Show manual sync menu
+      const { showManualSyncMenu } = await import('./manual-sync-menu');
+      const syncOption = await showManualSyncMenu();
+      
+      switch (syncOption.type) {
+        case 'selected':
+          // Send specific sessions - they're already in the right format!
+          console.log(colors.info(`\nSyncing ${syncOption.sessions.length} selected sessions...`));
+          console.log(colors.dim('Preparing sessions for privacy-safe upload...'));
+          
+          await sendWithTimeout({ 
+            selectedSessions: syncOption.sessions
+          });
+          break;
+          
+        case 'projects':
+          // Send selected projects
+          // Read sessions from selected projects
+          const { readClaudeSessions } = await import('../readers/claude');
+          const { analyzeProject } = await import('../claude-core');
+          const projectSessions: any[] = [];
+          
+          for (const claudePath of syncOption.projects) {
+            try {
+              // Analyze the Claude project to get the actual path
+              const dirName = parseProjectName(claudePath);
+              const project = await analyzeProject(claudePath, dirName);
+              
+              if (!project) {
+                console.log(colors.warning(`Failed to analyze project ${dirName}`));
+                continue;
+              }
+              
+              // Read sessions using the actual path for filtering
+              const sessions = await readClaudeSessions({
+                projectPath: project.actualPath
+              });
+              projectSessions.push(...sessions);
+              console.log(colors.subdued(`  • ${project.name}: ${sessions.length} sessions`));
+            } catch (error) {
+              console.log(colors.warning(`Failed to read sessions from ${parseProjectName(claudePath)}`));
+            }
+          }
+          
+          if (projectSessions.length > 0) {
+            console.log(colors.success(`\nTotal: ${projectSessions.length} sessions to sync`));
+            console.log(colors.dim('Preparing sessions for privacy-safe upload...'));
+            
+            await sendWithTimeout({ 
+              selectedSessions: projectSessions.map(s => ({
+                projectPath: s.sourceFile?.claudeProjectPath || s.projectPath,
+                sessionFile: s.sourceFile?.sessionFile || '',
+                displayName: parseProjectName(s.projectPath),
+                timestamp: s.timestamp,
+                duration: s.duration,
+                messageCount: s.messages.length
+              }))
+            });
+          } else {
+            console.log(colors.warning('No sessions found in selected projects'));
+          }
+          break;
+          
+        case 'all':
+          // Send all projects
+          console.log(colors.info('\nSyncing all projects...'));
+          await sendWithTimeout({ all: true });
+          break;
+          
+        case 'cancel':
+          // User cancelled
+          break;
+      }
+      break;
+      
+    case 'status':
+      await status();
+      break;
+      
+    case 'dashboard':
+      if (state.cloudUrl) {
+        console.log(colors.info(`Opening dashboard: ${state.cloudUrl}`));
+        await open(state.cloudUrl);
+      }
+      break;
+      
+      
+    case 'report':
+      const { generateLocalReportInteractive } = await import('./local-report-generator');
+      await generateLocalReportInteractive();
+      break;
+      
+    case 'install-agents':
+      await manageAgents();
+      break;
+      
+    case 'manage-hooks':
+      const { showHooksManagementMenu } = await import('./hooks-menu');
+      await showHooksManagementMenu();
+      break;
+      
+    case 'install-hooks':
+      // Legacy support - redirect to new hooks management
+      const { showHooksManagementMenu: showMenu } = await import('./hooks-menu');
+      await showMenu();
+      break;
+      
+    case 'update-hooks':
+      // Legacy support - redirect to new hooks management
+      const { showHooksManagementMenu: showMenuUpdate } = await import('./hooks-menu');
+      await showMenuUpdate();
+      break;
+      
+    case 'switch-cloud':
+      const { showPrivacyNotice } = await import('./privacy-notice');
+      const accepted = await showPrivacyNotice();
+      
+      if (accepted) {
+        console.log(colors.info('\nAuthenticating with GitHub...'));
+        await auth({});
+      } else {
+        console.log(colors.warning('\nCloud setup cancelled.'));
+      }
+      break;
+      
+      
+    case 'logout':
+      await logout();
+      break;
+      
+    case 'help':
+      showHelp();
+      break;
+      
+    case 'exit':
+      console.log(colors.muted('\nGoodbye! 👋\n'));
+      process.exit(0);
+      break;
+      
+    default:
+      console.log(colors.warning(`Unknown action: ${action}`));
+  }
+  
+  // Show menu again unless exiting
+  if (action !== 'exit') {
+    // For auth actions, auto-refresh without prompt (SSE handles the flow)
+    if (action === 'auth' || action === 'switch-cloud') {
+      // Only refresh if auth was successful (user didn't cancel)
+      // The auth/switch-cloud handlers already show cancellation message
+      const { detectSetupState } = await import('../detector');
+      const newState = await detectSetupState();
+      
+      // Only show menu if state changed (successful auth)
+      if (newState.hasAuth !== state.hasAuth || action === 'switch-cloud') {
+        await showMainMenu(newState);
+      } else {
+        // Auth was cancelled or failed, return to menu
+        await showMainMenu(newState);
+      }
+    } else {
+      // For all other actions, refresh state and show menu again
+      const { detectSetupState } = await import('../detector');
+      const newState = await detectSetupState();
+      await showMainMenu(newState);
+    }
+  }
+}
+
+
+async function manageAgents(): Promise<void> {
+  const { installSubAgentsInteractive } = await import('./sub-agents-installer');
+  await installSubAgentsInteractive();
+}
+
+function showHelp(): void {
+  console.log(colors.accent('\n--- Help ---'));
+  console.log('');
+  console.log(colors.primary('Vibe-Log CLI Help'));
+  console.log('');
+  console.log('Vibe-Log helps you track your coding sessions and productivity.');
+  console.log('');
+  console.log(colors.accent('Modes:'));
+  console.log('  • Local Mode: 100% offline, uses Claude Code tokens');
+  console.log('  • Cloud Mode: Automatic sync, no tokens needed');
+  console.log('');
+  console.log(colors.accent('Getting Started:'));
+  console.log('  1. Choose between Local or Cloud mode');
+  console.log('  2. Install sub-agents for enhanced analysis');
+  console.log('  3. (Cloud only) Install hooks for automatic sync');
+  console.log('');
+  console.log(colors.accent('Getting Started:'));
+  console.log('  Simply run: npx vibe-log');
+  console.log('');
+  console.log(colors.muted('Learn more at: https://vibe-log.dev'));
+}

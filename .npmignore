@@ -1,0 +1,172 @@
+# Source files (we only ship dist/)
+src/
+*.ts
+!*.d.ts
+
+# Test files
+tests/
+test-*.js
+run-unit-tests.js
+**/*.test.ts
+**/*.test.js
+**/test-*
+**/__tests__/
+**/__mocks__/
+
+# Test binary files in bin/
+bin/hello_world.js
+bin/hello_world.py
+bin/hello_world_login.py
+bin/test_languages.py
+
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# Configuration files
+.eslintrc*
+.prettierrc*
+tsconfig.json
+tsup.config.ts
+vitest.config.ts
+.editorconfig
+eslintrc.json
+jest.config.*
+
+# Environment files
+.env
+.env.*
+*.env
+
+# Logs and debug files
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Coverage and test reports
+coverage/
+.nyc_output/
+test-results/
+*.lcov
+.coverage/
+
+# Editor directories
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.*.swp
+.*.swo
+
+# Documentation (internal) - Keep README.md and SECURITY.md for users
+TASKS.md
+TECHNICAL_SPEC.md
+ACTUAL_TEST_STATUS.md
+BETTER_PRIVACY_DESIGN.md
+BUILD_AND_RELEASE.md
+CROSS_PLATFORM_TESTING.md
+DEVELOPER_QUICKSTART.md
+FULL_TEST_REPORT.md
+PLATFORM_EMULATION_GUIDE.md
+PRIVACY_TRANSPARENCY.md
+REMAINING_TEST_FIXES.md
+ROOT_CAUSE_ANALYSIS.md
+SECURITY_AUDIT.md
+SECURITY_EDUCATION.md
+SECURITY_FIXES.md
+SECURITY_IMPLEMENTATION_REPORT.md
+TEST_FIX_SUMMARY.md
+USAGE_GUIDE.md
+
+# Build info
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+.tsbuildinfo
+
+# Test data and fixtures  
+tests/session_data.json
+tests/reducted_ready_to_send.json
+tests/d.mp3
+tests/sanitization-report.md
+tests/TEST_REPORT.md
+tests/test-plan.md
+test-date.js
+
+# Backup files
+*.bak
+*.backup
+*.old
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+._*
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# Cache directories
+.cache/
+.parcel-cache/
+.turbo/
+node_modules/
+
+# Local data
+.vibelog/
+.claude/
+
+# Private/sensitive folders
+.ignore/
+private/
+sensitive/
+
+# Debug and development files
+debug/
+.debug/
+
+# CI/CD files
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+azure-pipelines.yml
+
+# Package manager files (except package.json which is needed)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.npmrc
+.yarnrc
+.pnpmfile.cjs
+
+# Any local config overrides
+config.local.json
+settings.local.json
+*.local.*
+local.*
+
+# Development scripts
+scripts/
+
+# Documentation build output
+docs/_build/
+docs/generated/
+
+# Misc development files
+TODO.md
+NOTES.md
+*.todo
+.todo

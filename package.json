@@ -1,0 +1,66 @@
+{
+  "name": "vibe-log-cli",
+  "version": "0.3.0",
+  "description": "Track your building journey with Vibelog",
+  "bin": {
+    "vibe-log": "./bin/vibe-log.js"
+  },
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "npm run type-check && tsup",
+    "dev": "tsup --watch",
+    "prepublishOnly": "npm run build",
+    "test": "vitest",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "security-check": "npm audit && npm outdated",
+    "security-fix": "npm audit fix",
+    "validate-deps": "npm ls --depth=0",
+    "check-all": "npm run lint && npm run type-check && npm run test && npm run security-check"
+  },
+  "keywords": [
+    "cli",
+    "vibelog",
+    "productivity",
+    "developer-tools",
+    "code-tracking"
+  ],
+  "author": "Vibelog",
+  "license": "MIT",
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "conf": "^10.2.0",
+    "dayjs": "^1.11.0",
+    "event-source-polyfill": "^1.0.31",
+    "inquirer": "^12.9.1",
+    "oh-my-logo": "^0.2.1",
+    "open": "^8.4.2",
+    "ora": "^5.4.1"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^9.0.7",
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "execa": "^9.6.0",
+    "fs-extra": "^11.3.1",
+    "prettier": "^3.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0",
+    "vitest": "^3.2.4"
+  }
+}

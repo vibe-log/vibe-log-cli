@@ -1,0 +1,131 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Production build
+dist/
+build/
+out/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor directories and files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+*.launch
+.settings/
+*.swp
+*.swo
+*~
+
+# Testing
+coverage/
+.nyc_output/
+test-results/
+*.lcov
+
+# TypeScript
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Cache
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.turbo/
+.vercel/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+.vibe-log-sessions-temp.json
+.vibe-log-temp/
+
+# Local data
+.vibelog/
+.claude/
+
+# Business sensitive files
+MONETIZATION_STRATEGIES.md
+BUSINESS_PLAN.md
+INTERNAL_NOTES.md
+REVENUE_PROJECTIONS.md
+COMPETITIVE_ANALYSIS.md
+
+# Test data that might contain sensitive info
+tests/session_data.jsonl
+test-data-*.ts
+test-data-*.js
+*-test-data-*.json
+*-test-output-*.txt
+session-analysis.txt
+sanitization-analysis-output.json
+
+# Build artifacts
+*.tgz
+package-lock.json.backup
+yarn.lock.backup
+
+# Local config overrides
+config.local.json
+settings.local.json
+
+# Debug files
+debug/
+.debug/
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Generated documentation
+docs/_build/
+docs/generated/
+
+# Personal notes
+TODO.personal.md
+NOTES.personal.md
+
+# Private/sensitive folders
+.ignore/
+private/
+sensitive/
+
+# Windows path test directories (prevent CI failures)
+C:/
+C:\\
+
+# Test-generated files with Windows paths
+**/C:\\*
+**\\C:\\*
