@@ -62,7 +62,8 @@ export async function showSessionSelector(): Promise<SelectedSessionInfo[]> {
     const allSessions = await readAvailableSessions(claudePath);
     
     if (allSessions.length === 0) {
-      spinner.fail(colors.warning('No sessions found in the last 30 days.'));
+      spinner.fail(colors.warning('No sessions longer than 4 minutes found in the last 7 days.'));
+      console.log(colors.subdued('Sessions must be at least 4 minutes long to be uploaded.'));
       return [];
     }
     
@@ -135,9 +136,9 @@ export async function selectTodaysSessions(): Promise<SelectedSessionInfo[]> {
     const todayGroup = grouped.find(g => g.label === 'Today');
     
     if (todayGroup && todayGroup.sessions.length > 0) {
-      spinner.succeed(colors.success(`Found ${todayGroup.sessions.length} sessions today`));
+      spinner.succeed(colors.success(`Found ${todayGroup.sessions.length} sessions today (4+ minutes)`));
     } else {
-      spinner.info(colors.subdued('No sessions found today'));
+      spinner.info(colors.subdued('No sessions longer than 4 minutes found today'));
     }
     
     return todayGroup ? todayGroup.sessions : [];
@@ -153,13 +154,23 @@ export async function selectTodaysSessions(): Promise<SelectedSessionInfo[]> {
  */
 async function readAvailableSessions(_claudePath: string): Promise<SessionInfo[]> {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const MIN_DURATION_SECONDS = 240; // 4 minutes minimum
   
   try {
     // Use the optimized reader with date filtering
     const claudeSessions = await readClaudeSessions({ since: sevenDaysAgo });
     
+    // Filter out sessions shorter than 4 minutes
+    const validSessions = claudeSessions.filter(session => session.duration >= MIN_DURATION_SECONDS);
+    
+    // Log if sessions were filtered
+    const filteredCount = claudeSessions.length - validSessions.length;
+    if (filteredCount > 0) {
+      logger.debug(`Filtered out ${filteredCount} session(s) shorter than 4 minutes`);
+    }
+    
     // Convert SessionData to SessionInfo format
-    const sessions: SessionInfo[] = claudeSessions.map(session => {
+    const sessions: SessionInfo[] = validSessions.map(session => {
       // Extract display name from project path
       const displayName = parseProjectName(session.projectPath);
       
