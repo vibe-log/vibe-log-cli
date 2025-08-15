@@ -775,7 +775,7 @@ async function offerInitialSync(options: {
       // Sync all sessions for global hooks
       showInfo('Syncing all existing sessions from all projects...');
       console.log('');
-      await sendWithTimeout({ all: true, fromMenu: true });
+      await sendWithTimeout({ all: true, fromMenu: true, isInitialSync: true });
     } else if (options.selectedProjects) {
       // For selected projects, directly load their sessions (like manual sync does)
       const { readClaudeSessions } = await import('../readers/claude');
@@ -821,10 +821,10 @@ async function offerInitialSync(options: {
         console.log(colors.dim('Preparing sessions for privacy-safe upload...'));
         
         // This will show the loading, redaction count, and upload UI
-        await sendWithTimeout({ selectedSessions, fromMenu: true });
+        await sendWithTimeout({ selectedSessions, fromMenu: true, isInitialSync: true });
       } else {
         console.log(colors.warning('No sessions found in selected projects'));
-        showInfo('You can sync sessions later using "vibe-log send"');
+        showInfo('You can sync sessions later using "Send sessions" from the main menu');
       }
     }
     

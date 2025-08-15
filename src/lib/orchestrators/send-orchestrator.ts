@@ -30,6 +30,7 @@ export interface SendOptions {
   skipActionMenu?: boolean;
   claudeProjectDir?: string;
   fromMenu?: boolean;  // Indicates call is from interactive menu
+  isInitialSync?: boolean;  // Indicates this is initial sync during hook setup
 }
 
 // Use Session type from api-client for consistency
@@ -51,7 +52,7 @@ export class SendOrchestrator {
     }
 
     // Sanitize and transform sessions
-    const apiSessions = await this.sanitizeSessions(sessions);
+    const apiSessions = await this.sanitizeSessions(sessions, options);
 
     // Handle dry run
     if (options.dry) {
@@ -227,7 +228,7 @@ export class SendOrchestrator {
     return sessions;
   }
 
-  async sanitizeSessions(sessions: SessionData[]): Promise<ApiSession[]> {
+  async sanitizeSessions(sessions: SessionData[], options?: SendOptions): Promise<ApiSession[]> {
     const apiSessions: ApiSession[] = [];
     const MIN_DURATION_SECONDS = 240; // 4 minutes minimum as required by server
     
@@ -265,8 +266,15 @@ export class SendOrchestrator {
     if (filteredCount > 0) {
       logger.info(`Filtered out ${filteredCount} session(s) shorter than 4 minutes`);
       
-      // If all sessions were filtered, throw a clear error
+      // If all sessions were filtered
       if (apiSessions.length === 0) {
+        // During initial sync from hooks setup, don't throw error
+        if (options?.isInitialSync) {
+          logger.info('No sessions longer than 4 minutes found for initial sync');
+          return apiSessions; // Return empty array, let calling code handle it gracefully
+        }
+        
+        // For regular sync, throw error
         throw new VibelogError(
           `All ${filteredCount} session(s) were shorter than 4 minutes. Sessions must be at least 4 minutes long to upload.`,
           'VALIDATION_ERROR'

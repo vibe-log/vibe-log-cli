@@ -87,7 +87,7 @@ async function executeInteractiveSend(options: SendOptions): Promise<void> {
 
     // Prepare sessions for upload
     progressUI.showPreparing();
-    const apiSessions = await orchestrator.sanitizeSessions(sessions);
+    const apiSessions = await orchestrator.sanitizeSessions(sessions, options);
     
     // Show progress during sanitization
     if (!options.silent && sessions.length > 1) {
@@ -101,6 +101,17 @@ async function executeInteractiveSend(options: SendOptions): Promise<void> {
     const filteredCount = sessions.length - apiSessions.length;
     if (filteredCount > 0) {
       console.log(chalk.yellow(`\n⚠️  Filtered out ${filteredCount} session(s) shorter than 4 minutes`));
+    }
+    
+    // If no sessions left after filtering
+    if (apiSessions.length === 0) {
+      if (options.isInitialSync) {
+        // During initial sync, this is not an error
+        console.log(chalk.yellow('\nℹ️  No sessions longer than 4 minutes found to sync.'));
+        console.log(chalk.dim('Future sessions longer than 4 minutes will be synced automatically.'));
+        return;
+      }
+      // For regular sync, the orchestrator will throw an error
     }
 
     // Show upload summary
