@@ -6,9 +6,31 @@ import { showSessionSelector, SelectedSessionInfo } from './session-selector';
 import { showPrivacyPreview } from './privacy-preview';
 import { MessageSanitizer } from '../message-sanitizer';
 import { getDashboardUrl } from '../config';
+import { displayError } from '../../utils/errors';
+import { VibelogError } from '../../utils/errors';
 import path from 'path';
 import fs from 'fs/promises';
 import open from 'open';
+import chalk from 'chalk';
+
+/**
+ * Helper function to show connection error help messages
+ */
+function showConnectionErrorHelp(error: unknown): void {
+  if (error instanceof VibelogError) {
+    if (error.code === 'CONNECTION_REFUSED' || 
+        error.code === 'NETWORK_ERROR' ||
+        error.code === 'SERVER_NOT_FOUND' ||
+        error.code === 'CONNECTION_FAILED') {
+    }
+  } else if (error instanceof Error) {
+    const errorCode = (error as any).code;
+    if (errorCode === 'ECONNREFUSED') {
+      console.log(chalk.red('\n❌ Cannot connect to the server'));
+      console.log(chalk.yellow('Please ensure the vibe-log server is accessible.'));
+    }
+  }
+}
 
 /**
  * Guided cloud setup flow for first-time users
@@ -69,8 +91,16 @@ export async function guidedCloudSetup(): Promise<void> {
   try {
     await auth({ wizardMode: true });
   } catch (error) {
-    console.log(colors.error('\n✗ Authentication failed'));
-    console.log(colors.subdued('Please try again from the main menu.'));
+    // Display the actual error details
+    displayError(error);
+    
+    // Show connection-specific help if applicable
+    showConnectionErrorHelp(error);
+    
+    // Pause so user can read the error
+    console.log('Press Enter to continue...');
+    await inquirer.prompt([{ type: 'input', name: 'continue', message: '' }]);
+    
     return;
   }
   
@@ -141,8 +171,18 @@ export async function guidedCloudSetup(): Promise<void> {
       }
     }
   } catch (error) {
-    console.log(colors.error('\n✗ Failed to upload sessions'));
-    console.log(colors.subdued('You can try again from the main menu.'));
+    // Display detailed error information
+    displayError(error);
+    
+    // Show connection-specific help if applicable
+    showConnectionErrorHelp(error);
+    
+    console.log(colors.subdued('\nYou can try again from the main menu after resolving the issue.'));
+    
+    // Pause so user can read the error
+    console.log('Press Enter to continue...');
+    await inquirer.prompt([{ type: 'input', name: 'continue', message: '' }]);
+    
     return;
   }
   

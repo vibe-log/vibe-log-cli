@@ -26,7 +26,49 @@ export async function browserAuth(wizardMode?: boolean): Promise<string> {
     await clearToken();
     
     // Get auth token from server (this creates a new token each time)
-    const { authUrl, token } = await apiClient.createAuthSession();
+    let authUrl: string;
+    let token: string;
+    
+    try {
+      const apiUrl = getApiUrl();
+      if (!wizardMode) {
+        console.log(chalk.gray(`Connecting to: ${apiUrl}`));
+      }
+      
+      const result = await apiClient.createAuthSession();
+      authUrl = result.authUrl;
+      token = result.token;
+    } catch (error: any) {
+      // Handle connection errors specifically
+      if (error.code === 'ECONNREFUSED') {
+        console.error(chalk.red('\n❌ Cannot connect to vibe-log server'));
+        console.error(chalk.yellow('\n📋 Please check:'));
+        console.error(chalk.gray('   1. Is the server running? (For local development: npm run dev)'));
+        console.error(chalk.gray('   2. Is the API URL correct? Current: ' + getApiUrl()));
+        console.error(chalk.gray('   3. Is your firewall blocking the connection?'));
+        console.error(chalk.gray('\n💡 Tip: If running locally, make sure the vibe-log server is started'));
+        throw new VibelogError('Server connection refused', 'CONNECTION_REFUSED');
+      } else if (error.code === 'ENOTFOUND') {
+        console.error(chalk.red('\n❌ Server not found'));
+        console.error(chalk.yellow('\nThe server address could not be resolved: ' + getApiUrl()));
+        console.error(chalk.gray('\n💡 Check your internet connection or API URL configuration'));
+        throw new VibelogError('Server not found', 'SERVER_NOT_FOUND');
+      } else if (error.code === 'ETIMEDOUT' || error.code === 'TIMEOUT') {
+        console.error(chalk.red('\n❌ Connection timed out'));
+        console.error(chalk.yellow('\nThe server is not responding. It might be:'));
+        console.error(chalk.gray('   • Down for maintenance'));
+        console.error(chalk.gray('   • Experiencing high load'));
+        console.error(chalk.gray('   • Blocked by network issues'));
+        throw new VibelogError('Connection timed out', 'TIMEOUT');
+      } else if (error.code === 'NETWORK_ERROR') {
+        console.error(chalk.red('\n❌ Network error'));
+        console.error(chalk.yellow('\nPlease check your internet connection and try again.'));
+        throw error;
+      } else {
+        // Re-throw other errors to be handled by outer catch
+        throw error;
+      }
+    }
     
     if (!wizardMode) {
       console.log(chalk.yellow('\n📱 Opening browser for authentication...'));

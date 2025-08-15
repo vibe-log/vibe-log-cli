@@ -74,7 +74,20 @@ export async function init(options: InitOptions): Promise<void> {
     console.log(chalk.cyan('\n💡 Tip: Use the interactive menu to sync sessions and check your stats!'));
   } catch (error) {
     if (error instanceof VibelogError) {
+      // Connection errors are already displayed with helpful messages in browserAuth
       throw error;
+    }
+    
+    // Check for network errors that might not have been caught
+    if (error instanceof Error) {
+      const errorCode = (error as any).code;
+      if (errorCode === 'ECONNREFUSED' || errorCode === 'ENOTFOUND' || errorCode === 'ETIMEDOUT') {
+        // The error was already displayed in browserAuth, just throw it
+        throw new VibelogError(
+          'Could not connect to authentication server',
+          'CONNECTION_FAILED'
+        );
+      }
     }
     
     logger.error('Authentication failed', error);
