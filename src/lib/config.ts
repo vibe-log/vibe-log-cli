@@ -42,7 +42,7 @@ const config = new Conf<ConfigSchema>({
   schema: {
     apiUrl: {
       type: 'string',
-      default: 'https://vibe-log.dev',
+      default: 'https://app.vibe-log.dev',
     },
     cliPath: {
       type: 'string',

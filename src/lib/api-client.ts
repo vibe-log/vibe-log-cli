@@ -240,7 +240,7 @@ class SecureApiClient {
       return validateUrl(url);
     } catch (error) {
       console.error('Invalid API URL, using default');
-      return 'https://vibe-log.dev';
+      return 'https://app.vibe-log.dev';
     }
   }
 
