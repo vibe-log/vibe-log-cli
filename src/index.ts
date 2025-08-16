@@ -11,12 +11,52 @@ import { detectSetupState } from './lib/detector';
 import { showMainMenu } from './lib/ui/main-menu';
 import { colors } from './lib/ui/styles';
 
+// Import package.json for version info
+const pkg = require('../package.json');
+
+// Check for package updates and store the info
+let packageUpdateInfo: { current: string; latest: string } | null = null;
+const isSilent = process.argv.includes('--silent');
+
+if (!isSilent) {
+  // Support simulation for testing
+  const simulatedVersion = process.env.SIMULATE_OLD_VERSION;
+  const displayPkg = simulatedVersion 
+    ? { ...pkg, name: 'vibe-log-cli', version: simulatedVersion }
+    : pkg;
+
+  // Use update-notifier to check for package updates
+  const updateNotifier = require('update-notifier');
+  const notifier = updateNotifier({
+    pkg: displayPkg,
+    updateCheckInterval: simulatedVersion ? 0 : 1000 * 60 * 60, // Check immediately in simulation, otherwise hourly
+    shouldNotifyInNpmScript: true
+  });
+
+  // Store package update info if available
+  if (notifier.update) {
+    packageUpdateInfo = {
+      current: notifier.update.current,
+      latest: notifier.update.latest
+    };
+  } else if (simulatedVersion) {
+    // Force package update info in simulation mode
+    packageUpdateInfo = {
+      current: simulatedVersion,
+      latest: pkg.version
+    };
+  }
+}
+
+// Store version for UI components
+export const currentVersion = process.env.SIMULATE_OLD_VERSION || pkg.version;
+
 const program = new Command();
 
 program
   .name('vibe-log')
   .description('Track your building journey with vibe-log')
-  .version('1.0.0')
+  .version(currentVersion)
   .option('-v, --verbose', 'Enable verbose logging')
   .helpOption(false) // Disable default help
   .hook('preAction', async (thisCommand) => {
@@ -30,7 +70,7 @@ program
     // Only show logo if a command is specified (not the default interactive menu)
     const hasCommand = process.argv.length > 2 && !process.argv[2].startsWith('-');
     if (!isSilent && hasCommand) {
-      await showLogo();
+      await showLogo(currentVersion);
     }
   });
 
@@ -164,7 +204,7 @@ program.action(async () => {
   
   // Always show the interactive menu, even on error
   try {
-    await showMainMenu(state);
+    await showMainMenu(state, packageUpdateInfo);
   } catch (menuError) {
     // Only if menu itself fails, show simple fallback
     console.error(colors.error('\nFailed to display interactive menu'));

@@ -39,10 +39,13 @@ function showConnectionErrorHelp(error: unknown): void {
  * Users see concrete sessions BEFORE being asked to authenticate
  */
 export async function guidedCloudSetup(): Promise<void> {
+  // Get version for logo display
+  const pkg = require('../../../package.json');
+  const version = process.env.SIMULATE_OLD_VERSION || pkg.version;
   // Step 1: Session Selection (NO AUTH REQUIRED)
   console.clear();
   const { showLogo } = await import('../ui');
-  await showLogo();
+  await showLogo(version);
   console.log(colors.accent('\n👀 Step 1: Let\'s See What You\'ve Been Building\n'));
   
   console.log(colors.primary('Take a peek at your recent Claude Code sessions - no commitment required.'));
@@ -61,7 +64,7 @@ export async function guidedCloudSetup(): Promise<void> {
   
   // Step 2: Privacy Preview - Show what will be redacted
   console.clear();
-  await showLogo();
+  await showLogo(version);
   console.log(colors.accent('\n🔒 Step 2: Privacy Preview\n'));
   
   console.log(colors.primary('Your code never leaves your machine - we only analyze patterns and redacted metadata.'));
@@ -81,7 +84,7 @@ export async function guidedCloudSetup(): Promise<void> {
   
   // Step 3: Just-in-time Authentication
   console.clear();
-  await showLogo();
+  await showLogo(version);
   console.log(colors.accent('\n🔐 Step 3: Authentication\n'));
   
   console.log(colors.primary('Now we need to authenticate to upload your sessions.'));
@@ -107,7 +110,7 @@ export async function guidedCloudSetup(): Promise<void> {
   
   // Step 4: Upload Sessions
   console.clear();
-  await showLogo();
+  await showLogo(version);
   console.log(colors.accent('\n📤 Uploading Your Sessions\n'));
   
   // Show privacy processing message
@@ -158,7 +161,7 @@ export async function guidedCloudSetup(): Promise<void> {
     
     if (setupHooks) {
       console.clear();
-      await showLogo();
+      await showLogo(version);
       console.log(colors.accent('\n🔧 Optional: Configure Auto-sync\n'));
       
       const hooksInstalled = await showHooksManagementMenuGuided();
@@ -189,7 +192,7 @@ export async function guidedCloudSetup(): Promise<void> {
   
   // Final success message
   console.clear();
-  await showLogo();
+  await showLogo(version);
   console.log(colors.success('\n🎉 Cloud Setup Complete!\n'));
   
   console.log(colors.primary('Your vibe-log is now active!'));

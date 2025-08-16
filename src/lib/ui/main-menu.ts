@@ -20,13 +20,40 @@ async function waitForEnter(): Promise<void> {
   });
 }
 
-export async function showMainMenu(state: StateDetails): Promise<void> {
+// Helper to display package update notification
+function displayPackageUpdateNotification(packageUpdateInfo: { current: string; latest: string }): void {
+  const boxen = require('boxen');
+  console.log(boxen(
+    `Update available ${packageUpdateInfo.current} → ${packageUpdateInfo.latest}\nRun \`npx vibe-log-cli@latest\` to update`,
+    {
+      padding: 1,
+      margin: 0,
+      align: 'center',
+      borderColor: 'yellow',
+      borderStyle: 'round'
+    }
+  ));
+}
+
+export async function showMainMenu(
+  state: StateDetails, 
+  packageUpdateInfo?: { current: string; latest: string } | null
+): Promise<void> {
+  // Get version from index.ts
+  const pkg = require('../../../package.json');
+  const version = process.env.SIMULATE_OLD_VERSION || pkg.version;
+  
   // Handle FIRST_TIME and PARTIAL_SETUP states with welcome screen
   if (state.state === 'FIRST_TIME' || state.state === 'PARTIAL_SETUP') {
     // Clear console and show logo for first-time experience
     console.clear();
     const { showLogo } = await import('../ui');
-    await showLogo();
+    await showLogo(version);
+    
+    // Show package update notification if available
+    if (packageUpdateInfo) {
+      displayPackageUpdateNotification(packageUpdateInfo);
+    }
     
     const { showFirstTimeWelcome, showSetupMessage } = await import('./first-time-welcome');
     const choice = await showFirstTimeWelcome();
@@ -62,7 +89,7 @@ export async function showMainMenu(state: StateDetails): Promise<void> {
       case 'help':
         showHelp();
         // Show welcome again after help
-        await showMainMenu(state);
+        await showMainMenu(state, packageUpdateInfo);
         return;
       
       case 'exit':
@@ -77,10 +104,10 @@ export async function showMainMenu(state: StateDetails): Promise<void> {
     
     // If still FIRST_TIME or PARTIAL_SETUP (user cancelled), show welcome again
     if (newState.state === 'FIRST_TIME' || newState.state === 'PARTIAL_SETUP') {
-      await showMainMenu(newState);
+      await showMainMenu(newState, packageUpdateInfo);
     } else {
       // Setup successful, show the main menu
-      await showMainMenu(newState);
+      await showMainMenu(newState, packageUpdateInfo);
     }
     return;
   }
@@ -90,7 +117,12 @@ export async function showMainMenu(state: StateDetails): Promise<void> {
   
   // Show the logo after clearing console
   const { showLogo } = await import('../ui');
-  await showLogo();
+  await showLogo(version);
+  
+  // Show package update notification if available
+  if (packageUpdateInfo) {
+    displayPackageUpdateNotification(packageUpdateInfo);
+  }
   
   // Show status dashboard with converted parameters
   const cloudStatus = {
@@ -165,10 +197,14 @@ export async function showMainMenu(state: StateDetails): Promise<void> {
   ]);
   
   // Handle actions
-  await handleMenuAction(action, state);
+  await handleMenuAction(action, state, packageUpdateInfo);
 }
 
-async function handleMenuAction(action: string, state: StateDetails): Promise<void> {
+async function handleMenuAction(
+  action: string, 
+  state: StateDetails,
+  packageUpdateInfo?: { current: string; latest: string } | null
+): Promise<void> {
   switch (action) {
     case 'auth':
       try {
@@ -383,16 +419,16 @@ async function handleMenuAction(action: string, state: StateDetails): Promise<vo
       
       // Only show menu if state changed (successful auth)
       if (newState.hasAuth !== state.hasAuth || action === 'switch-cloud') {
-        await showMainMenu(newState);
+        await showMainMenu(newState, packageUpdateInfo);
       } else {
         // Auth was cancelled or failed, return to menu
-        await showMainMenu(newState);
+        await showMainMenu(newState, packageUpdateInfo);
       }
     } else {
       // For all other actions, refresh state and show menu again
       const { detectSetupState } = await import('../detector');
       const newState = await detectSetupState();
-      await showMainMenu(newState);
+      await showMainMenu(newState, packageUpdateInfo);
     }
   }
 }

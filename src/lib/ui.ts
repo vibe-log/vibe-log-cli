@@ -2,7 +2,14 @@ import chalk from 'chalk';
 import ora from 'ora';
 import { StreakInfo } from './api-client';
 
-export async function showLogo(): Promise<void> {
+export async function showLogo(version?: string): Promise<void> {
+  // Helper to display version line
+  const displayVersion = (version: string) => {
+    const isSimulated = process.env.SIMULATE_OLD_VERSION === version;
+    const versionText = isSimulated ? `v${version} (simulated)` : `v${version}`;
+    console.log(chalk.gray(`                         ${versionText}`));
+  };
+
   try {
     // Dynamically import oh-my-logo (ESM module) in our CommonJS build
     const { renderFilled } = await import('oh-my-logo');
@@ -12,12 +19,23 @@ export async function showLogo(): Promise<void> {
     await renderFilled('VIBE-LOG', {
       palette: 'matrix'
     });
+    
+    // Display version if provided
+    if (version) {
+      displayVersion(version);
+    }
+    
     console.log(); // Add a blank line after the logo
   } catch (error) {
     // Fallback to simple text logo if oh-my-logo fails or isn't available
     console.log(chalk.green(`
                          VIBE-LOG
     `));
+    
+    // Display version in fallback mode too
+    if (version) {
+      displayVersion(version);
+    }
   }
 }
 
