@@ -49,7 +49,7 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
       label: `${icons.refresh} Retry setup`,
       description: 'Try setting up vibe-log again',
       icon: '',
-      action: 'init'
+      action: 'auth'
     });
     items.push({
       id: 'auth',

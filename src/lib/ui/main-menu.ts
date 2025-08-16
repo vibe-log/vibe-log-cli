@@ -4,7 +4,6 @@ import { parseProjectName } from './project-display';
 import { colors, icons } from './styles';
 import { createStatusDashboard } from './status-sections';
 import { generateMenuItems, MenuContext } from './menu-builder';
-import { init } from '../../commands/init';
 import { sendWithTimeout } from '../../commands/send';
 import { status } from '../../commands/status';
 import { auth } from '../../commands/auth';
@@ -168,15 +167,6 @@ export async function showMainMenu(state: StateDetails): Promise<void> {
 
 async function handleMenuAction(action: string, state: StateDetails): Promise<void> {
   switch (action) {
-    case 'init':
-      try {
-        await init({});
-      } catch (error) {
-        displayError(error);
-        await waitForEnter();
-      }
-      break;
-      
     case 'auth':
       try {
         // For first-time users selecting cloud mode, show privacy notice first
@@ -369,7 +359,6 @@ async function handleMenuAction(action: string, state: StateDetails): Promise<vo
     case 'exit':
       console.log(colors.muted('\nGoodbye! 👋\n'));
       process.exit(0);
-      break;
       
     default:
       console.log(colors.warning(`Unknown action: ${action}`));
