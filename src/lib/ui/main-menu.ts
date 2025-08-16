@@ -157,7 +157,8 @@ export async function showMainMenu(state: StateDetails): Promise<void> {
       name: 'action',
       message: 'What would you like to do?',
       choices,
-      pageSize: 10
+      pageSize: 10,
+      loop: false
     }
   ]);
   
