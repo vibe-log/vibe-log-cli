@@ -183,8 +183,8 @@ describe('API Client Module', () => {
           await errorInterceptor(error);
           expect.fail('Should have thrown an error');
         } catch (e: any) {
-          expect(e.message).toBe('Authentication required');
-          expect(e.code).toBe('AUTH_REQUIRED');
+          expect(e.message).toBe('Your session has expired. Please authenticate again');
+          expect(e.code).toBe('AUTH_EXPIRED');
         }
       }
     });
@@ -205,7 +205,7 @@ describe('API Client Module', () => {
           await errorInterceptor(error);
           expect.fail('Should have thrown an error');
         } catch (e: any) {
-          expect(e.message).toContain('Rate limit exceeded');
+          expect(e.message).toContain('Too many requests');
           expect(e.code).toBe('RATE_LIMITED');
         }
       }
@@ -227,7 +227,7 @@ describe('API Client Module', () => {
           await errorInterceptor(error);
           expect.fail('Should have thrown an error');
         } catch (e: any) {
-          expect(e.message).toContain('Cannot connect to server');
+          expect(e.message).toContain('Cannot reach vibe-log servers');
           expect(e.code).toBe('NETWORK_ERROR');
         }
       }
@@ -249,8 +249,8 @@ describe('API Client Module', () => {
           await errorInterceptor(error);
           expect.fail('Should have thrown an error');
         } catch (e: any) {
-          expect(e.message).toContain('Cannot connect to server');
-          expect(e.code).toBe('NETWORK_ERROR');
+          expect(e.message).toContain('Connection refused');
+          expect(e.code).toBe('CONNECTION_REFUSED');
         }
       }
     });
