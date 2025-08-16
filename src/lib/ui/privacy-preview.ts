@@ -59,13 +59,11 @@ export async function showPrivacyPreview(
   if (selectedSessions && selectedSessions.length > 0) {
     // Group sessions by project
     const sessionsByProject = new Map<string, SelectedSessionInfo[]>();
-    let totalDuration = 0;
     
     for (const session of selectedSessions) {
       const existing = sessionsByProject.get(session.displayName) || [];
       existing.push(session);
       sessionsByProject.set(session.displayName, existing);
-      totalDuration += session.duration;
     }
     
     // Get time range

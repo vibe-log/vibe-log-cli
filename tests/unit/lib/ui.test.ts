@@ -274,16 +274,16 @@ describe('UI Utilities', () => {
     it.skip('should use appropriate colors for different message types', () => {
       // Test color output by checking chalk usage
       showSuccess('Test');
-      expect(mockConsole.log.mock.calls[0][0]).toContain('\x1b[32m'); // Green
+      expect(mockConsole.log.mock.calls[0][0]).toContain('\u001b[32m'); // Green
       
       showError('Test');
-      expect(mockConsole.log.mock.calls[1][0]).toContain('\x1b[31m'); // Red
+      expect(mockConsole.log.mock.calls[1][0]).toContain('\u001b[31m'); // Red
       
       showWarning('Test');
-      expect(mockConsole.log.mock.calls[2][0]).toContain('\x1b[33m'); // Yellow
+      expect(mockConsole.log.mock.calls[2][0]).toContain('\u001b[33m'); // Yellow
       
       showInfo('Test');
-      expect(mockConsole.log.mock.calls[3][0]).toContain('\x1b[34m'); // Blue
+      expect(mockConsole.log.mock.calls[3][0]).toContain('\u001b[34m'); // Blue
     });
   });
 

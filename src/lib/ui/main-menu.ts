@@ -32,7 +32,7 @@ export async function showMainMenu(state: StateDetails): Promise<void> {
     const choice = await showFirstTimeWelcome();
     
     switch (choice) {
-      case 'local':
+      case 'local': {
         showSetupMessage('local');
         // Track that this is first-time setup
         const wasFirstTime = state.agentCount === 0;
@@ -49,13 +49,15 @@ export async function showMainMenu(state: StateDetails): Promise<void> {
           // when it detects a successful first-time installation
         }
         break;
+      }
       
-      case 'cloud':
+      case 'cloud': {
         showSetupMessage('cloud');
         // Start guided cloud setup flow
         const { guidedCloudSetup } = await import('./cloud-setup-wizard');
         await guidedCloudSetup();
         break;
+      }
       
       case 'help':
         showHelp();
@@ -213,7 +215,7 @@ async function handleMenuAction(action: string, state: StateDetails): Promise<vo
           });
           break;
           
-        case 'projects':
+        case 'projects': {
           // Send selected projects
           // Read sessions from selected projects
           const { readClaudeSessions } = await import('../readers/claude');
@@ -261,6 +263,7 @@ async function handleMenuAction(action: string, state: StateDetails): Promise<vo
             console.log(colors.warning('No sessions found in selected projects'));
           }
           break;
+        }
           
         case 'all':
           // Send all projects
@@ -309,22 +312,25 @@ async function handleMenuAction(action: string, state: StateDetails): Promise<vo
       await manageAgents();
       break;
       
-    case 'manage-hooks':
+    case 'manage-hooks': {
       const { showHooksManagementMenu } = await import('./hooks-menu');
       await showHooksManagementMenu();
       break;
+    }
       
-    case 'install-hooks':
+    case 'install-hooks': {
       // Legacy support - redirect to new hooks management
       const { showHooksManagementMenu: showMenu } = await import('./hooks-menu');
       await showMenu();
       break;
+    }
       
-    case 'update-hooks':
+    case 'update-hooks': {
       // Legacy support - redirect to new hooks management
       const { showHooksManagementMenu: showMenuUpdate } = await import('./hooks-menu');
       await showMenuUpdate();
       break;
+    }
       
     case 'switch-cloud':
       try {
@@ -360,6 +366,7 @@ async function handleMenuAction(action: string, state: StateDetails): Promise<vo
     case 'exit':
       console.log(colors.muted('\nGoodbye! 👋\n'));
       process.exit(0);
+      break;
       
     default:
       console.log(colors.warning(`Unknown action: ${action}`));

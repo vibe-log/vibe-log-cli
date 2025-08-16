@@ -214,7 +214,7 @@ export class MessageSanitizer {
     
     // 6. Redact URLs but keep domain type (including database URLs)
     sanitized = sanitized.replace(
-      /(?:https?|postgres|mysql|mongodb|redis):\/\/[^\s<>"{}|\\^`\[\]]+/g,
+      /(?:https?|postgres|mysql|mongodb|redis):\/\/[^\s<>"{}|\\^`[\]]+/g,
       (url) => {
         metadata.urls++;
         // Database URLs take precedence

@@ -71,8 +71,6 @@ describe('Project Display Module', () => {
 
   describe('formatRelativeTime()', () => {
     it('should format times correctly', () => {
-      const now = new Date('2024-01-15T12:00:00Z');
-      
       // Just now (less than 60 seconds)
       expect(formatRelativeTime(new Date('2024-01-15T11:59:30Z'))).toBe('just now');
       expect(formatRelativeTime(new Date('2024-01-15T11:59:01Z'))).toBe('just now');
@@ -133,66 +131,66 @@ describe('Project Display Module', () => {
   describe('createActivityGraph()', () => {
     it('should create correct activity graph', () => {
       const graph = createActivityGraph(50, 100, 20);
-      const stripped = graph.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = graph.replace(/\u001b\[[0-9;]*m/g, '');
       expect(stripped).toBe('█'.repeat(10) + '░'.repeat(10));
       expect(stripped.length).toBe(20);
     });
 
     it('should handle zero sessions', () => {
       const graph = createActivityGraph(0, 100, 20);
-      const stripped = graph.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = graph.replace(/\u001b\[[0-9;]*m/g, '');
       expect(stripped).toBe('░'.repeat(20));
     });
 
     it('should handle max sessions', () => {
       const graph = createActivityGraph(100, 100, 20);
-      const stripped = graph.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = graph.replace(/\u001b\[[0-9;]*m/g, '');
       expect(stripped).toBe('█'.repeat(20));
     });
 
     it('should handle sessions exceeding max', () => {
       const graph = createActivityGraph(150, 100, 20);
-      const stripped = graph.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = graph.replace(/\u001b\[[0-9;]*m/g, '');
       expect(stripped).toBe('█'.repeat(20));
     });
 
     it.skip('should apply correct color based on activity level', () => {
       // High activity (>75%) - should be green (success)
       const highActivity = createActivityGraph(80, 100, 20);
-      expect(highActivity).toContain('\x1b[32m'); // Green color code
+      expect(highActivity).toContain('\u001b[32m'); // Green color code
 
       // Medium-high activity (>50%) - should be cyan (primary)
       const medHighActivity = createActivityGraph(60, 100, 20);
-      expect(medHighActivity).toContain('\x1b[36m'); // Cyan color code
+      expect(medHighActivity).toContain('\u001b[36m'); // Cyan color code
 
       // Medium-low activity (>25%) - should be yellow (warning)
       const medLowActivity = createActivityGraph(30, 100, 20);
-      expect(medLowActivity).toContain('\x1b[33m'); // Yellow color code
+      expect(medLowActivity).toContain('\u001b[33m'); // Yellow color code
 
       // Low activity (<=25%) - should be gray (muted)
       const lowActivity = createActivityGraph(20, 100, 20);
-      expect(lowActivity).toContain('\x1b[90m'); // Gray color code
+      expect(lowActivity).toContain('\u001b[90m'); // Gray color code
     });
 
     it('should handle zero max sessions', () => {
       const graph = createActivityGraph(10, 0, 20);
-      const stripped = graph.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = graph.replace(/\u001b\[[0-9;]*m/g, '');
       expect(stripped).toBe('█'.repeat(20)); // Full bar when max is 0
     });
 
     it('should handle custom width', () => {
       const graph5 = createActivityGraph(50, 100, 5);
-      const stripped5 = graph5.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped5 = graph5.replace(/\u001b\[[0-9;]*m/g, '');
       expect(stripped5.length).toBe(5);
 
       const graph50 = createActivityGraph(50, 100, 50);
-      const stripped50 = graph50.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped50 = graph50.replace(/\u001b\[[0-9;]*m/g, '');
       expect(stripped50.length).toBe(50);
     });
 
     it('should handle fractional values correctly', () => {
       const graph = createActivityGraph(33, 100, 10);
-      const stripped = graph.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = graph.replace(/\u001b\[[0-9;]*m/g, '');
       expect(stripped).toBe('█'.repeat(3) + '░'.repeat(7));
     });
   });
@@ -200,7 +198,7 @@ describe('Project Display Module', () => {
   describe('createSparkline()', () => {
     it('should create sparkline from activity data', () => {
       const sparkline = createSparkline([0, 2, 4, 8, 4, 2, 0]);
-      const stripped = sparkline.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = sparkline.replace(/\u001b\[[0-9;]*m/g, '');
       expect(stripped.length).toBe(7);
       expect(stripped).toContain('▁');
       expect(stripped).toContain('█');
@@ -213,25 +211,25 @@ describe('Project Display Module', () => {
 
     it('should handle single value', () => {
       const sparkline = createSparkline([5]);
-      const stripped = sparkline.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = sparkline.replace(/\u001b\[[0-9;]*m/g, '');
       expect(stripped.length).toBe(1);
     });
 
     it('should handle all zeros', () => {
       const sparkline = createSparkline([0, 0, 0, 0]);
-      const stripped = sparkline.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = sparkline.replace(/\u001b\[[0-9;]*m/g, '');
       expect(stripped).toBe('▁'.repeat(4));
     });
 
     it('should handle all same non-zero values', () => {
       const sparkline = createSparkline([5, 5, 5, 5]);
-      const stripped = sparkline.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = sparkline.replace(/\u001b\[[0-9;]*m/g, '');
       expect(stripped).toBe('█'.repeat(4));
     });
 
     it('should use custom max value', () => {
       const sparkline = createSparkline([2, 4, 6, 8], 16);
-      const stripped = sparkline.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = sparkline.replace(/\u001b\[[0-9;]*m/g, '');
       // Values are half of max, so should be around middle
       expect(stripped).not.toContain('█');
     });
@@ -239,12 +237,12 @@ describe('Project Display Module', () => {
     it.skip('should apply colors based on intensity', () => {
       const sparkline = createSparkline([0, 2, 5, 10], 10);
       // Zero values should be dim
-      expect(sparkline).toContain('\x1b[2m'); // Dim color code
+      expect(sparkline).toContain('\u001b[2m'); // Dim color code
     });
 
     it('should handle negative values by treating as 0', () => {
       const sparkline = createSparkline([-5, 0, 5, 10]);
-      const stripped = sparkline.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = sparkline.replace(/\u001b\[[0-9;]*m/g, '');
       expect(stripped[0]).toBe('▁');
       expect(stripped[1]).toBe('▁');
     });
@@ -252,7 +250,7 @@ describe('Project Display Module', () => {
     it('should handle very large arrays', () => {
       const largeArray = Array(100).fill(0).map((_, i) => i);
       const sparkline = createSparkline(largeArray);
-      const stripped = sparkline.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = sparkline.replace(/\u001b\[[0-9;]*m/g, '');
       expect(stripped.length).toBe(100);
     });
   });
@@ -320,7 +318,7 @@ describe('Project Display Module', () => {
 
     it('should truncate long project names', () => {
       const table = createProjectTable(mockProjects);
-      const stripped = table.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = table.replace(/\u001b\[[0-9;]*m/g, '');
       
       // Long name should be truncated with ellipsis
       expect(stripped).toContain('...');
@@ -366,7 +364,7 @@ describe('Project Display Module', () => {
       expect(table).toContain('🔥');
       
       // Check for color codes (these are ANSI escape sequences)
-      expect(table).toContain('\x1b['); // Contains color codes
+      expect(table).toContain('\u001b['); // Contains color codes
     });
 
     it('should handle wide terminals correctly', () => {
@@ -376,7 +374,7 @@ describe('Project Display Module', () => {
       
       // Table should adapt to terminal width (capped at 120)
       const borderLine = lines[0];
-      const stripped = borderLine.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = borderLine.replace(/\u001b\[[0-9;]*m/g, '');
       expect(stripped.length).toBeLessThanOrEqual(120);
     });
 
@@ -433,7 +431,7 @@ describe('Project Display Module', () => {
 
     it('should show activity graphs', () => {
       const list = createCompactProjectList(mockProjects);
-      const stripped = list.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = list.replace(/\u001b\[[0-9;]*m/g, '');
       
       // Should contain progress bar characters
       expect(stripped).toMatch(/[█░]+/);
@@ -487,7 +485,7 @@ describe('Project Display Module', () => {
       const card = createProjectCard(mockProject, recentActivity);
       
       expect(card).toContain('Recent Activity');
-      const stripped = card.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = card.replace(/\u001b\[[0-9;]*m/g, '');
       // Should contain sparkline characters
       expect(stripped).toMatch(/[▁▂▃▄▅▆▇█]+/);
     });
@@ -514,7 +512,7 @@ describe('Project Display Module', () => {
       
       // Card width should be limited
       lines.forEach(line => {
-        const stripped = line.replace(/\x1b\[[0-9;]*m/g, '');
+        const stripped = line.replace(/\u001b\[[0-9;]*m/g, '');
         expect(stripped.length).toBeLessThanOrEqual(60);
       });
     });
@@ -526,7 +524,7 @@ describe('Project Display Module', () => {
       
       // Card width should be capped at 80
       const borderLine = lines[0];
-      const stripped = borderLine.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = borderLine.replace(/\u001b\[[0-9;]*m/g, '');
       expect(stripped.length).toBeLessThanOrEqual(80);
     });
 
@@ -589,7 +587,7 @@ describe('Project Display Module', () => {
       };
       
       const table = createProjectTable([project]);
-      const stripped = table.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = table.replace(/\u001b\[[0-9;]*m/g, '');
       expect(stripped).toContain('...');
     });
 

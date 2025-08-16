@@ -96,25 +96,25 @@ export const format = {
 
 // Utility functions
 export function center(text: string, width: number): string {
-  const textLength = text.replace(/\x1b\[[0-9;]*m/g, '').length;
+  const textLength = text.replace(/\u001b\[[0-9;]*m/g, '').length;
   const padding = Math.max(0, Math.floor((width - textLength) / 2));
   return ' '.repeat(padding) + text;
 }
 
 export function padRight(text: string, width: number): string {
-  const textLength = text.replace(/\x1b\[[0-9;]*m/g, '').length;
+  const textLength = text.replace(/\u001b\[[0-9;]*m/g, '').length;
   const padding = Math.max(0, width - textLength);
   return text + ' '.repeat(padding);
 }
 
 export function padLeft(text: string, width: number): string {
-  const textLength = text.replace(/\x1b\[[0-9;]*m/g, '').length;
+  const textLength = text.replace(/\u001b\[[0-9;]*m/g, '').length;
   const padding = Math.max(0, width - textLength);
   return ' '.repeat(padding) + text;
 }
 
 export function truncate(text: string, maxLength: number): string {
-  const cleanText = text.replace(/\x1b\[[0-9;]*m/g, '');
+  const cleanText = text.replace(/\u001b\[[0-9;]*m/g, '');
   if (cleanText.length <= maxLength) return text;
   return text.substring(0, maxLength - 3) + '...';
 }
@@ -138,7 +138,7 @@ export function sectionDivider(title?: string): string {
   }
   
   const titleWithSpaces = ` ${title} `;
-  const titleLength = titleWithSpaces.replace(/\x1b\[[0-9;]*m/g, '').length;
+  const titleLength = titleWithSpaces.replace(/\u001b\[[0-9;]*m/g, '').length;
   const leftWidth = Math.floor((width - titleLength) / 2);
   const rightWidth = width - titleLength - leftWidth;
   

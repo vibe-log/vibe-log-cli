@@ -242,7 +242,7 @@ async function installHooksToSettings(
   }
   
   // Read or create settings
-  let settings = await readSettingsFile(settingsPath) || {};
+  const settings = await readSettingsFile(settingsPath) || {};
   
   // Ensure hooks object exists
   if (!settings.hooks) {

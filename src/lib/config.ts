@@ -353,6 +353,7 @@ export function getAllConfig(): ConfigSchema {
   // This prevents default values from being treated as configured state
   const configPath = join(homedir(), '.vibe-log', 'config.json');
   try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     require('fs').accessSync(configPath);
     // Config file exists, return actual values
     return {

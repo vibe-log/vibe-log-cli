@@ -60,7 +60,7 @@ export function createSection(
   
   // Top border with title
   const titleText = ` ${icon} ${title} `;
-  const titleLength = titleText.replace(/\x1b\[[0-9;]*m/g, '').length;
+  const titleLength = titleText.replace(/\u001b\[[0-9;]*m/g, '').length;
   const leftPadding = 3;
   const rightPadding = width - titleLength - leftPadding - 2;
   
@@ -72,7 +72,7 @@ export function createSection(
   
   // Content lines
   content.forEach(line => {
-    const cleanLine = line.replace(/\x1b\[[0-9;]*m/g, '');
+    const cleanLine = line.replace(/\u001b\[[0-9;]*m/g, '');
     const padding = width - cleanLine.length - 4;
     lines.push(
       color(chars.v) + ' ' +

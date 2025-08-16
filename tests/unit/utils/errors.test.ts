@@ -258,7 +258,7 @@ describe('Error Handling', () => {
       expect(() => handleError(error)).toThrow('Process exited');
       
       const errorCall = mockConsole.error.mock.calls[0][0];
-      expect(errorCall).toContain('\x1b[31m'); // Red color
+      expect(errorCall).toContain('\u001b[31m'); // Red color
     });
 
     it('should use yellow color for suggestions', () => {
@@ -269,7 +269,7 @@ describe('Error Handling', () => {
       const suggestionCall = mockConsole.log.mock.calls.find(
         call => call[0].includes('💡')
       );
-      expect(suggestionCall[0]).toContain('\x1b[33m'); // Yellow color
+      expect(suggestionCall[0]).toContain('\u001b[33m'); // Yellow color
     });
 
     it('should use gray color for help link', () => {
@@ -280,7 +280,7 @@ describe('Error Handling', () => {
       const helpCall = mockConsole.log.mock.calls.find(
         call => call[0].includes('Need help?')
       );
-      expect(helpCall[0]).toContain('\x1b[90m'); // Gray color
+      expect(helpCall[0]).toContain('\u001b[90m'); // Gray color
     });
 
     it('should use gray color for debug output', () => {
@@ -289,7 +289,7 @@ describe('Error Handling', () => {
       logDebug('Debug message');
       
       const debugCall = mockConsole.log.mock.calls[0][0];
-      expect(debugCall).toContain('\x1b[90m'); // Gray color
+      expect(debugCall).toContain('\u001b[90m'); // Gray color
     });
   });
 });

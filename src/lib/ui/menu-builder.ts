@@ -183,7 +183,7 @@ export function createMenu(
   // Title
   if (options?.title) {
     const titleText = ` ${icons.sparkles} ${options.title} ${icons.sparkles} `;
-    const titleWidth = titleText.replace(/\x1b\[[0-9;]*m/g, '').length;
+    const titleWidth = titleText.replace(/\u001b\[[0-9;]*m/g, '').length;
     const padding = Math.floor((width - titleWidth) / 2);
     
     lines.push(colors.primary(box.topLeft + box.horizontal.repeat(width - 2) + box.topRight));

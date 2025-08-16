@@ -299,7 +299,7 @@ export async function installSubAgentsInteractive(): Promise<void> {
     
     switch (action) {
       case 'install':
-      case 'reinstall':
+      case 'reinstall': {
         const isReinstall = action === 'reinstall';
         const confirmed = await confirmInstallation(isReinstall);
         
@@ -328,6 +328,7 @@ export async function installSubAgentsInteractive(): Promise<void> {
           console.log(colors.warning('\nInstallation cancelled.'));
         }
         break;
+      }
         
       case 'remove-selected':
         await handleSelectiveRemoval(status);

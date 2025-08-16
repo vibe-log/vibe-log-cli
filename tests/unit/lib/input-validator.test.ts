@@ -41,7 +41,7 @@ describe('Input Validator', () => {
     });
 
     it('should remove null bytes', () => {
-      const pathWithNull = 'file\x00.txt';
+      const pathWithNull = 'file\u0000.txt';
       const sanitized = sanitizePath(pathWithNull);
       expect(sanitized).toBe('file.txt');
     });
@@ -123,7 +123,7 @@ describe('Input Validator', () => {
         'token<script>alert(1)</script>123456789012345678',
         'token`${process.env.SECRET}`123456789012345678',
         'token\'; DROP TABLE users;--123456789012345678',
-        'token\x00\x01\x02with-control-chars123456789012',
+        'token\u0000\x01\x02with-control-chars123456789012',
       ];
 
       dangerousTokens.forEach(token => {
@@ -179,7 +179,7 @@ describe('Input Validator', () => {
 
   describe('sanitizeLogOutput', () => {
     it('should remove ANSI escape codes', () => {
-      const withAnsi = '\x1b[31mRed text\x1b[0m';
+      const withAnsi = '\u001b[31mRed text\u001b[0m';
       const sanitized = sanitizeLogOutput(withAnsi);
       expect(sanitized).toBe('Red text');
     });

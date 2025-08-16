@@ -102,7 +102,7 @@ export function validateDate(dateStr: string): Date {
   }
   
   // Remove any potential injection characters
-  const cleaned = dateStr.replace(/[^0-9\-T:\.Z]/g, '');
+  const cleaned = dateStr.replace(/[^0-9\-T:.Z]/g, '');
   
   const date = new Date(cleaned);
   if (isNaN(date.getTime())) {
@@ -151,7 +151,7 @@ export function validateProjectName(name: string): string {
   
   // Remove potentially dangerous characters
   const sanitized = name
-    .replace(/[<>:"\\|?*\x00-\x1F]/g, '') // Windows forbidden chars
+    .replace(/[<>:"\\|?*\u0000-\u001F]/g, '') // Windows forbidden chars
     .replace(/\.\./g, '')                  // Directory traversal
     .replace(/^\.|\.$/g, '')               // Leading/trailing dots
     .trim();
@@ -220,7 +220,7 @@ export function validateAuthToken(token: string): string {
   const dangerousPatterns = [
     /[<>]/,           // HTML injection
     /[`${}]/,         // Template injection
-    /[\x00-\x1F]/,    // Control characters
+    /[\u0000-\u001F]/,    // Control characters
     /[';\\]/,         // SQL/Command injection
   ];
   

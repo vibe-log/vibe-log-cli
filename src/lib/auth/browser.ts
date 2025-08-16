@@ -150,12 +150,11 @@ async function waitForAuthWithSSE(sessionId: string, spinner: Ora, wizardMode?: 
     
     const httpModule = sseUrl.protocol === 'https:' ? https : http;
     
-    let timeoutTimer: NodeJS.Timeout;
     // let lastHeartbeat = Date.now();
     let buffer = '';
     
     // Setup timeout (5 minutes)
-    timeoutTimer = setTimeout(() => {
+    const timeoutTimer = setTimeout(() => {
       req.destroy();
       reject(new VibelogError(
         'Authentication timed out. Please try again.',
@@ -321,7 +320,7 @@ function isValidTokenFormat(token: string): boolean {
   const dangerousPatterns = [
     /[<>]/,           // HTML injection
     /[`${}]/,         // Template injection
-    /[\x00-\x1F]/,    // Control characters
+    /[\u0000-\u001F]/,    // Control characters
     /['";\\]/,        // SQL/Command injection
   ];
   

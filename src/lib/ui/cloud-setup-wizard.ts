@@ -22,6 +22,7 @@ function showConnectionErrorHelp(error: unknown): void {
         error.code === 'NETWORK_ERROR' ||
         error.code === 'SERVER_NOT_FOUND' ||
         error.code === 'CONNECTION_FAILED') {
+      // Network errors are handled below
     }
   } else if (error instanceof Error) {
     const errorCode = (error as any).code;

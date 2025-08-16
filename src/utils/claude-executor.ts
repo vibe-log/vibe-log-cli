@@ -183,7 +183,7 @@ export async function executeClaudePrompt(
       logger.debug(`Windows: Wrote prompt to temp file: ${tempPromptFile}`);
       
       // Build the Claude command with arguments
-      let claudeArgs = ['-p'];
+      const claudeArgs = ['-p'];
       
       // Add system prompt if provided
       if (systemPrompt) {

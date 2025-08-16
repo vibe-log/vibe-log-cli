@@ -165,7 +165,7 @@ export function createProjectSelector(
     }
     
     // Pad to width
-    const cleanRow = row.replace(/\x1b\[[0-9;]*m/g, '');
+    const cleanRow = row.replace(/\u001b\[[0-9;]*m/g, '');
     const padding = Math.max(0, width - cleanRow.length - 3);
     row += ' '.repeat(padding) + ' ' + colors.primary(box.vertical);
     

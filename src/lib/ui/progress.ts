@@ -88,7 +88,7 @@ export function createProgressBar(
       }
       break;
       
-    case 'smooth':
+    case 'smooth': {
       // Smooth gradient bar
       const smoothChars = ['░', '▒', '▓', '█'];
       for (let i = 0; i < width; i++) {
@@ -103,6 +103,7 @@ export function createProgressBar(
         }
       }
       break;
+    }
       
     case 'ascii':
       // ASCII-only progress bar

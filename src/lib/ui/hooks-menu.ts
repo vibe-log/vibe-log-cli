@@ -285,6 +285,7 @@ async function configureTrackAll(): Promise<void> {
   
   // Install selected hooks
   console.log('');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const spinner = require('ora')('Installing global hooks...').start();
   
   try {
@@ -456,6 +457,7 @@ async function configureTrackSelected(): Promise<void> {
   }
   
   console.log('');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const spinner = require('ora')('Configuring project hooks...').start();
   
   try {
@@ -535,6 +537,7 @@ async function disableAllTracking(status: HooksStatus, stats: any): Promise<void
   }
   
   console.log('');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const spinner = require('ora')('Removing hooks...').start();
   
   try {
@@ -729,6 +732,7 @@ async function offerInitialSync(options: {
   }
   
   console.log('');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const spinner = require('ora')('Preparing to sync sessions...').start();
   
   try {

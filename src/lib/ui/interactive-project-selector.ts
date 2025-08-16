@@ -72,7 +72,7 @@ export async function interactiveProjectSelector(
     // Helper function to render the UI
     const render = () => {
       // Clear screen and move cursor to top
-      process.stdout.write('\x1b[2J\x1b[H');
+      process.stdout.write('\u001b[2J\u001b[H');
       
       // Filter projects based on search
       const filteredProjects = searchTerm
@@ -192,7 +192,7 @@ export async function interactiveProjectSelector(
         resolve([]);
       } else if (str === '?' || str === 'h' || str === 'H') {
         // Show help
-        process.stdout.write('\x1b[2J\x1b[H');
+        process.stdout.write('\u001b[2J\u001b[H');
         console.log(colors.accent('\n--- Project Selector Help ---\n'));
         console.log('Navigation:');
         console.log('  ↑/k      Move up');
@@ -265,6 +265,7 @@ export async function simpleProjectSelector(
   // Otherwise fall back to standard checkbox
   try {
     // Try to use searchable checkbox (requires inquirer-checkbox-plus-prompt)
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const CheckboxPlusPrompt = require('inquirer-checkbox-plus-prompt');
     inquirer.registerPrompt('checkbox-plus', CheckboxPlusPrompt);
     

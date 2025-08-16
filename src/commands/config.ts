@@ -79,12 +79,13 @@ export async function config(options: ConfigOptions): Promise<void> {
     }
     
     switch (key) {
-      case 'apiUrl':
+      case 'apiUrl': {
         // Validate URL using secure validator
         const validatedUrl = validateUrl(value);
         setApiUrl(validatedUrl);
         showSuccess(`API URL set to: ${validatedUrl}`);
         break;
+      }
         
       case 'preferences.colorScheme':
         if (!['default', 'minimal'].includes(value)) {
@@ -97,11 +98,12 @@ export async function config(options: ConfigOptions): Promise<void> {
         showSuccess(`Color scheme set to: ${value}`);
         break;
         
-      case 'preferences.verboseOutput':
+      case 'preferences.verboseOutput': {
         const boolValue = value.toLowerCase() === 'true';
         setPreference('verboseOutput', boolValue);
         showSuccess(`Verbose output set to: ${boolValue}`);
         break;
+      }
         
       case 'cliPath':
         setCliPath(value);

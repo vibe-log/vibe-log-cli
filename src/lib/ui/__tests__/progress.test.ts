@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import chalk from 'chalk';
 import {
   Spinner,
@@ -76,7 +76,7 @@ describe('Progress Module', () => {
       const spinner = new Spinner('dots', 'Test', chalk.red);
       const frame = spinner.next();
       
-      expect(frame).toContain('\x1b[31m'); // Red color code
+      expect(frame).toContain('\u001b[31m'); // Red color code
       expect(frame).toContain('Test');
     });
 
@@ -105,7 +105,7 @@ describe('Progress Module', () => {
   describe('createProgressBar()', () => {
     it('should create basic progress bar', () => {
       const bar = createProgressBar(50, 100);
-      const stripped = bar.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = bar.replace(/\u001b\[[0-9;]*m/g, '');
       
       expect(stripped).toContain('50%');
       expect(stripped).toMatch(/[█░]+/);
@@ -113,7 +113,7 @@ describe('Progress Module', () => {
 
     it.skip('should handle 0% progress', () => {
       const bar = createProgressBar(0, 100);
-      const stripped = bar.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = bar.replace(/\u001b\[[0-9;]*m/g, '');
       
       expect(stripped).toContain('0%');
       expect(stripped).not.toContain('█');
@@ -121,7 +121,7 @@ describe('Progress Module', () => {
 
     it.skip('should handle 100% progress', () => {
       const bar = createProgressBar(100, 100);
-      const stripped = bar.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = bar.replace(/\u001b\[[0-9;]*m/g, '');
       
       expect(stripped).toContain('100%');
       expect(stripped).not.toContain('░');
@@ -129,14 +129,14 @@ describe('Progress Module', () => {
 
     it('should cap at 100% for overflow', () => {
       const bar = createProgressBar(150, 100);
-      const stripped = bar.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = bar.replace(/\u001b\[[0-9;]*m/g, '');
       
       expect(stripped).toContain('100%');
     });
 
     it('should support blocks style', () => {
       const bar = createProgressBar(33, 100, { style: 'blocks', width: 10 });
-      const stripped = bar.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = bar.replace(/\u001b\[[0-9;]*m/g, '');
       
       // Should use block characters
       expect(stripped).toMatch(/[█▓▒░]+/);
@@ -144,14 +144,14 @@ describe('Progress Module', () => {
 
     it('should support smooth style', () => {
       const bar = createProgressBar(50, 100, { style: 'smooth', width: 20 });
-      const stripped = bar.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = bar.replace(/\u001b\[[0-9;]*m/g, '');
       
       expect(stripped).toMatch(/[░▒▓█]+/);
     });
 
     it('should support ASCII style', () => {
       const bar = createProgressBar(50, 100, { style: 'ascii', width: 20 });
-      const stripped = bar.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = bar.replace(/\u001b\[[0-9;]*m/g, '');
       
       expect(stripped).toContain('[');
       expect(stripped).toContain(']');
@@ -161,21 +161,21 @@ describe('Progress Module', () => {
 
     it('should show numbers when requested', () => {
       const bar = createProgressBar(25, 100, { showNumbers: true });
-      const stripped = bar.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = bar.replace(/\u001b\[[0-9;]*m/g, '');
       
       expect(stripped).toContain('(25/100)');
     });
 
     it('should hide percentage when requested', () => {
       const bar = createProgressBar(50, 100, { showPercentage: false });
-      const stripped = bar.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = bar.replace(/\u001b\[[0-9;]*m/g, '');
       
       expect(stripped).not.toContain('%');
     });
 
     it('should add label when provided', () => {
       const bar = createProgressBar(50, 100, { label: 'Downloading' });
-      const stripped = bar.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = bar.replace(/\u001b\[[0-9;]*m/g, '');
       
       expect(stripped).toContain('Downloading');
     });
@@ -184,8 +184,8 @@ describe('Progress Module', () => {
       const bar = createProgressBar(50, 100, { gradient: true, width: 30 });
       
       // Should contain multiple color codes
-      expect(bar).toContain('\x1b[31m'); // Red
-      expect(bar).toContain('\x1b[33m'); // Yellow
+      expect(bar).toContain('\u001b[31m'); // Red
+      expect(bar).toContain('\u001b[33m'); // Yellow
     });
 
     it('should color based on percentage', () => {
@@ -193,14 +193,14 @@ describe('Progress Module', () => {
       const medium = createProgressBar(50, 100);
       const high = createProgressBar(80, 100);
       
-      expect(low).toContain('\x1b[31m'); // Red for low
-      expect(medium).toContain('\x1b[33m'); // Yellow for medium
-      expect(high).toContain('\x1b[32m'); // Green for high
+      expect(low).toContain('\u001b[31m'); // Red for low
+      expect(medium).toContain('\u001b[33m'); // Yellow for medium
+      expect(high).toContain('\u001b[32m'); // Green for high
     });
 
     it('should handle custom width', () => {
       const bar = createProgressBar(50, 100, { width: 10 });
-      const stripped = bar.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = bar.replace(/\u001b\[[0-9;]*m/g, '');
       const barPart = stripped.match(/[█░]+/)?.[0] || '';
       
       expect(barPart.length).toBe(10);
@@ -208,14 +208,14 @@ describe('Progress Module', () => {
 
     it('should handle zero total gracefully', () => {
       const bar = createProgressBar(50, 0);
-      const stripped = bar.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = bar.replace(/\u001b\[[0-9;]*m/g, '');
       
       expect(stripped).toContain('100%'); // Division by zero defaults to 100%
     });
 
     it('should handle fractional progress in blocks style', () => {
       const bar = createProgressBar(33, 100, { style: 'blocks', width: 10 });
-      const stripped = bar.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = bar.replace(/\u001b\[[0-9;]*m/g, '');
       
       // Should show partial blocks for precision
       expect(stripped).toMatch(/[█▓▒░]/);
@@ -291,7 +291,7 @@ describe('Progress Module', () => {
       const lines = display.split('\n');
       
       lines.forEach(line => {
-        const stripped = line.replace(/\x1b\[[0-9;]*m/g, '');
+        const stripped = line.replace(/\u001b\[[0-9;]*m/g, '');
         const barMatch = stripped.match(/[█░]+/);
         if (barMatch) {
           expect(barMatch[0].length).toBe(10);
@@ -395,7 +395,7 @@ describe('Progress Module', () => {
       
       expect(display).toContain('✗'); // Error icon
       expect(display).toContain('Connection failed');
-      expect(display).toContain('\x1b[31m'); // Red color
+      expect(display).toContain('\u001b[31m'); // Red color
     });
 
     it('should show connectors between steps', () => {
@@ -445,7 +445,7 @@ describe('Progress Module', () => {
       ];
       
       // All frames should have same total length when stripped
-      const lengths = frames.map(f => f.replace(/\x1b\[[0-9;]*m/g, '').length);
+      const lengths = frames.map(f => f.replace(/\u001b\[[0-9;]*m/g, '').length);
       expect(new Set(lengths).size).toBe(1); // All lengths should be equal
     });
   });
@@ -483,7 +483,7 @@ describe('Progress Module', () => {
       const progress = new IndeterminateProgress(30);
       const frame = progress.next();
       
-      const stripped = frame.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = frame.replace(/\u001b\[[0-9;]*m/g, '');
       expect(stripped.length).toBe(32); // 30 + 2 brackets
     });
 
@@ -493,7 +493,7 @@ describe('Progress Module', () => {
       for (let i = 0; i < 20; i++) {
         const frame = progress.next();
         const barContent = frame.match(/\[(.*?)\]/)?.[1] || '';
-        const stripped = barContent.replace(/\x1b\[[0-9;]*m/g, '');
+        const stripped = barContent.replace(/\u001b\[[0-9;]*m/g, '');
         const fullBlocks = (stripped.match(/█/g) || []).length;
         
         expect(fullBlocks).toBe(10); // Bar width should stay constant
@@ -632,7 +632,7 @@ describe('Progress Module', () => {
   describe('edge cases and error handling', () => {
     it('should handle negative progress values', () => {
       const bar = createProgressBar(-10, 100);
-      const stripped = bar.replace(/\x1b\[[0-9;]*m/g, '');
+      const stripped = bar.replace(/\u001b\[[0-9;]*m/g, '');
       
       expect(stripped).toContain('0%'); // Should clamp to 0
     });

@@ -104,10 +104,6 @@ export async function installHooks(options: InstallHooksOptions = {}): Promise<v
     
     // The old code had conditional logic based on tracking mode
     // Now we know global hooks mean all projects are tracked
-    if (false) { // Keep structure for any legacy code that might follow
-      console.log(chalk.red('  ⚠️  No projects are being tracked'));
-      console.log(chalk.yellow('  → Use "vibe-log projects" to select projects to track'));
-    }
     
     console.log('');
     console.log(chalk.green('✨ Your coding sessions will now be automatically synced!'));

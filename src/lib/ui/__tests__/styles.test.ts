@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import chalk from 'chalk';
 import {
   colors,
@@ -107,7 +107,7 @@ describe('UI Styles Module', () => {
         const coloredText = chalk.red('test');
         const result = center(coloredText, 10);
         // Should center based on actual text length (4), not including ANSI codes
-        expect(result.replace(/\x1b\[[0-9;]*m/g, '')).toBe('   test');
+        expect(result.replace(/\u001b\[[0-9;]*m/g, '')).toBe('   test');
       });
 
       it('should handle odd width centering', () => {
@@ -136,7 +136,7 @@ describe('UI Styles Module', () => {
       it('should strip ANSI codes when calculating padding', () => {
         const coloredText = chalk.cyan('test');
         const result = padRight(coloredText, 10);
-        const stripped = result.replace(/\x1b\[[0-9;]*m/g, '');
+        const stripped = result.replace(/\u001b\[[0-9;]*m/g, '');
         expect(stripped).toBe('test      ');
         expect(stripped.length).toBe(10);
       });
@@ -167,7 +167,7 @@ describe('UI Styles Module', () => {
       it('should strip ANSI codes when calculating padding', () => {
         const coloredText = chalk.green('test');
         const result = padLeft(coloredText, 10);
-        const stripped = result.replace(/\x1b\[[0-9;]*m/g, '');
+        const stripped = result.replace(/\u001b\[[0-9;]*m/g, '');
         expect(stripped).toBe('      test');
         expect(stripped.length).toBe(10);
       });
@@ -205,7 +205,7 @@ describe('UI Styles Module', () => {
         // Note: The function strips ANSI for length check, but truncates the original string
         // So ANSI codes are preserved but truncation happens at wrong position
         // This is a bug in the implementation, but we'll test the actual behavior
-        const stripped = result.replace(/\x1b\[[0-9;]*m/g, '');
+        const stripped = result.replace(/\u001b\[[0-9;]*m/g, '');
         expect(stripped.endsWith('...')).toBe(true);
         expect(stripped.length).toBeLessThanOrEqual(8);
       });
@@ -300,13 +300,13 @@ describe('UI Styles Module', () => {
 
       it('should create plain divider without title', () => {
         const result = sectionDivider();
-        const stripped = result.replace(/\x1b\[[0-9;]*m/g, '');
+        const stripped = result.replace(/\u001b\[[0-9;]*m/g, '');
         expect(stripped).toBe('─'.repeat(40));
       });
 
       it('should create divider with centered title', () => {
         const result = sectionDivider('TEST');
-        const stripped = result.replace(/\x1b\[[0-9;]*m/g, '');
+        const stripped = result.replace(/\u001b\[[0-9;]*m/g, '');
         expect(stripped).toContain(' TEST ');
         expect(stripped.length).toBe(40);
       });
@@ -314,13 +314,13 @@ describe('UI Styles Module', () => {
       it('should handle long title', () => {
         const longTitle = 'This is a very long title that exceeds width';
         const result = sectionDivider(longTitle);
-        const stripped = result.replace(/\x1b\[[0-9;]*m/g, '');
+        const stripped = result.replace(/\u001b\[[0-9;]*m/g, '');
         expect(stripped).toContain(longTitle);
       });
 
       it('should handle empty title', () => {
         const result = sectionDivider('');
-        const stripped = result.replace(/\x1b\[[0-9;]*m/g, '');
+        const stripped = result.replace(/\u001b\[[0-9;]*m/g, '');
         // Empty string is falsy, so it falls back to plain divider (same as no title)
         expect(stripped.length).toBe(40); // Full width line
         expect(stripped).toBe('─'.repeat(40)); // Just dashes, no spaces
@@ -329,7 +329,7 @@ describe('UI Styles Module', () => {
       it('should center title with odd width', () => {
         process.stdout.columns = 21;
         const result = sectionDivider('A');
-        const stripped = result.replace(/\x1b\[[0-9;]*m/g, '');
+        const stripped = result.replace(/\u001b\[[0-9;]*m/g, '');
         expect(stripped).toBe('───────── A ─────────');
       });
     });
