@@ -341,7 +341,7 @@ class SecureApiClient {
     
     // Chunk large uploads
     // Using 10 for good progress granularity without too many API calls
-    const CHUNK_SIZE = 30;
+    const CHUNK_SIZE = 50;
     const chunks = [];
     
     for (let i = 0; i < sanitizedSessions.length; i += CHUNK_SIZE) {
@@ -461,12 +461,15 @@ class SecureApiClient {
   }
 
   private mergeResults(results: any[]): any {
-    // Merge chunked upload results
+    // Merge chunked upload results - properly handle created and duplicates counts
     return {
       success: results.every(r => r.success),
-      sessionsProcessed: results.reduce((sum, r) => sum + (r.sessionsProcessed || 0), 0),
+      created: results.reduce((sum, r) => sum + (r.created || 0), 0),
+      duplicates: results.reduce((sum, r) => sum + (r.duplicates || 0), 0),
+      sessionsProcessed: results.reduce((sum, r) => sum + ((r.created || 0) + (r.duplicates || 0)), 0),
       analysisPreview: results[0]?.analysisPreview,
       streak: results[results.length - 1]?.streak,
+      batchId: results.find(r => r.batchId)?.batchId,
     };
   }
 

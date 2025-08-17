@@ -77,6 +77,20 @@ export function formatDate(date: Date): string {
 }
 
 export function showUploadResults(results: any): void {
+  // Show upload summary with created and duplicate counts
+  if (results.created !== undefined && results.duplicates !== undefined) {
+    console.log('');
+    if (results.created > 0) {
+      console.log(chalk.green(`✅ ${results.created} new session${results.created !== 1 ? 's' : ''} uploaded`));
+    }
+    if (results.duplicates > 0) {
+      console.log(chalk.yellow(`📋 ${results.duplicates} duplicate session${results.duplicates !== 1 ? 's' : ''} already in system`));
+    }
+    if (results.created === 0 && results.duplicates === 0) {
+      console.log(chalk.gray('No sessions were uploaded'));
+    }
+  }
+  
   if (results.analysisPreview) {
     console.log(chalk.cyan('\n📊 Analysis Preview:'));
     console.log(chalk.gray(results.analysisPreview));
