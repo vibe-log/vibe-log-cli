@@ -8,6 +8,7 @@ export interface SessionMetadata {
   id: string;
   projectPath: string;
   timestamp: Date;
+  claudeSessionId?: string;  // Claude's unique session identifier
 }
 
 export interface SessionData extends SessionMetadata {

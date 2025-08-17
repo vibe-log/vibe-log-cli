@@ -156,6 +156,7 @@ async function parseSessionFile(filePath: string): Promise<SessionData | null> {
       id: string;
       projectPath: string;
       timestamp: Date;
+      claudeSessionId?: string;
     } | null = null;
     const editedFiles = new Set<string>();
     const languages = new Set<string>();
@@ -172,6 +173,7 @@ async function parseSessionFile(filePath: string): Promise<SessionData | null> {
             id: data.sessionId,
             projectPath: data.cwd,
             timestamp: new Date(data.timestamp),
+            claudeSessionId: data.sessionId,  // Store the Claude session ID
           };
         }
 

@@ -9,6 +9,7 @@ export interface Session {
   tool: 'claude_code' | 'cursor' | 'vscode';
   timestamp: string;
   duration: number;
+  claudeSessionId?: string;  // Claude's unique session identifier
   data: {
     projectName: string;  // Changed from projectPath to projectName
     // Privacy-preserving: We don't send actual message content

@@ -173,6 +173,7 @@ export class SendOrchestrator {
                 id: data.sessionId,
                 projectPath: data.cwd,
                 timestamp: new Date(data.timestamp),
+                claudeSessionId: data.sessionId,  // Store the Claude session ID
               };
             }
             
@@ -211,6 +212,7 @@ export class SendOrchestrator {
             messages,
             duration,
             tool: 'claude_code',
+            claudeSessionId: metadata.claudeSessionId,  // Include Claude session ID
             metadata: {
               files_edited: editedFiles.size,
               languages: Array.from(languages),
@@ -252,6 +254,7 @@ export class SendOrchestrator {
         tool: session.tool,
         timestamp: session.timestamp.toISOString(),
         duration: session.duration,
+        claudeSessionId: session.claudeSessionId,  // Include Claude session ID
         data: {
           projectName,
           messageSummary: JSON.stringify(sanitizedMessages),
