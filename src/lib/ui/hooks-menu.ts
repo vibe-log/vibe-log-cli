@@ -691,10 +691,11 @@ async function testHooksMenu(): Promise<void> {
 }
 
 /**
- * Prompt to continue (now a no-op for smoother flow)
+ * Prompt to continue - waits for user to press Enter
  */
 async function promptToContinue(): Promise<void> {
-  // Removed prompt for better UX - menu will refresh automatically
+  console.log('Press Enter to continue...');
+  await inquirer.prompt([{ type: 'input', name: 'continue', message: '' }]);
 }
 
 /**
