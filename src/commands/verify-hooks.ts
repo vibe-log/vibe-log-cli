@@ -6,7 +6,8 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { showSuccess, showWarning, showInfo, showError } from '../lib/ui';
 import { getToken } from '../lib/auth/token';
-import { getProjectTrackingMode, getTrackedProjects, getCliPath } from '../lib/config';
+import { getCliPath } from '../lib/config';
+import { getHookMode, getTrackedProjects } from '../lib/claude-settings-reader';
 import { logger } from '../utils/logger';
 import { getHookStatus, validateHookCommands, readClaudeSettings } from '../lib/hooks-manager';
 
@@ -86,8 +87,8 @@ export async function verifyHooks(): Promise<void> {
   
   // 3. Check project tracking configuration
   console.log(chalk.gray('\n3. Checking project tracking...'));
-  const trackingMode = getProjectTrackingMode();
-  const trackedProjects = getTrackedProjects();
+  const trackingMode = await getHookMode();
+  const trackedProjects = await getTrackedProjects();
   
   if (trackingMode === 'all') {
     showSuccess('  ✓ Tracking ALL projects');

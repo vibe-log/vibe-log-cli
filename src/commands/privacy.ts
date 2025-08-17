@@ -4,7 +4,8 @@ import path from 'path';
 import fs from 'fs/promises';
 import { readClaudeSessions } from '../lib/readers/claude';
 import { MessageSanitizer } from '../lib/message-sanitizer';
-import { getLastSync, getProjectTrackingMode, getTrackedProjects } from '../lib/config';
+import { getLastSync } from '../lib/config';
+import { getHookMode, getTrackedProjects } from '../lib/claude-settings-reader';
 import { formatDuration, showInfo, showWarning, showSuccess } from '../lib/ui';
 import { logger } from '../utils/logger';
 
@@ -84,8 +85,8 @@ async function previewNextUpload(): Promise<void> {
   const sessions = await readClaudeSessions({ since: sinceDate });
 
   // Filter by tracked projects
-  const trackingMode = getProjectTrackingMode();
-  const trackedProjects = getTrackedProjects();
+  const trackingMode = await getHookMode();
+  const trackedProjects = await getTrackedProjects();
   
   let filteredSessions = sessions;
   if (trackingMode === 'selected' && trackedProjects.length > 0) {

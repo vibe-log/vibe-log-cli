@@ -1,10 +1,10 @@
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import { getAllConfig, getToken as getConfigToken, getProjectTrackingMode, getTrackedProjects, getLastSyncSummary, getDashboardUrl } from './config';
+import { getAllConfig, getToken as getConfigToken, getLastSyncSummary, getDashboardUrl } from './config';
 import { logger } from '../utils/logger';
 import { VIBE_LOG_SUB_AGENTS } from './sub-agents/constants';
-import { getHookMode } from './claude-settings-reader';
+import { getHookMode, getTrackedProjects as getHookTrackedProjects } from './claude-settings-reader';
 
 export type SetupState = 
   | 'FIRST_TIME'           // No configuration exists
@@ -88,13 +88,32 @@ export async function detectSetupState(): Promise<StateDetails> {
       details.agentCount = 0;
     }
 
-    // Check for hooks using the claude-settings-reader which checks both global and project settings
+    // Check for hooks and tracking mode using the claude-settings-reader (single source of truth)
     try {
       const hookMode = await getHookMode();
       details.hasHooks = hookMode === 'all' || hookMode === 'selected';
+      details.trackingMode = hookMode;
+      
+      // Get tracked projects based on hook mode
+      if (hookMode === 'selected') {
+        const trackedProjects = await getHookTrackedProjects();
+        details.trackedProjectCount = trackedProjects.length;
+        // Only store names for display if there are a reasonable number
+        if (trackedProjects.length <= 10) {
+          details.trackedProjectNames = trackedProjects;
+        }
+      } else if (hookMode === 'all') {
+        // For 'all' mode, count is the total number of projects
+        // We'll count them below
+      } else {
+        // For 'none' mode, count is 0
+        details.trackedProjectCount = 0;
+      }
     } catch (error) {
       logger.debug('Error checking hooks installation:', error);
       details.hasHooks = false;
+      details.trackingMode = 'none';
+      details.trackedProjectCount = 0;
     }
 
     // Check for Claude Code projects
@@ -106,31 +125,16 @@ export async function detectSetupState(): Promise<StateDetails> {
         const stat = await fs.stat(path.join(projectsPath, p));
         return stat.isDirectory();
       }).length;
+      
+      // If tracking mode is 'all', set tracked count to total project count
+      if (details.trackingMode === 'all') {
+        details.trackedProjectCount = details.projectCount || 0;
+      }
     } catch {
       details.projectCount = 0;
-    }
-
-    // Get project tracking information
-    try {
-      details.trackingMode = getProjectTrackingMode();
-      
-      if (details.trackingMode === 'selected') {
-        const trackedProjects = getTrackedProjects();
-        details.trackedProjectCount = trackedProjects.length;
-        // Only store names for display if there are a reasonable number
-        if (trackedProjects.length <= 10) {
-          details.trackedProjectNames = trackedProjects;
-        }
-      } else if (details.trackingMode === 'all') {
-        // For 'all' mode, count is the total number of projects
-        details.trackedProjectCount = details.projectCount || 0;
-      } else {
-        // For 'none' mode, count is 0
+      if (details.trackingMode === 'all') {
         details.trackedProjectCount = 0;
       }
-    } catch (error) {
-      logger.debug('Error getting project tracking info:', error);
-      // Default values already set
     }
 
     // Determine state based on what's installed

@@ -22,11 +22,7 @@ interface ConfigSchema {
     colorScheme?: 'default' | 'minimal';
     verboseOutput?: boolean;
   };
-  trackedProjects?: string[];
-  projectTracking?: {
-    mode: 'all' | 'selected' | 'none';
-    projects: string[];
-  };
+  // PROJECT TRACKING REMOVED - Now handled by hooks in Claude settings
   projectSyncData?: {
     [claudeFolderName: string]: ProjectSyncData;
   };
@@ -68,12 +64,7 @@ const config = new Conf<ConfigSchema>({
         },
       },
     },
-    trackedProjects: {
-      type: 'array',
-      items: {
-        type: 'string',
-      },
-    },
+    // PROJECT TRACKING REMOVED - Now handled by hooks in Claude settings
   },
 });
 
@@ -285,68 +276,11 @@ export function setPreference<K extends keyof NonNullable<ConfigSchema['preferen
   config.set('preferences', preferences);
 }
 
-export function getTrackedProjects(): string[] {
-  // Check new format first
-  const tracking = config.get('projectTracking');
-  if (tracking) {
-    return tracking.projects || [];
-  }
-  
-  // Fallback to old format for backward compatibility
-  return config.get('trackedProjects') || [];
-}
-
-export function setTrackedProjects(projects: string[]): void {
-  if (!Array.isArray(projects)) {
-    throw new Error('Invalid projects list');
-  }
-  // Migrate to new format - assume 'selected' mode when setting specific projects
-  config.set('projectTracking', {
-    mode: projects.length > 0 ? 'selected' : 'all',
-    projects
-  });
-  // Clear old format
-  config.delete('trackedProjects');
-}
-
-export type ProjectTrackingMode = 'all' | 'selected' | 'none';
-
-export function getProjectTrackingMode(): ProjectTrackingMode {
-  const tracking = config.get('projectTracking');
-  if (tracking) {
-    return tracking.mode;
-  }
-  
-  // Backward compatibility: check old format
-  const oldProjects = config.get('trackedProjects');
-  if (oldProjects && oldProjects.length > 0) {
-    // Migrate to new format
-    config.set('projectTracking', {
-      mode: 'selected',
-      projects: oldProjects
-    });
-    config.delete('trackedProjects');
-    return 'selected';
-  }
-  
-  // Default to 'all' for backward compatibility
-  return 'all';
-}
-
-export function setProjectTrackingMode(mode: ProjectTrackingMode, projects?: string[]): void {
-  if (!['all', 'selected', 'none'].includes(mode)) {
-    throw new Error('Invalid tracking mode');
-  }
-  
-  const tracking = {
-    mode,
-    projects: mode === 'selected' ? (projects || []) : []
-  };
-  
-  config.set('projectTracking', tracking);
-  // Clear old format if it exists
-  config.delete('trackedProjects');
-}
+// PROJECT TRACKING REMOVED - Now handled by hooks in Claude settings files
+// The source of truth for project tracking is now:
+// - Global hooks in ~/.claude/settings.json (for 'all' mode)
+// - Project-specific hooks in project/.claude/settings.local.json (for 'selected' mode)
+// Use getHookMode() and getTrackedProjects() from claude-settings-reader.ts instead
 
 export function getAllConfig(): ConfigSchema {
   // Only return config if the file actually exists
@@ -361,7 +295,6 @@ export function getAllConfig(): ConfigSchema {
       token: config.get('token') ? '<redacted>' : undefined,
       lastSync: config.get('lastSync'),
       preferences: config.get('preferences'),
-      trackedProjects: config.get('trackedProjects'),
       projectSyncData: config.get('projectSyncData'),
       lastSyncSummary: config.get('lastSyncSummary'),
     };

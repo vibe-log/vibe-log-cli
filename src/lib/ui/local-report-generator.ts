@@ -1,7 +1,6 @@
 import inquirer from 'inquirer';
 import { colors, icons, box, format } from './styles';
 import { discoverProjects, ClaudeProject } from '../claude-core';
-import { getTrackedProjects, setTrackedProjects } from '../config';
 import { SelectableProject } from './project-selector';
 import { interactiveProjectSelector } from './interactive-project-selector';
 import { buildOrchestratedPrompt, getExecutableCommand } from '../prompts/orchestrator';
@@ -159,11 +158,8 @@ export async function generateLocalReportInteractive(): Promise<void> {
     return;
   }
   
-  // Get previously selected projects from config
-  const previouslySelected = getTrackedProjects();
-  
-  // Convert to selectable format
-  const selectableProjects = toSelectableProjects(recentProjects, previouslySelected);
+  // Convert to selectable format (no previous selection persistence for local reports)
+  const selectableProjects = toSelectableProjects(recentProjects, []);
   
   // Show project selector
   const selectedProjects = await interactiveProjectSelector({
@@ -177,9 +173,6 @@ export async function generateLocalReportInteractive(): Promise<void> {
     console.log(colors.warning('\nNo projects selected. Report generation cancelled.'));
     return;
   }
-  
-  // Save selected projects for next time
-  setTrackedProjects(selectedProjects.map(p => p.id));
   
   // Step 3: Generate report
   console.clear();
