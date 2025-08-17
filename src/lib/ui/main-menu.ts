@@ -22,6 +22,7 @@ async function waitForEnter(): Promise<void> {
 
 // Helper to display package update notification
 function displayPackageUpdateNotification(packageUpdateInfo: { current: string; latest: string }): void {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const boxen = require('boxen');
   console.log(boxen(
     `Update available ${packageUpdateInfo.current} → ${packageUpdateInfo.latest}\nRun \`npx vibe-log-cli@latest\` to update`,
@@ -40,6 +41,7 @@ export async function showMainMenu(
   packageUpdateInfo?: { current: string; latest: string } | null
 ): Promise<void> {
   // Get version from index.ts
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const pkg = require('../../../package.json');
   const version = process.env.SIMULATE_OLD_VERSION || pkg.version;
   

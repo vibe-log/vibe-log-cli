@@ -60,6 +60,7 @@ export function createSection(
   
   // Top border with title
   const titleText = ` ${icon} ${title} `;
+  // eslint-disable-next-line no-control-regex
   const titleLength = titleText.replace(/\u001b\[[0-9;]*m/g, '').length;
   const leftPadding = 3;
   const rightPadding = width - titleLength - leftPadding - 2;
@@ -72,6 +73,7 @@ export function createSection(
   
   // Content lines
   content.forEach(line => {
+    // eslint-disable-next-line no-control-regex
     const cleanLine = line.replace(/\u001b\[[0-9;]*m/g, '');
     const padding = width - cleanLine.length - 4;
     lines.push(

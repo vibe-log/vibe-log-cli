@@ -183,6 +183,7 @@ export function createMenu(
   // Title
   if (options?.title) {
     const titleText = ` ${icons.sparkles} ${options.title} ${icons.sparkles} `;
+    // eslint-disable-next-line no-control-regex
     const titleWidth = titleText.replace(/\u001b\[[0-9;]*m/g, '').length;
     const padding = Math.floor((width - titleWidth) / 2);
     

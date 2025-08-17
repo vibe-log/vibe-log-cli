@@ -287,6 +287,7 @@ async function promptForLocalReport(): Promise<boolean> {
  * Main interactive management flow for sub-agents
  */
 export async function installSubAgentsInteractive(): Promise<void> {
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     // Show explanation about sub-agents
     showSubAgentExplanation();

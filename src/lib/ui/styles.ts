@@ -96,18 +96,21 @@ export const format = {
 
 // Utility functions
 export function center(text: string, width: number): string {
+  // eslint-disable-next-line no-control-regex
   const textLength = text.replace(/\u001b\[[0-9;]*m/g, '').length;
   const padding = Math.max(0, Math.floor((width - textLength) / 2));
   return ' '.repeat(padding) + text;
 }
 
 export function padRight(text: string, width: number): string {
+  // eslint-disable-next-line no-control-regex
   const textLength = text.replace(/\u001b\[[0-9;]*m/g, '').length;
   const padding = Math.max(0, width - textLength);
   return text + ' '.repeat(padding);
 }
 
 export function padLeft(text: string, width: number): string {
+  // eslint-disable-next-line no-control-regex
   const textLength = text.replace(/\u001b\[[0-9;]*m/g, '').length;
   const padding = Math.max(0, width - textLength);
   return ' '.repeat(padding) + text;

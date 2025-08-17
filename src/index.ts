@@ -12,6 +12,7 @@ import { showMainMenu } from './lib/ui/main-menu';
 import { colors } from './lib/ui/styles';
 
 // Import package.json for version info
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const pkg = require('../package.json');
 
 // Check for package updates and store the info
@@ -26,6 +27,7 @@ if (!isSilent) {
     : pkg;
 
   // Use update-notifier to check for package updates
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const updateNotifier = require('update-notifier');
   const notifier = updateNotifier({
     pkg: displayPkg,
