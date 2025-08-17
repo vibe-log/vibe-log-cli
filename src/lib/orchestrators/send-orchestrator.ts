@@ -89,22 +89,24 @@ export class SendOrchestrator {
       return this.readSelectedSessions(options.selectedSessions);
     }
 
-    // Determine date filter
-    const sinceDate = this.determineSinceDate(options);
-
-    // Handle explicit Claude project directory
-    if (options.claudeProjectDir) {
-      return this.loadProjectSessions(options.claudeProjectDir, sinceDate);
-    }
-
-    // Load all sessions and filter as needed
-    const sessions = await readClaudeSessions({ since: sinceDate });
-
+    // IMPORTANT: --all flag takes precedence over claudeProjectDir
+    // This ensures global hooks capture all projects regardless of CLAUDE_PROJECT_DIR
     if (options.all) {
+      // For --all mode, don't use project-specific date filtering
+      const sessions = await readClaudeSessions({ since: undefined });
       return sessions;
     }
 
-    // Filter to current directory
+    // Determine date filter only for non-all modes
+    const sinceDate = this.determineSinceDate(options);
+
+    // Handle explicit Claude project directory (only when --all is not set)
+    if (options.claudeProjectDir && options.claudeProjectDir.trim() !== '') {
+      return this.loadProjectSessions(options.claudeProjectDir, sinceDate);
+    }
+
+    // Load all sessions and filter to current directory (default behavior)
+    const sessions = await readClaudeSessions({ since: sinceDate });
     const currentDir = process.cwd();
     return sessions.filter(session => {
       const sessionPath = path.normalize(session.projectPath).toLowerCase();

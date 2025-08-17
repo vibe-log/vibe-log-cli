@@ -177,8 +177,15 @@ export async function getHooksStatus(): Promise<HooksStatus> {
  */
 export function buildHookCommand(
   cliPath: string, 
-  hookTrigger: 'sessionstart' | 'precompact'
+  hookTrigger: 'sessionstart' | 'precompact',
+  mode?: 'all' | 'selected'
 ): string {
+  // For global mode (track all), use --all flag instead of --claude-project-dir
+  if (mode === 'all') {
+    return `${cliPath} send --silent --background --hook-trigger=${hookTrigger} --hook-version=${HOOKS_VERSION} --all`;
+  }
+  
+  // For selected mode or backward compatibility, use --claude-project-dir
   return `${cliPath} send --silent --background --hook-trigger=${hookTrigger} --hook-version=${HOOKS_VERSION} --claude-project-dir="$CLAUDE_PROJECT_DIR"`;
 }
 
@@ -195,14 +202,15 @@ interface HookDefinition {
  */
 function buildHookConfiguration(
   hookType: 'SessionStart' | 'PreCompact',
-  cliPath: string
+  cliPath: string,
+  mode?: 'all' | 'selected'
 ): HookConfigWithMatcher[] {
   const triggerType = hookType === 'SessionStart' ? 'sessionstart' : 'precompact';
   return [{
     matcher: HOOK_MATCHERS[hookType],
     hooks: [{
       type: 'command',
-      command: buildHookCommand(cliPath, triggerType)
+      command: buildHookCommand(cliPath, triggerType, mode)
       // No timeout specified - uses Claude's default of 60 seconds
     }]
   }];
@@ -233,7 +241,8 @@ async function ensureDirectory(dir: string): Promise<void> {
 async function installHooksToSettings(
   settingsPath: string,
   hooks: HookDefinition[],
-  cliPath: string
+  cliPath: string,
+  mode?: 'all' | 'selected'
 ): Promise<void> {
   // Ensure directory exists for local settings
   const dir = path.dirname(settingsPath);
@@ -252,7 +261,7 @@ async function installHooksToSettings(
   // Install/remove each hook based on configuration
   for (const hook of hooks) {
     if (hook.enabled) {
-      settings.hooks[hook.type] = buildHookConfiguration(hook.type, cliPath);
+      settings.hooks[hook.type] = buildHookConfiguration(hook.type, cliPath, mode);
       logger.debug(`${hook.type} hook configured`);
     } else {
       delete settings.hooks[hook.type];
@@ -284,7 +293,8 @@ export async function installSelectedHooks(selection: HookSelection): Promise<vo
   await installHooksToSettings(
     getGlobalSettingsPath(),
     hooks,
-    getCliPath()
+    getCliPath(),
+    'all'  // Global hooks use 'all' mode
   );
   
   logger.info('Hooks installed successfully');
@@ -512,7 +522,8 @@ export async function installGlobalHooks(): Promise<void> {
   await installHooksToSettings(
     getGlobalSettingsPath(),
     hooks,
-    getCliPath()
+    getCliPath(),
+    'all'  // Pass mode='all' for global hooks
   );
   
   logger.info('Global hooks installed for all projects');
@@ -545,7 +556,8 @@ export async function installProjectHooks(projects: Array<{ path: string; name: 
       await installHooksToSettings(
         localSettingsPath,
         hooks,
-        cliPath
+        cliPath,
+        'selected'  // Project-specific hooks use 'selected' mode
       );
       
       logger.info(`Hooks installed for project ${project.name} at ${localSettingsPath}`);
@@ -602,7 +614,8 @@ export async function installSelectiveProjectHooks(projectConfigs: ProjectHookCo
       await installHooksToSettings(
         localSettingsPath,
         hooks,
-        cliPath
+        cliPath,
+        'selected'  // Project-specific hooks use 'selected' mode
       );
       
       // Log per-project summary
