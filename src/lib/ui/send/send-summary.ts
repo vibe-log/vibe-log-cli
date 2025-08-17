@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import { formatDuration, showSuccess, showWarning, showInfo } from '../../ui';
 import { parseProjectName } from '../project-display';
-import { SessionData } from '../../readers/types';
+import { Session as ApiSession } from '../../api-client';
 import { logger } from '../../../utils/logger';
 
 export class SendSummaryUI {
@@ -44,7 +44,7 @@ export class SendSummaryUI {
     }
   }
 
-  showUploadSummary(sessions: SessionData[], totalRedactions: number) {
+  showUploadSummary(sessions: ApiSession[], totalRedactions: number) {
     if (this.silent) {
       const totalDuration = sessions.reduce((sum, s) => sum + s.duration, 0);
       logger.info(`Uploading ${sessions.length} sessions (${formatDuration(totalDuration)})`);

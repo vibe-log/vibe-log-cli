@@ -116,7 +116,7 @@ async function executeInteractiveSend(options: SendOptions): Promise<void> {
 
     // Show upload summary
     const totalRedactions = countTotalRedactions(apiSessions);
-    summaryUI.showUploadSummary(sessions, totalRedactions);
+    summaryUI.showUploadSummary(apiSessions, totalRedactions);
 
     // Handle dry run
     if (options.dry) {
