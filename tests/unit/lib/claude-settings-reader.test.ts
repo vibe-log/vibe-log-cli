@@ -44,7 +44,7 @@ describe('Claude Settings Reader', () => {
                 matcher: 'startup|clear',
                 hooks: [{
                   type: 'command',
-                  command: 'npx vibe-log send --silent --background --hook-trigger=sessionstart'
+                  command: 'npx vibe-log-cli send --silent --background --hook-trigger=sessionstart'
                 }]
               }]
             }
@@ -77,7 +77,7 @@ describe('Claude Settings Reader', () => {
                 matcher: 'startup|clear',
                 hooks: [{
                   type: 'command',
-                  command: 'npx vibe-log send --silent --background --hook-trigger=sessionstart'
+                  command: 'npx vibe-log-cli send --silent --background --hook-trigger=sessionstart'
                 }]
               }]
             }
@@ -139,7 +139,7 @@ describe('Claude Settings Reader', () => {
                 matcher: 'startup|clear',
                 hooks: [{
                   type: 'command',
-                  command: 'npx vibe-log send --silent'
+                  command: 'npx vibe-log-cli send --silent'
                 }]
               }]
             }
@@ -153,7 +153,7 @@ describe('Claude Settings Reader', () => {
                 matcher: 'auto',
                 hooks: [{
                   type: 'command',
-                  command: 'npx vibe-log send --silent'
+                  command: 'npx vibe-log-cli send --silent'
                 }]
               }]
             }
@@ -191,7 +191,7 @@ describe('Claude Settings Reader', () => {
               SessionStart: [{
                 hooks: [{
                   type: 'command',
-                  command: 'npx vibe-log send --silent'
+                  command: 'npx vibe-log-cli send --silent'
                 }]
               }]
             }
@@ -204,7 +204,7 @@ describe('Claude Settings Reader', () => {
               PreCompact: [{
                 hooks: [{
                   type: 'command',
-                  command: 'npx vibe-log send --silent'
+                  command: 'npx vibe-log-cli send --silent'
                 }]
               }]
             }
@@ -297,7 +297,7 @@ describe('Claude Settings Reader', () => {
           SessionStart: [{
             hooks: [{
               type: 'command' as const,
-              command: 'npx vibe-log send --silent'
+              command: 'npx vibe-log-cli send --silent'
             }]
           }]
         }

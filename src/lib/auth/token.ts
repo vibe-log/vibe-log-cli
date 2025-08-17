@@ -16,7 +16,7 @@ export async function isAuthenticated(): Promise<boolean> {
 export async function requireAuth(): Promise<void> {
   const authenticated = await isAuthenticated();
   if (!authenticated) {
-    throw new Error('Authentication required. Please run: npx vibe-log');
+    throw new Error('Authentication required. Please run: npx vibe-log-cli');
   }
 }
 

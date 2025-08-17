@@ -102,18 +102,18 @@ export function handleError(error: unknown): void {
     
     switch (error.code) {
       case 'AUTH_REQUIRED':
-        console.log(chalk.yellow('💡 Run: npx vibe-log'));
+        console.log(chalk.yellow('💡 Run: npx vibe-log-cli'));
         break;
       case 'AUTH_EXPIRED':
       case 'AUTH_FAILED':
       case 'INVALID_TOKEN':
-        console.log(chalk.yellow('💡 Run: npx vibe-log and authenticate'));
+        console.log(chalk.yellow('💡 Run: npx vibe-log-cli and authenticate'));
         break;
       case 'AUTH_NOT_COMPLETED':
         console.log(chalk.yellow('💡 Complete the authentication in your browser, then try again'));
         break;
       case 'AUTH_CHECK_FAILED':
-        console.log(chalk.yellow('💡 Try running: npx vibe-log and re-authenticate'));
+        console.log(chalk.yellow('💡 Try running: npx vibe-log-cli and re-authenticate'));
         break;
       case 'NETWORK_ERROR':
         console.log(chalk.yellow('💡 Check your internet connection'));

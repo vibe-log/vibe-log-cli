@@ -6,7 +6,7 @@ const createMockConfig = () => {
   const store = new Map<string, any>();
   // Set default values to match the actual config schema
   store.set('apiUrl', 'https://vibe-log.dev');
-  store.set('cliPath', 'npx vibe-log');
+  store.set('cliPath', 'npx vibe-log-cli');
   
   return {
     store,

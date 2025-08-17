@@ -112,7 +112,7 @@ export async function browserAuth(wizardMode?: boolean): Promise<string> {
         console.log('');
         console.log(chalk.green('✅ Successfully authenticated with Vibe-Log!'));
         console.log(chalk.cyan('🚀 You can now use the Vibe-Log interactive menu:'));
-        console.log(chalk.gray('   Run `npx vibe-log` to access all features'));
+        console.log(chalk.gray('   Run `npx vibe-log-cli` to access all features'));
         console.log('');
       }
       

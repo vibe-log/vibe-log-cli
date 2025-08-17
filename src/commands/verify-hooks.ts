@@ -47,7 +47,7 @@ export async function verifyHooks(): Promise<void> {
     showSuccess('  ✓ Authenticated');
   } else {
     showWarning('  ⚠ Not authenticated (hooks will skip sending)');
-    showInfo('    Run "npx vibe-log" and authenticate');
+    showInfo('    Run "npx vibe-log-cli" and authenticate');
   }
   
   // 2. Check hooks installation

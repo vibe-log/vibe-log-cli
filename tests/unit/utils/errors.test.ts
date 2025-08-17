@@ -59,7 +59,7 @@ describe('Error Handling', () => {
         expect.stringContaining('❌ Error: Authentication required')
       );
       expect(mockConsole.log).toHaveBeenCalledWith(
-        expect.stringContaining('💡 Run: npx vibe-log')
+        expect.stringContaining('💡 Run: npx vibe-log-cli')
       );
     });
 
@@ -74,7 +74,7 @@ describe('Error Handling', () => {
         
         expect(() => handleError(error)).toThrow('Process exited');
         expect(mockConsole.log).toHaveBeenCalledWith(
-          expect.stringContaining('💡 Run: npx vibe-log and authenticate')
+          expect.stringContaining('💡 Run: npx vibe-log-cli and authenticate')
         );
       });
     });

@@ -24,5 +24,5 @@ export async function logout(): Promise<void> {
   await clearToken();
   showSuccess('Logged out successfully!');
   
-  console.log(chalk.gray('\nTo use vibe-log again, run: npx vibe-log'));
+  console.log(chalk.gray('\nTo use vibe-log again, run: npx vibe-log-cli'));
 }

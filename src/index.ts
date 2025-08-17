@@ -152,20 +152,20 @@ program
 // Custom help function
 function showHelp(): void {
   console.log('');
-  console.log('Usage: npx vibe-log');
+  console.log('Usage: npx vibe-log-cli');
   console.log('');
   console.log('Track your building journey with vibe-log');
   console.log('');
   console.log('Main usage:');
-  console.log('  npx vibe-log              Interactive menu (recommended)');
+  console.log('  npx vibe-log-cli              Interactive menu (recommended)');
   console.log('');
   console.log('Quick actions:');
-  console.log('  npx vibe-log auth         Sign in to enable cloud sync & web dashboard');
-  console.log('  npx vibe-log send         Manually sync sessions to cloud');
-  console.log('  npx vibe-log privacy      Preview what data gets sent (privacy first!)');
+  console.log('  npx vibe-log-cli auth         Sign in to enable cloud sync & web dashboard');
+  console.log('  npx vibe-log-cli send         Manually sync sessions to cloud');
+  console.log('  npx vibe-log-cli privacy      Preview what data gets sent (privacy first!)');
   console.log('');
   console.log('For hooks (automatic sync):');
-  console.log('  npx vibe-log send --silent    Used by Claude Code hooks');
+  console.log('  npx vibe-log-cli send --silent    Used by Claude Code hooks');
   console.log('');
   console.log('Learn more at: https://vibe-log.dev');
   console.log('');
@@ -210,7 +210,7 @@ program.action(async () => {
   } catch (menuError) {
     // Only if menu itself fails, show simple fallback
     console.error(colors.error('\nFailed to display interactive menu'));
-    console.log(colors.subdued('Run "npx vibe-log" to get started'));
+    console.log(colors.subdued('Run "npx vibe-log-cli" to get started'));
     
     if (menuError instanceof Error) {
       logger.debug('Menu display error:', menuError);

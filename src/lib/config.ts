@@ -42,7 +42,7 @@ const config = new Conf<ConfigSchema>({
     },
     cliPath: {
       type: 'string',
-      default: 'npx vibe-log',
+      default: 'npx vibe-log-cli',
     },
     token: {
       type: 'string',
@@ -225,7 +225,7 @@ export function getCliPath(): string {
   }
   
   // Use configured path or default to npx command
-  return config.get('cliPath') || 'npx vibe-log';
+  return config.get('cliPath') || 'npx vibe-log-cli';
 }
 
 export function setCliPath(path: string): void {

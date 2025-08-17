@@ -458,7 +458,7 @@ function showHelp(): void {
   console.log('  3. (Cloud only) Install hooks for automatic sync');
   console.log('');
   console.log(colors.accent('Getting Started:'));
-  console.log('  Simply run: npx vibe-log');
+  console.log('  Simply run: npx vibe-log-cli');
   console.log('');
   console.log(colors.muted('Learn more at: https://vibe-log.dev'));
 }

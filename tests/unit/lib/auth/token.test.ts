@@ -79,7 +79,7 @@ describe('Token Authentication Module', () => {
       vi.mocked(config.getToken).mockResolvedValue(null);
       
       await expect(requireAuth()).rejects.toThrow(
-        'Authentication required. Please run: npx vibe-log'
+        'Authentication required. Please run: npx vibe-log-cli'
       );
     });
 
@@ -90,7 +90,7 @@ describe('Token Authentication Module', () => {
       });
       
       await expect(requireAuth()).rejects.toThrow(
-        'Authentication required. Please run: npx vibe-log'
+        'Authentication required. Please run: npx vibe-log-cli'
       );
     });
 
@@ -101,7 +101,7 @@ describe('Token Authentication Module', () => {
       );
       
       await expect(requireAuth()).rejects.toThrow(
-        'Authentication required. Please run: npx vibe-log'
+        'Authentication required. Please run: npx vibe-log-cli'
       );
     });
   });
