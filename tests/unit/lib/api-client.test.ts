@@ -103,20 +103,30 @@ describe('API Client Module', () => {
   describe('Session Management', () => {
     it('should upload sessions', async () => {
       const sessions = [testData.createSession()];
-      const mockResult = {
+      const mockServerResponse = {
         success: true,
-        sessionsProcessed: 1,
+        created: 1,
+        duplicates: 0,
         analysisPreview: 'Great coding session!',
         streak: testData.createStreakInfo(),
       };
       
       mockAxiosInstance.post.mockResolvedValue({
-        data: mockResult,
+        data: mockServerResponse,
       });
       
       const result = await apiClient.uploadSessions(sessions);
       
-      expect(result).toEqual(mockResult);
+      // The mergeResults method now returns additional fields
+      expect(result).toEqual({
+        success: true,
+        created: 1,
+        duplicates: 0,
+        sessionsProcessed: 1, // created + duplicates
+        analysisPreview: 'Great coding session!',
+        streak: testData.createStreakInfo(),
+        batchId: undefined,
+      });
       expect(mockAxiosInstance.post).toHaveBeenCalledWith('/cli/sessions', 
         expect.objectContaining({
           sessions: expect.any(Array),
