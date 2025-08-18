@@ -342,7 +342,7 @@ class SecureApiClient {
     
     // Chunk large uploads
     // Using 10 for good progress granularity without too many API calls
-    const CHUNK_SIZE = 50;
+    const CHUNK_SIZE = 30;
     const chunks = [];
     
     for (let i = 0; i < sanitizedSessions.length; i += CHUNK_SIZE) {
