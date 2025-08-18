@@ -399,6 +399,8 @@ async function handleMenuAction(
       
     case 'help':
       showHelp();
+      console.log('Press Enter to continue...');
+      await inquirer.prompt([{ type: 'input', name: 'continue', message: '' }]);
       break;
       
     case 'exit':
@@ -442,23 +444,32 @@ async function manageAgents(): Promise<void> {
 }
 
 function showHelp(): void {
-  console.log(colors.accent('\n--- Help ---'));
   console.log('');
-  console.log(colors.primary('Vibe-Log CLI Help'));
+  console.log(colors.primary('🚀 Vibe-Log - The Strava for Builders'));
   console.log('');
-  console.log('Vibe-Log helps you track your coding sessions and productivity.');
+  console.log(colors.subdued('Track your coding journey, maintain streaks, and share your progress'));
+  console.log(colors.subdued('with AI-powered insights. Join 500+ builders shipping daily!'));
   console.log('');
-  console.log(colors.accent('Modes:'));
-  console.log('  • Local Mode: 100% offline, uses Claude Code tokens');
-  console.log('  • Cloud Mode: Automatic sync, no tokens needed');
+  console.log(colors.accent('✨ What Vibe-Log Does:'));
+  console.log('  • ' + colors.highlight('Track Sessions') + ' - Capture your Claude Code sessions automatically');
+  console.log('  • ' + colors.highlight('Build Streaks') + ' - Stay motivated with coding streak tracking');
+  console.log('  • ' + colors.highlight('AI Insights') + ' - Get personalized productivity analytics');
+  console.log('  • ' + colors.highlight('Share Progress') + ' - Showcase your building journey');
+  console.log('  • ' + colors.highlight('Privacy First') + ' - Your code stays private, we only track metadata');
   console.log('');
-  console.log(colors.accent('Getting Started:'));
-  console.log('  1. Choose between Local or Cloud mode');
-  console.log('  2. Install sub-agents for enhanced analysis');
-  console.log('  3. (Cloud only) Install hooks for automatic sync');
+  console.log(colors.accent('🎯 Choose Your Mode:'));
+  console.log('  • ' + colors.success('Cloud Mode') + ' - Automatic sync, web dashboard, GitHub auth');
+  console.log('  • ' + colors.info('Local Mode') + ' - 100% offline, generate AI reports locally');
   console.log('');
-  console.log(colors.accent('Getting Started:'));
-  console.log('  Simply run: npx vibe-log-cli');
+  console.log(colors.accent('⚡ Quick Start:'));
+  console.log('  1. Run ' + colors.primary('npx vibe-log-cli') + ' to open this menu');
+  console.log('  2. Choose Cloud (recommended) or Local mode');
+  console.log('  3. For Local Mode: Install sub-agents to generate AI reports');
+  console.log('  4. Start tracking your building journey!');
   console.log('');
-  console.log(colors.muted('Learn more at: https://vibe-log.dev'));
+  console.log(colors.accent('📚 Resources:'));
+  console.log('  • Website: ' + colors.primary('https://vibe-log.dev'));
+  console.log('  • Dashboard: ' + colors.primary('https://app.vibe-log.dev'));
+  console.log('  • GitHub: ' + colors.primary('https://github.com/vibe-log'));
+  console.log('');
 }
