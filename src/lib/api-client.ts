@@ -341,8 +341,8 @@ class SecureApiClient {
     const sanitizedSessions = sessions.map(session => this.sanitizeSession(session));
     
     // Chunk large uploads
-    // Using 10 for good progress granularity without too many API calls
-    const CHUNK_SIZE = 30;
+    // Using 100 for better performance - modern connections can handle 300-500KB payloads
+    const CHUNK_SIZE = 100;
     const chunks = [];
     
     for (let i = 0; i < sanitizedSessions.length; i += CHUNK_SIZE) {
@@ -364,13 +364,17 @@ class SecureApiClient {
       const payload = { 
         sessions: chunk,
         checksum: this.calculateChecksum(chunk),
+        totalSessions: sanitizedSessions.length, // Total sessions being uploaded
+        batchNumber: i + 1, // Current batch number (1-indexed)
+        totalBatches: chunks.length, // Total number of batches
       };
       
       // Calculate payload size in kilobytes
       const payloadSize = Buffer.byteLength(JSON.stringify(payload)) / 1024;
       
       if (process.env.VIBELOG_DEBUG === 'true') {
-        console.log('[DEBUG] Uploading chunk', i + 1, 'of', chunks.length, 'with', chunk.length, 'sessions', `(${payloadSize.toFixed(2)} KB)`);
+        console.log('[DEBUG] Uploading batch', i + 1, 'of', chunks.length, 'with', chunk.length, 'sessions', `(${payloadSize.toFixed(2)} KB)`);
+        console.log('[DEBUG] Total progress:', uploadedCount, '+', chunk.length, '=', uploadedCount + chunk.length, 'of', sanitizedSessions.length);
         
         // Log first session of each chunk to debug validation issues
         if (chunk.length > 0) {
@@ -379,8 +383,10 @@ class SecureApiClient {
       }
       
       // Log the actual HTTP request data
-      logger.debug(`📤 API Request ${i + 1}/${chunks.length}: POST /cli/sessions`, {
-        sessionsCount: chunk.length,
+      logger.debug(`📤 API Request batch ${i + 1}/${chunks.length}: POST /cli/sessions`, {
+        batchSessions: chunk.length,
+        totalSessions: sanitizedSessions.length,
+        cumulativeProgress: `${uploadedCount + chunk.length}/${sanitizedSessions.length}`,
         firstSession: chunk[0] ? {
           tool: chunk[0].tool,
           timestamp: chunk[0].timestamp,
