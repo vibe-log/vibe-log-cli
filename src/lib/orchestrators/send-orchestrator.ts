@@ -17,6 +17,7 @@ import { analyzeProject } from '../claude-core';
 import path from 'path';
 import fs from 'fs/promises';
 import { filterImageContent } from '../readers/image-filter';
+import { extractLanguagesFromSession } from '../language-extractor';
 
 export interface SendOptions {
   dry?: boolean;
@@ -160,7 +161,6 @@ export class SendOrchestrator {
         const messages: any[] = [];
         let metadata: any = null;
         const editedFiles = new Set<string>();
-        const languages = new Set<string>();
         
         for (const line of lines) {
           if (!line.trim()) continue;
@@ -187,14 +187,11 @@ export class SendOrchestrator {
               });
             }
             
+            // Track edited files from toolUseResult (for backward compatibility)
             if (data.toolUseResult && (data.toolUseResult.type === 'create' || data.toolUseResult.type === 'update')) {
               const filePath = data.toolUseResult.filePath;
               if (filePath) {
                 editedFiles.add(filePath);
-                const ext = path.extname(filePath).slice(1).toLowerCase();
-                if (ext) {
-                  languages.add(ext);
-                }
               }
             }
           } catch {
@@ -207,6 +204,9 @@ export class SendOrchestrator {
             ? Math.max(0, Math.floor((messages[messages.length - 1].timestamp.getTime() - messages[0].timestamp.getTime()) / 1000))
             : 0;
           
+          // Use the language extractor to get all languages used in the session
+          const languages = extractLanguagesFromSession(lines);
+          
           sessions.push({
             ...metadata,
             messages,
@@ -215,7 +215,7 @@ export class SendOrchestrator {
             claudeSessionId: metadata.claudeSessionId,  // Include Claude session ID
             metadata: {
               files_edited: editedFiles.size,
-              languages: Array.from(languages),
+              languages: languages,
             },
           });
         }

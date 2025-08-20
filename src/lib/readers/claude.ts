@@ -4,6 +4,7 @@ import os from 'os';
 import { SessionData, Message, ReaderOptions } from './types';
 import { VibelogError } from '../../utils/errors';
 import { filterImageContent } from './image-filter';
+import { extractLanguagesFromSession } from '../language-extractor';
 
 interface ClaudeMessage {
   role: string;
@@ -159,7 +160,6 @@ async function parseSessionFile(filePath: string): Promise<SessionData | null> {
       claudeSessionId?: string;
     } | null = null;
     const editedFiles = new Set<string>();
-    const languages = new Set<string>();
 
     for (const line of lines) {
       if (!line.trim()) continue;
@@ -189,15 +189,11 @@ async function parseSessionFile(filePath: string): Promise<SessionData | null> {
           });
         }
 
-        // Track edited files from toolUseResult
+        // Track edited files from toolUseResult (for backward compatibility)
         if (data.toolUseResult && (data.toolUseResult.type === 'create' || data.toolUseResult.type === 'update')) {
           const filePath = data.toolUseResult.filePath;
           if (filePath) {
             editedFiles.add(filePath);
-            const ext = path.extname(filePath).slice(1).toLowerCase();
-            if (ext) {
-              languages.add(getLanguageFromExtension(ext));
-            }
           }
         }
       } catch (err) {
@@ -209,6 +205,9 @@ async function parseSessionFile(filePath: string): Promise<SessionData | null> {
     if (!metadata || messages.length === 0) return null;
 
     const duration = calculateDuration(messages);
+    
+    // Use the language extractor to get all languages used in the session
+    const languages = extractLanguagesFromSession(lines);
 
     return {
       ...metadata,
@@ -217,7 +216,7 @@ async function parseSessionFile(filePath: string): Promise<SessionData | null> {
       tool: 'claude_code',
       metadata: {
         files_edited: editedFiles.size,
-        languages: Array.from(languages),
+        languages: languages,
       },
     };
   } catch (error) {
@@ -234,45 +233,4 @@ function calculateDuration(messages: Message[]): number {
 
   // Ensure duration is never negative (can happen if timestamps are out of order)
   return Math.max(0, Math.floor((lastTimestamp - firstTimestamp) / 1000)); // Convert to seconds
-}
-
-function getLanguageFromExtension(ext: string): string {
-  const languageMap: Record<string, string> = {
-    js: 'JavaScript',
-    jsx: 'JavaScript',
-    ts: 'TypeScript',
-    tsx: 'TypeScript',
-    py: 'Python',
-    java: 'Java',
-    c: 'C',
-    cpp: 'C++',
-    cs: 'C#',
-    go: 'Go',
-    rs: 'Rust',
-    rb: 'Ruby',
-    php: 'PHP',
-    swift: 'Swift',
-    kt: 'Kotlin',
-    scala: 'Scala',
-    r: 'R',
-    m: 'MATLAB',
-    sql: 'SQL',
-    html: 'HTML',
-    css: 'CSS',
-    scss: 'SCSS',
-    sass: 'Sass',
-    less: 'Less',
-    json: 'JSON',
-    xml: 'XML',
-    yaml: 'YAML',
-    yml: 'YAML',
-    md: 'Markdown',
-    sh: 'Shell',
-    bash: 'Bash',
-    ps1: 'PowerShell',
-    dockerfile: 'Docker',
-    makefile: 'Makefile',
-  };
-
-  return languageMap[ext.toLowerCase()] || ext.toUpperCase();
 }
