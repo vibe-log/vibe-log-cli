@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import { isNetworkError, getNetworkErrorMessage } from '../lib/errors/network-errors';
 
 export class VibelogError extends Error {
   constructor(message: string, public code: string) {
@@ -68,10 +69,9 @@ export function displayError(error: unknown): void {
     console.error(chalk.red(`\n❌ Error: ${error.message}`));
     
     // Network-specific errors
-    if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED')) {
-      console.log(chalk.yellow('💡 Cannot reach the server. Check your internet connection'));
-    } else if (error.message.includes('ETIMEDOUT')) {
-      console.log(chalk.yellow('💡 Request timed out. The server might be slow or your connection is unstable'));
+    if (isNetworkError(error)) {
+      const message = getNetworkErrorMessage(error);
+      console.log(chalk.yellow(`💡 ${message}`));
     } else if (error.message.includes('ENOSPC')) {
       console.log(chalk.yellow('💡 Your disk is full. Free up some space and try again'));
     } else if (error.message.includes('EACCES') || error.message.includes('EPERM')) {

@@ -10,6 +10,7 @@ import { countTotalRedactions } from '../lib/ui/sanitization-display';
 import { showUploadResults } from '../lib/ui';
 import { VibelogError } from '../utils/errors';
 import { logger } from '../utils/logger';
+import { isNetworkError, createNetworkError } from '../lib/errors/network-errors';
 import chalk from 'chalk';
 
 /**
@@ -237,13 +238,8 @@ function handleSendError(error: unknown, options: SendOptions): void {
   // Handle specific error types
   if (error instanceof Error) {
     // Network errors
-    if (error.message.includes('ENOTFOUND') || 
-        error.message.includes('ECONNREFUSED') || 
-        error.message.includes('ETIMEDOUT')) {
-      throw new VibelogError(
-        'Network error. Please check your internet connection and try again.',
-        'NETWORK_ERROR'
-      );
+    if (isNetworkError(error)) {
+      throw createNetworkError(error);
     }
     
     // Disk space errors

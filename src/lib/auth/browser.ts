@@ -7,6 +7,7 @@ import http from 'http';
 import { apiClient } from '../api-client';
 import { storeToken, clearToken, getApiUrl } from '../config';
 import { VibelogError } from '../../utils/errors';
+import { isNetworkError, getNetworkErrorType, getNetworkErrorMessage, createNetworkError } from '../errors/network-errors';
 
 // Secure random sleep to prevent timing attacks
 function secureRandomSleep(baseMs: number): Promise<void> {
@@ -40,26 +41,29 @@ export async function browserAuth(wizardMode?: boolean): Promise<string> {
       token = result.token;
     } catch (error: any) {
       // Handle connection errors specifically
-      if (error.code === 'ECONNREFUSED') {
-        console.error(chalk.red('\n❌ Cannot connect to vibe-log server'));
-        console.error(chalk.yellow('\n📋 Please check:'));
-        console.error(chalk.gray('   1. Is the server running? (For local development: npm run dev)'));
-        console.error(chalk.gray('   2. Is the API URL correct? Current: ' + getApiUrl()));
-        console.error(chalk.gray('   3. Is your firewall blocking the connection?'));
-        console.error(chalk.gray('\n💡 Tip: If running locally, make sure the vibe-log server is started'));
-        throw new VibelogError('Server connection refused', 'CONNECTION_REFUSED');
-      } else if (error.code === 'ENOTFOUND') {
-        console.error(chalk.red('\n❌ Server not found'));
-        console.error(chalk.yellow('\nThe server address could not be resolved: ' + getApiUrl()));
-        console.error(chalk.gray('\n💡 Check your internet connection or API URL configuration'));
-        throw new VibelogError('Server not found', 'SERVER_NOT_FOUND');
-      } else if (error.code === 'ETIMEDOUT' || error.code === 'TIMEOUT') {
-        console.error(chalk.red('\n❌ Connection timed out'));
-        console.error(chalk.yellow('\nThe server is not responding. It might be:'));
-        console.error(chalk.gray('   • Down for maintenance'));
-        console.error(chalk.gray('   • Experiencing high load'));
-        console.error(chalk.gray('   • Blocked by network issues'));
-        throw new VibelogError('Connection timed out', 'TIMEOUT');
+      if (isNetworkError(error)) {
+        const errorType = getNetworkErrorType(error);
+        const message = getNetworkErrorMessage(error);
+        
+        console.error(chalk.red('\n❌ Network error'));
+        console.error(chalk.yellow(`\n${message}`));
+        
+        if (errorType === 'CONNECTION_REFUSED') {
+          console.error(chalk.yellow('\n📋 Please check:'));
+          console.error(chalk.gray('   1. Is the server running? (For local development: npm run dev)'));
+          console.error(chalk.gray('   2. Is the API URL correct? Current: ' + getApiUrl()));
+          console.error(chalk.gray('   3. Is your firewall blocking the connection?'));
+          console.error(chalk.gray('\n💡 Tip: If running locally, make sure the vibe-log server is started'));
+        } else if (errorType === 'DNS_RESOLUTION_FAILED') {
+          console.error(chalk.gray('\n💡 Check your internet connection or API URL configuration'));
+        } else if (errorType === 'TIMEOUT') {
+          console.error(chalk.yellow('\nThe server is not responding. It might be:'));
+          console.error(chalk.gray('   • Down for maintenance'));
+          console.error(chalk.gray('   • Experiencing high load'));
+          console.error(chalk.gray('   • Blocked by network issues'));
+        }
+        
+        throw createNetworkError(error);
       } else if (error.code === 'NETWORK_ERROR') {
         console.error(chalk.red('\n❌ Network error'));
         console.error(chalk.yellow('\nPlease check your internet connection and try again.'));

@@ -3,6 +3,7 @@ import { getToken, getApiUrl } from './config';
 import { VibelogError } from '../utils/errors';
 import { validateUrl } from './input-validator';
 import { logger } from '../utils/logger';
+import { isNetworkError, createNetworkError } from './errors/network-errors';
 import crypto from 'crypto';
 
 export interface Session {
@@ -183,26 +184,8 @@ class SecureApiClient {
             'Server error. The vibe-log service is having issues. Please try again later',
             'SERVER_ERROR'
           );
-        } else if (error.response?.status === 502 || error.response?.status === 503) {
-          throw new VibelogError(
-            'Service temporarily unavailable. Please try again in a few moments',
-            'SERVICE_UNAVAILABLE'
-          );
-        } else if (error.code === 'ENOTFOUND') {
-          throw new VibelogError(
-            'Cannot reach vibe-log servers. Please check your internet connection',
-            'NETWORK_ERROR'
-          );
-        } else if (error.code === 'ECONNREFUSED') {
-          throw new VibelogError(
-            'Connection refused. The server might be down or your firewall is blocking the connection',
-            'CONNECTION_REFUSED'
-          );
-        } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
-          throw new VibelogError(
-            'Request timed out. Your connection might be slow or the server is not responding',
-            'TIMEOUT'
-          );
+        } else if (isNetworkError(error)) {
+          throw createNetworkError(error);
         } else if (error.response?.status === 404) {
           throw new VibelogError(
             'API endpoint not found. You might need to update your CLI',
@@ -427,10 +410,10 @@ class SecureApiClient {
           retryCount++;
           
           // Only retry on network errors, not on client errors (4xx)
-          const isNetworkError = error instanceof AxiosError && 
-            (!error.response || error.response.status >= 500 || error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT');
+          const shouldRetry = error instanceof AxiosError && 
+            (!error.response || error.response.status >= 500 || isNetworkError(error));
           
-          if (!isNetworkError || retryCount > MAX_RETRIES) {
+          if (!shouldRetry || retryCount > MAX_RETRIES) {
             throw error; // Don't retry, throw immediately
           }
           

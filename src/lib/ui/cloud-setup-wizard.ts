@@ -8,6 +8,7 @@ import { MessageSanitizer } from '../message-sanitizer';
 import { getDashboardUrl } from '../config';
 import { displayError } from '../../utils/errors';
 import { VibelogError } from '../../utils/errors';
+import { isNetworkError } from '../errors/network-errors';
 import path from 'path';
 import fs from 'fs/promises';
 import open from 'open';
@@ -24,12 +25,9 @@ function showConnectionErrorHelp(error: unknown): void {
         error.code === 'CONNECTION_FAILED') {
       // Network errors are handled below
     }
-  } else if (error instanceof Error) {
-    const errorCode = (error as any).code;
-    if (errorCode === 'ECONNREFUSED') {
-      console.log(chalk.red('\n❌ Cannot connect to the server'));
-      console.log(chalk.yellow('Please ensure the vibe-log server is accessible.'));
-    }
+  } else if (error instanceof Error && isNetworkError(error)) {
+    console.log(chalk.red('\n❌ Cannot connect to the server'));
+    console.log(chalk.yellow('Please ensure the vibe-log server is accessible.'));
   }
 }
 

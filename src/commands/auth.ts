@@ -3,6 +3,7 @@ import { showSuccess } from '../lib/ui';
 import { VibelogError } from '../utils/errors';
 import { logger } from '../utils/logger';
 import { validateAuthToken } from '../lib/input-validator';
+import { isNetworkError, createNetworkError } from '../lib/errors/network-errors';
 import chalk from 'chalk';
 
 interface AuthOptions {
@@ -49,16 +50,10 @@ export async function auth(options: AuthOptions): Promise<void> {
     logger.error('Re-authentication failed', error);
     
     // If it's a recognizable network error that wasn't caught in browserAuth
-    if (error instanceof Error) {
-      const errorCode = (error as any).code;
-      if (errorCode === 'ECONNREFUSED' || errorCode === 'ENOTFOUND' || errorCode === 'ETIMEDOUT') {
-        console.error(chalk.red('\n❌ Failed to connect to the authentication server'));
-        console.error(chalk.yellow('Please check that the server is running and accessible.'));
-        throw new VibelogError(
-          'Could not connect to authentication server',
-          'CONNECTION_FAILED'
-        );
-      }
+    if (error instanceof Error && isNetworkError(error)) {
+      console.error(chalk.red('\n❌ Failed to connect to the authentication server'));
+      console.error(chalk.yellow('Please check that the server is running and accessible.'));
+      throw createNetworkError(error);
     }
     
     throw new VibelogError(
