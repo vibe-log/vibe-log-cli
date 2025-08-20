@@ -122,6 +122,29 @@ function toSelectableProjects(
  * Main interactive function for generating local reports
  */
 export async function generateLocalReportInteractive(): Promise<void> {
+  // Safety check: Ensure sub-agents are installed
+  const { checkInstalledSubAgents } = await import('../sub-agents/manager');
+  const subAgentStatus = await checkInstalledSubAgents();
+  
+  if (subAgentStatus.missing.length > 0) {
+    console.clear();
+    console.log(colors.error('\n❌ Sub-agents Not Installed'));
+    console.log(colors.muted('Local report generation requires all vibe-log sub-agents to be installed.'));
+    console.log();
+    console.log(colors.warning(`Missing ${subAgentStatus.missing.length} of ${subAgentStatus.total} sub-agents:`));
+    subAgentStatus.missing.forEach(agent => {
+      console.log(colors.muted(`  • ${agent}`));
+    });
+    console.log();
+    console.log(colors.info('Please install sub-agents from the main menu:'));
+    console.log(colors.accent('  📦 Manage local sub-agents'));
+    console.log();
+    console.log(colors.muted('Press Enter to return to menu...'));
+    
+    await inquirer.prompt([{ type: 'input', name: 'continue', message: '' }]);
+    return;
+  }
+  
   // Show explanation
   showLocalReportExplanation();
   

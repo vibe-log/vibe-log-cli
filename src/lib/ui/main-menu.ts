@@ -338,8 +338,55 @@ async function handleMenuAction(
       
     case 'report':
       try {
-        const { generateLocalReportInteractive } = await import('./local-report-generator');
-        await generateLocalReportInteractive();
+        // Check if sub-agents are installed first
+        const { checkInstalledSubAgents } = await import('../sub-agents/manager');
+        const subAgentStatus = await checkInstalledSubAgents();
+        
+        if (subAgentStatus.missing.length > 0) {
+          // Sub-agents are missing, prompt to install
+          console.clear();
+          console.log(colors.warning('\n⚠️  Sub-agents Required'));
+          console.log(colors.muted('Local report generation requires vibe-log sub-agents to be installed.'));
+          console.log(colors.muted(`Currently missing: ${subAgentStatus.missing.length} of ${subAgentStatus.total} sub-agents`));
+          console.log();
+          
+          const { confirm } = await inquirer.prompt([{
+            type: 'confirm',
+            name: 'confirm',
+            message: 'Would you like to install them now?',
+            default: true
+          }]);
+          
+          if (confirm) {
+            // Install the sub-agents
+            const { installSubAgentsInteractive } = await import('./sub-agents-installer');
+            await installSubAgentsInteractive();
+            
+            // After installation, check if they want to continue with report
+            const newStatus = await checkInstalledSubAgents();
+            if (newStatus.missing.length === 0) {
+              console.log();
+              const { continueReport } = await inquirer.prompt([{
+                type: 'confirm',
+                name: 'continueReport',
+                message: 'Sub-agents installed! Would you like to generate your report now?',
+                default: true
+              }]);
+              
+              if (continueReport) {
+                const { generateLocalReportInteractive } = await import('./local-report-generator');
+                await generateLocalReportInteractive();
+              }
+            }
+          } else {
+            console.log(colors.info('\nYou can install sub-agents later from the menu.'));
+            await waitForEnter();
+          }
+        } else {
+          // Sub-agents are installed, proceed with report generation
+          const { generateLocalReportInteractive } = await import('./local-report-generator');
+          await generateLocalReportInteractive();
+        }
       } catch (error) {
         displayError(error);
         await waitForEnter();
