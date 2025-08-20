@@ -5,6 +5,20 @@ All notable changes to the vibe-log-cli project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.15] - 2025-08-20
+
+### Added
+- Sub-agent installation check before local report generation
+- Two-layer protection to ensure sub-agents are installed
+- Automatic prompt to install missing sub-agents
+- Option to continue with report generation after installation
+- Clear error messages when sub-agents are missing
+- Release process documentation in CLAUDE.md
+
+### Changed
+- Local report generation now validates sub-agent availability
+- Improved user experience with guided installation flow
+
 ## [0.3.13] - 2024-08-20
 
 ### Added

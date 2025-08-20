@@ -280,6 +280,60 @@ npm run lint      # ESLint checking
 4. **Manual testing** - Don't run `node vibe-log.js` directly; use proper CLI commands
 5. **Type safety** - Always run `npm run build` to catch type errors
 
+## Release Process
+
+### How to Release a New Version
+
+1. **Update CHANGELOG.md**
+   ```bash
+   # Add release notes with version number, date, and changes
+   # Follow the existing format in CHANGELOG.md
+   ```
+
+2. **Bump Version**
+   ```bash
+   # For patch release (bug fixes): 0.3.14 -> 0.3.15
+   npm version patch
+   
+   # For minor release (new features): 0.3.14 -> 0.4.0
+   npm version minor
+   
+   # For major release (breaking changes): 0.3.14 -> 1.0.0
+   npm version major
+   ```
+
+3. **Build and Test**
+   ```bash
+   npm run build
+   npm run test
+   npm run check-all  # Runs lint, typecheck, test, and security audit
+   ```
+
+4. **Publish to NPM**
+   ```bash
+   npm publish
+   ```
+
+5. **Push Changes**
+   ```bash
+   git push origin main --tags
+   ```
+
+### Release Checklist
+- [ ] CHANGELOG.md updated with release notes
+- [ ] Version bumped appropriately (patch/minor/major)
+- [ ] All tests passing (`npm run test`)
+- [ ] Build successful (`npm run build`)
+- [ ] Linting passed (`npm run lint`)
+- [ ] Type checking passed (`npm run type-check`)
+- [ ] Package published to npm
+- [ ] Git tags pushed to repository
+
+### Version Guidelines
+- **Patch (0.0.x)**: Bug fixes, small improvements, documentation updates
+- **Minor (0.x.0)**: New features, non-breaking changes
+- **Major (x.0.0)**: Breaking changes, major refactors (not used pre-1.0.0)
+
 ---
 
 # Claude Code - vibe-log CLI Development Notes
