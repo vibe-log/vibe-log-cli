@@ -1,6 +1,6 @@
 {
   "name": "vibe-log-cli",
-  "version": "0.3.11",
+  "version": "0.3.12",
   "description": "Track your building journey with Vibelog",
   "bin": {
     "vibe-log": "./bin/vibe-log.js"
