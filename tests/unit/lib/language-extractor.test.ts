@@ -32,9 +32,19 @@ describe('Language Extractor', () => {
       expect(getLanguageFromExtension('PY')).toBe('Python');
     });
 
-    it('should return uppercase extension for unknown types', () => {
-      expect(getLanguageFromExtension('xyz')).toBe('XYZ');
-      expect(getLanguageFromExtension('foo')).toBe('FOO');
+    it('should return null for unknown programming extensions', () => {
+      expect(getLanguageFromExtension('xyz')).toBe(null);
+      expect(getLanguageFromExtension('foo')).toBe(null);
+      expect(getLanguageFromExtension('abc')).toBe(null);
+    });
+    
+    it('should return null for non-programming file extensions', () => {
+      expect(getLanguageFromExtension('png')).toBe(null);
+      expect(getLanguageFromExtension('jpg')).toBe(null);
+      expect(getLanguageFromExtension('mp4')).toBe(null);
+      expect(getLanguageFromExtension('pdf')).toBe(null);
+      expect(getLanguageFromExtension('zip')).toBe(null);
+      expect(getLanguageFromExtension('exe')).toBe(null);
     });
 
     it('should handle special case extensions', () => {

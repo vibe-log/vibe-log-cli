@@ -357,11 +357,13 @@ describe('Claude Reader Module', () => {
       expect(sessions[0].metadata?.languages).toContain('Docker');
     });
 
-    it('should handle unknown file extensions', async () => {
+    it('should ignore non-programming file extensions', async () => {
       const sessionLines = [
         JSON.stringify({ sessionId: 'test', cwd: '/test', timestamp: '2024-01-15T10:00:00Z' }),
         JSON.stringify({ message: { role: 'user', content: 'test' }, timestamp: '2024-01-15T10:00:30Z' }),
-        JSON.stringify({ toolUseResult: { type: 'create', filePath: 'test.xyz' }, timestamp: '2024-01-15T10:01:00Z' })
+        JSON.stringify({ toolUseResult: { type: 'create', filePath: 'test.png' }, timestamp: '2024-01-15T10:01:00Z' }),
+        JSON.stringify({ toolUseResult: { type: 'create', filePath: 'test.jpg' }, timestamp: '2024-01-15T10:01:30Z' }),
+        JSON.stringify({ toolUseResult: { type: 'create', filePath: 'test.ts' }, timestamp: '2024-01-15T10:02:00Z' })
       ];
       
       vi.mocked(fs.access).mockResolvedValue(undefined);
@@ -375,7 +377,10 @@ describe('Claude Reader Module', () => {
       const sessions = await readClaudeSessions();
       
       expect(sessions).toHaveLength(1);
-      expect(sessions[0].metadata?.languages).toContain('XYZ');
+      // Should only contain TypeScript, not PNG or JPG
+      expect(sessions[0].metadata?.languages).toEqual(['TypeScript']);
+      expect(sessions[0].metadata?.languages).not.toContain('PNG');
+      expect(sessions[0].metadata?.languages).not.toContain('JPG');
     });
   });
 });

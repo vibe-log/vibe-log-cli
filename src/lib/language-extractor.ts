@@ -162,6 +162,45 @@ export const LANGUAGE_MAPPINGS: Record<string, string> = {
 };
 
 /**
+ * File extensions to explicitly ignore (not programming languages)
+ * These are common file types that should not be counted as languages
+ */
+const IGNORED_EXTENSIONS = new Set([
+  // Images
+  'png', 'jpg', 'jpeg', 'gif', 'bmp', 'svg', 'ico', 'webp', 'avif', 'tiff', 'tif',
+  // Videos
+  'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', 'mpg', 'mpeg', 'm4v', '3gp',
+  // Audio
+  'mp3', 'wav', 'flac', 'aac', 'ogg', 'wma', 'm4a', 'opus',
+  // Documents
+  'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp',
+  // Archives
+  'zip', 'tar', 'gz', 'rar', '7z', 'bz2', 'xz', 'tgz',
+  // Fonts
+  'ttf', 'otf', 'woff', 'woff2', 'eot',
+  // Binary/Data
+  'exe', 'dll', 'so', 'dylib', 'bin', 'dat', 'db', 'sqlite', 'sqlite3',
+  // Certificates & Keys
+  'pem', 'crt', 'key', 'cer', 'pfx', 'p12',
+  // Logs
+  'log',
+  // Lock files
+  'lock',
+  // Environment
+  'env',
+  // macOS
+  'DS_Store',
+  // Git
+  'gitignore', 'gitattributes', 'gitmodules', 'gitkeep',
+  // NPM
+  'npmignore', 'npmrc',
+  // Editor configs
+  'editorconfig', 'prettierrc', 'prettierignore', 'eslintignore',
+  // Other
+  'bak', 'tmp', 'temp', 'cache', 'swp', 'swo'
+]);
+
+/**
  * Tool names that involve file operations
  * These are the Claude Code tools we check for file paths
  */
@@ -180,18 +219,23 @@ const FILE_OPERATION_TOOLS = [
 /**
  * Get the programming language from a file extension
  * @param ext - File extension (with or without dot)
- * @returns The programming language name or the uppercase extension if not found
+ * @returns The programming language name or null if not a programming language
  */
-export function getLanguageFromExtension(ext: string): string {
+export function getLanguageFromExtension(ext: string): string | null {
   // Remove leading dot if present
   const cleanExt = ext.startsWith('.') ? ext.slice(1) : ext;
+  
+  // Check if this extension should be ignored
+  if (IGNORED_EXTENSIONS.has(cleanExt.toLowerCase())) {
+    return null;
+  }
   
   // Look up in mappings (case-insensitive for most extensions)
   const language = LANGUAGE_MAPPINGS[cleanExt.toLowerCase()] || 
                   LANGUAGE_MAPPINGS[cleanExt];
   
-  // Return mapped language or uppercase extension as fallback
-  return language || cleanExt.toUpperCase();
+  // Return mapped language or null for unknown extensions
+  return language || null;
 }
 
 /**
@@ -297,7 +341,9 @@ export function extractLanguagesFromSession(lines: string[]): string[] {
           const ext = path.extname(filePath).slice(1).toLowerCase();
           if (ext) {
             const language = getLanguageFromExtension(ext);
-            languages.add(language);
+            if (language) {
+              languages.add(language);
+            }
           }
         }
       }
@@ -328,7 +374,7 @@ export function extractLanguageFromEntry(data: any): string | null {
     // Extract extension and get language
     const ext = path.extname(filePath).slice(1).toLowerCase();
     if (ext) {
-      return getLanguageFromExtension(ext);
+      return getLanguageFromExtension(ext); // This already returns null for ignored extensions
     }
   }
   
