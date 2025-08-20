@@ -79,7 +79,7 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
     
     items.push({
       id: 'report',
-      label: `${icons.chart} Generate local report`,
+      label: `${icons.chart} Generate local report (using Claude sub-agents)`,
       action: 'report'
     });
     
@@ -102,7 +102,7 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
     // Always show manual sync option for all cloud states
     items.push({
       id: 'manual-sync',
-      label: `📤 Manual sync to cloud`,
+      label: `📤 Manual sync (upload) coding sessions to cloud`,
       action: 'manual-sync'
     });
     
@@ -119,7 +119,7 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
     // Local actions
     items.push({
       id: 'report',
-      label: `${icons.chart} Generate local report`,
+      label: `${icons.chart} Generate local report (using Claude sub-agents)`,
       action: 'report'
     });
     

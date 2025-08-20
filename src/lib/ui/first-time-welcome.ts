@@ -19,7 +19,7 @@ export async function showFirstTimeWelcome(): Promise<WelcomeChoice> {
   // Menu choices formatted exactly as in cli-flows.md
   const choices = [
     {
-      name: `${colors.accent('Cloud mode (Automatic)')} ${colors.success('- FREE')}
+      name: `${colors.accent('Cloud mode (Automatic)')} ${colors.success('- FREE FOREVER')}
     ${colors.success('└─ ✓ Uses 0 tokens (our infrastructure)')}
     ${colors.success('└─ ✓ Auto-analyzes after each session')}
     ${colors.success('└─ ✓ Interactive dashboard')}
@@ -29,10 +29,10 @@ export async function showFirstTimeWelcome(): Promise<WelcomeChoice> {
       short: 'Cloud mode'
     },
     {
-      name: `${colors.primary('Local mode (Private)')}
+      name: `${colors.primary('Local mode (Claude Code with sub-agents)')}
     ${colors.muted('└─ 100% offline, using your claude code')}
-    ${colors.muted('└─ Uses ~25k-100k tokens per analysis')}
-    ${colors.muted('└─ 5-15 minute generation')}
+    ${colors.muted('└─ Uses ~10k-50k tokens per analysis')}
+    ${colors.muted('└─ 4-10 minute generation')}
     ${colors.muted('└─ Local HTML reports')}`,
       value: 'local' as const,
       short: 'Local mode'
