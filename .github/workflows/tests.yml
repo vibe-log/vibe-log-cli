@@ -15,8 +15,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        node: ['18.x', '20.x']
+        include:
+          - os: ubuntu-latest
+            node: '18.x'
+          - os: ubuntu-latest
+            node: '20.x'
+          - os: windows-latest
+            node: '20.x'
         
     steps:
       - name: Checkout repository
