@@ -29,7 +29,7 @@
 
 [Website](https://vibe-log.dev) • [Report Bug](https://github.com/vibe-log/vibe-log-cli/issues) • [Request Feature](https://github.com/vibe-log/vibe-log-cli/issues)
 </div>
-<dib align=left> <h2>🎯 What is vibe-log?</h2>
+<dib align=left> <h2>🎯 What is Vibe-Log?</h2>
 <p></p>
 vibe-log is a comprehensive CLI tool that analyzes your coding sessions to extract productivity metrics, emotional insights, and generates engaging Build in Public content. It integrates seamlessly with Claude Code and other AI coding assistants to help you understand your development patterns and share your journey.<p></p>
 ✨ Key Features
