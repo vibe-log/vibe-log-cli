@@ -9,6 +9,7 @@ import { status } from '../../commands/status';
 import { auth } from '../../commands/auth';
 import { logout } from '../../commands/logout';
 import { displayError } from '../../utils/errors';
+import { showHelpContent } from './help-content';
 import open from 'open';
 
 // Helper to wait for Enter key
@@ -90,6 +91,8 @@ export async function showMainMenu(
       
       case 'help':
         showHelp();
+        console.log('Press Enter to continue...');
+        await inquirer.prompt([{ type: 'input', name: 'continue', message: '' }]);
         // Show welcome again after help
         await showMainMenu(state, packageUpdateInfo);
         return;
@@ -491,36 +494,5 @@ async function manageAgents(): Promise<void> {
 }
 
 function showHelp(): void {
-  console.log('');
-  console.log(colors.primary('📊 Vibe-Log - Measure, Learn & Improve Your AI Coding'));
-  console.log('');
-  console.log(colors.subdued('Understand how you work with Claude Code. Track patterns, measure'));
-  console.log(colors.subdued('productivity, and discover what makes your AI coding sessions effective.'));
-  console.log('');
-  console.log(colors.accent('🎯 Why Track Your AI Coding?'));
-  console.log('  • ' + colors.highlight('Measure Patterns') + ' - See when and how you\'re most productive');
-  console.log('  • ' + colors.highlight('Learn From Data') + ' - Understand what makes sessions successful');
-  console.log('  • ' + colors.highlight('Improve Workflow') + ' - Identify bottlenecks and optimize your process');
-  console.log('  • ' + colors.highlight('Track Progress') + ' - Monitor project velocity and completion rates');
-  console.log('  • ' + colors.highlight('Privacy Protected') + ' - Your code stays private, only metadata tracked');
-  console.log('');
-  console.log(colors.accent('🔄 Choose How to Analyze:'));
-  console.log('  • ' + colors.success('Cloud Mode (Recommended)') + ' - Automatic tracking & insights');
-  console.log('    └─ Dashboard with trends, patterns, and productivity metrics');
-  console.log('    └─ Zero setup, GitHub auth, no tokens needed');
-  console.log('  • ' + colors.info('Local Mode') + ' - Private analysis on your machine');
-  console.log('    └─ Generate AI reports using Claude Code sub-agents');
-  console.log('    └─ 100% offline, uses your Claude tokens');
-  console.log('');
-  console.log(colors.accent('⚡ Getting Started:'));
-  console.log('  1. Run ' + colors.primary('npx vibe-log-cli') + ' to open this menu');
-  console.log('  2. Choose your analysis mode (Cloud or Local)');
-  console.log('  3. Start coding with Claude - vibe-log tracks automatically');
-  console.log('  4. Review insights to improve your AI coding workflow');
-  console.log('');
-  console.log(colors.accent('📚 Learn More:'));
-  console.log('  • Documentation: ' + colors.primary('https://vibe-log.dev'));
-  console.log('  • View Dashboard: ' + colors.primary('https://app.vibe-log.dev'));
-  console.log('  • GitHub: ' + colors.primary('https://github.com/vibe-log'));
-  console.log('');
+  showHelpContent();
 }
