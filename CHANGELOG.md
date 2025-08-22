@@ -5,6 +5,18 @@ All notable changes to the vibe-log-cli project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.17] - 2025-01-22
+
+### Improved
+- Enhanced local report analysis with activity breakdown and prompt engineering insights
+- Better async handling for package update checks
+- Cleaner repository structure
+
+## [0.3.16] - 2025-01-21
+
+### Fixed
+- Restored "Press Enter to continue" for help in first-time menu
+
 ## [0.3.15] - 2025-08-20
 
 ### Added
