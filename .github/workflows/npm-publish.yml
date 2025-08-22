@@ -66,7 +66,7 @@ jobs:
           cat dist/checksums.sha256
           
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
           path: |
@@ -100,7 +100,7 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           
       - name: Download build artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: build-artifacts
           
