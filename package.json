@@ -50,11 +50,12 @@
     "oh-my-logo": "^0.2.1",
     "open": "^8.4.2",
     "ora": "^5.4.1",
-    "update-notifier": "^5.1.0"
+    "update-notifier": "^7.3.1"
   },
   "devDependencies": {
     "@types/inquirer": "^9.0.7",
     "@types/node": "^20.0.0",
+    "@types/update-notifier": "^6.0.8",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.0.0",

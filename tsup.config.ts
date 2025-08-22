@@ -10,6 +10,7 @@ export default defineConfig({
   minify: true,
   target: 'node16',
   shims: true,
+  external: ['update-notifier'],
   outExtension() {
     return {
       js: '.js',

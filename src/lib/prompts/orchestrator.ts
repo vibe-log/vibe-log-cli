@@ -69,13 +69,31 @@ Task(subagent_type="vibe-log-track-analyzer", prompt="CRITICAL: Only access .vib
 4. Calculate: total coding hours, sessions per project, average session duration
 5. Return structured metrics. Skip files that fail to read.")
 
-Agent 2 - Tool Usage Analysis:  
+Agent 2 - Activity & Prompt Analysis:  
 Task(subagent_type="vibe-log-track-analyzer", prompt="CRITICAL: Only access .vibe-log-temp/ directory. Do NOT access project files or parent directories.
 1. Read .vibe-log-temp/manifest.json first (note isLarge flags)
-2. Sample each file: limit:20 for large files, full read for small
-3. Look for tool usage patterns in first 20 lines of each session
-4. Count: Read, Write, Edit, Bash operations from sampled data
-5. Return tool statistics. Skip files that fail after 2 attempts.")
+2. Sample each file: limit:30 for large files, full read for small
+3. Analyze user prompts and session context to categorize activities:
+   - Development (new features, implementation)
+   - Debugging (fixing errors, troubleshooting)  
+   - Refactoring (code cleanup, restructuring)
+   - Code Review (reviewing, analyzing existing code)
+   - Learning (tutorials, understanding concepts)
+   - Research (exploring options, documentation)
+   - Planning (architecture, design decisions)
+   - Testing (writing tests, validation)
+4. For each session, determine primary activity type based on user requests and file operations
+5. Count sessions by activity type for pie chart data: {development: X, debugging: Y, refactoring: Z, ...}
+6. Analyze user prompt patterns and identify improvement opportunities:
+   - Vague vs specific requests
+   - Missing context or requirements
+   - Unclear instructions vs clear step-by-step
+   - Lack of examples or expected outcomes
+   - Poor error descriptions vs detailed diagnostics
+7. Return: 
+   - Activity breakdown counts for pie chart
+   - Table of top 5 prompt engineering insights with specific recommendations based on actual user patterns vs Claude Code best practices
+8. Skip files that fail after 2 attempts.")
 
 Agent 3 - Key Accomplishments:
 Task(subagent_type="vibe-log-track-analyzer", prompt="CRITICAL: Only work with files in .vibe-log-temp/ directory. Do NOT explore the filesystem.
@@ -114,11 +132,20 @@ Generate a beautiful HTML report combining all agent insights:
    • Create a styled HTML dashboard with:
      - Executive summary
      - Productivity metrics (hours coded, sessions, averages)
-     - Tool usage breakdown with charts
+     - Activity breakdown visualization (horizontal bar chart using Agent 2's data)
+     - Prompt engineering insights table (from Agent 2's analysis)
      - Key accomplishments list
      - Activity patterns and insights
      - Project-by-project breakdown
  
+   • For the activity breakdown, convert Agent 2's counts to percentages and create horizontal bar chart:
+     - Calculate percentage for each activity type from total sessions
+     - Create HTML structure with activity labels and progress bars
+     - Use CSS styling for colorful horizontal bars with rounded corners
+     - Show percentages on each bar
+     - Use distinct colors: Development (green), Debugging (orange), Refactoring (blue), etc.
+     - Make bars responsive with flexbox layout
+
    • Finally output: "=== REPORT END ==="
    
 IMPORTANT: Do NOT use the Write tool. OUTPUT the HTML directly between the markers.

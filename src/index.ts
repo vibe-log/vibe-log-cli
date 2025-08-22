@@ -26,28 +26,38 @@ if (!isSilent) {
     ? { ...pkg, name: 'vibe-log-cli', version: simulatedVersion }
     : pkg;
 
-  // Use update-notifier to check for package updates
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const updateNotifier = require('update-notifier');
-  const notifier = updateNotifier({
-    pkg: displayPkg,
-    updateCheckInterval: simulatedVersion ? 0 : 1000 * 60 * 60, // Check immediately in simulation, otherwise hourly
-    shouldNotifyInNpmScript: true
-  });
+  // Use update-notifier to check for package updates (async)
+  (async () => {
+    let notifier: any;
+    try {
+      const updateNotifierModule = await import('update-notifier');
+      const updateNotifier = updateNotifierModule.default || updateNotifierModule;
+      notifier = updateNotifier({
+        pkg: displayPkg,
+        updateCheckInterval: simulatedVersion ? 0 : 1000 * 60 * 60, // Check immediately in simulation, otherwise hourly
+        shouldNotifyInNpmScript: true
+      });
+    } catch (error) {
+      // Silently fail if update-notifier is not available
+      notifier = { update: null };
+    }
 
-  // Store package update info if available
-  if (notifier.update) {
-    packageUpdateInfo = {
-      current: notifier.update.current,
-      latest: notifier.update.latest
-    };
-  } else if (simulatedVersion) {
-    // Force package update info in simulation mode
-    packageUpdateInfo = {
-      current: simulatedVersion,
-      latest: pkg.version
-    };
-  }
+    // Store package update info if available
+    if (notifier.update) {
+      packageUpdateInfo = {
+        current: notifier.update.current,
+        latest: notifier.update.latest
+      };
+    } else if (simulatedVersion) {
+      // Force package update info in simulation mode
+      packageUpdateInfo = {
+        current: simulatedVersion,
+        latest: pkg.version
+      };
+    }
+  })().catch(() => {
+    // Silently ignore any update check failures
+  });
 }
 
 // Store version for UI components
