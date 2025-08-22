@@ -5,6 +5,27 @@ All notable changes to the vibe-log-cli project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.18] - 2025-08-22
+
+### Added
+- **Package Transparency**: Disabled minification for full code verifiability
+- **Automated Releases**: GitHub Actions workflow for npm publishing with provenance
+- **Build Verification**: Automated CI/CD verification across multiple platforms
+- **SHA256 Checksums**: Automatic generation and verification of build artifacts
+- **Repository Link**: Added repository field to package.json for source verification
+- **Security Documentation**: Comprehensive transparency section in README
+- **Release Guide**: Complete setup documentation for automated releases
+
+### Changed
+- Build output is now readable (non-minified) for security auditing
+- Source maps are included in npm package for debugging
+- All releases now automated via GitHub Actions for reproducibility
+
+### Security
+- Addresses community concerns about package verifiability
+- Implements npm provenance for supply chain security
+- Provides checksums for integrity verification
+
 ## [0.3.17] - 2025-01-22
 
 ### Improved
