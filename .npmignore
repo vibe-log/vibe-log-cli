@@ -85,6 +85,13 @@ SECURITY_FIXES.md
 SECURITY_IMPLEMENTATION_REPORT.md
 TEST_FIX_SUMMARY.md
 USAGE_GUIDE.md
+CLAUDE.md
+CONTRIBUTING.md
+CHANGELOG.md
+SECURITY.md
+
+# HTML reports - should never be published
+vibe-log-report-*.html
 
 # Build info
 *.tsbuildinfo
