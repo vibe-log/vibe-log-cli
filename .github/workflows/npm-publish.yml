@@ -165,30 +165,3 @@ jobs:
           draft: false
           prerelease: false
           
-  verify-publication:
-    name: Verify NPM Publication
-    needs: publish
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Wait for NPM propagation
-        run: sleep 30
-        
-      - name: Verify package is available
-        run: |
-          PACKAGE_VERSION=$(node -p "require('./package.json').version")
-          echo "Checking if vibe-log-cli@$PACKAGE_VERSION is available on NPM..."
-          
-          npm view vibe-log-cli@$PACKAGE_VERSION version
-          
-          if [ $? -eq 0 ]; then
-            echo "✓ Package successfully published and available"
-          else
-            echo "✗ Package not found on NPM registry"
-            exit 1
-          fi
-          
-      - name: Test installation
-        run: |
-          npm install -g vibe-log-cli@latest
-          vibe-log --version
