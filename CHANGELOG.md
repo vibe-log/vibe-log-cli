@@ -5,6 +5,18 @@ All notable changes to the vibe-log-cli project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.19] - 2025-08-22
+
+### Fixed
+- GitHub Actions workflows now properly configured with permissions
+- Updated artifact actions from v3 to v4 to fix deprecation warnings
+- Made lint step non-blocking in npm-publish workflow
+- Removed flaky npm verification job that failed due to propagation delays
+
+### Improved
+- Simplified npm-publish workflow for more reliable releases
+- All workflows now passing with green badges
+
 ## [0.3.18] - 2025-08-22
 
 ### Added
