@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ main, master, develop ]
 
+permissions:
+  contents: read
+
 jobs:
   verify-build:
     name: Verify Build Reproducibility
