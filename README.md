@@ -1,15 +1,8 @@
 
 <div align="center">
-<pre>
 
- ██╗   ██╗ ██╗ ██████╗  ███████╗        ██╗       ██████╗   ██████╗
- ██║   ██║ ██║ ██╔══██╗ ██╔════╝        ██║      ██╔═══██╗ ██╔════╝
- ██║   ██║ ██║ ██████╔╝ █████╗   █████╗ ██║      ██║   ██║ ██║  ███╗
- ╚██╗ ██╔╝ ██║ ██╔══██╗ ██╔══╝   ╚════╝ ██║      ██║   ██║ ██║   ██║
-  ╚████╔╝  ██║ ██████╔╝ ███████╗        ███████╗ ╚██████╔╝ ╚██████╔╝
-   ╚═══╝   ╚═╝ ╚═════╝  ╚══════╝        ╚══════╝  ╚═════╝   ╚═════╝
-   
-</pre>
+<img width="628" height="176" alt="image" src="https://github.com/user-attachments/assets/1e468c1f-8228-46ad-a441-1b0926edfbc9" />
+
 <p></p>
 <h3> Track your building journey with Vibe-Log - the CLI tool that helps developers improve, analyze productivity patterns,  maintain coding streaks, and build in public with AI-powered insights </h3>
 <p></p>
@@ -20,7 +13,8 @@
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/node/v/vibe-log-cli.svg" alt="Node.js Version"></a>
   <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"></a>
-  <a href="SECURITY.md"><img src="https://img.shields.io/badge/Security-Policy-blue.svg" alt="Security Policy"></a>
+<a href="https://github.com/vibe-log/vibe-log-cli/actions/workflows/tests.yml"><img src="https://github.com/vibe-log/vibe-log-cli/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
+<a href="SECURITY.md"><img src="https://img.shields.io/badge/Security-Policy-blue.svg" alt="Security Policy"></a>
   <a href="https://github.com/vibe-log/vibe-log-cli">
   <img src="https://img.shields.io/badge/⭐_Star-this_repo-22C55E?labelColor=000000" alt="Star this repo">
 </a>
@@ -43,66 +37,24 @@ vibe-log is a comprehensive CLI tool that analyzes your coding sessions to extra
 
 </div>
 
-## Installation
-
-Use directly with npx (no installation required):
-
-```bash
-npx vibe-log-cli
-```
-
 ## Quick Start
 
 **Get started with the interactive menu:**
    ```bash
    npx vibe-log-cli
    ```
-## Commands
-
-### `npx vibe-log-cli`
-Open the interactive menu to access all features, including authentication, sending sessions, managing hooks, and checking status.
-
-### `npx vibe-log-cli send`
-Send your coding sessions to Vibelog for analysis and streak tracking. By default, only sends sessions from the current project directory.
-
-Options:
-- `-s, --since <date>` - Only send sessions since this date
-- `-d, --dry` - Show what would be sent without uploading
-- `-a, --all` - Send sessions from all projects (default: current project only)
-
-### `npx vibe-log-cli auth`
-Re-authenticate with Vibelog if your token expires.
-
-Options:
-- `-t, --token <token>` - Provide authentication token manually
-
-### `npx vibe-log-cli config`
-Manage Vibelog configuration settings.
-
-Options:
-- `-l, --list` - List all configuration values
-- `-s, --set <key=value>` - Set a configuration value
-- `-g, --get <key>` - Get a configuration value
-
-### `npx vibe-log-cli logout`
-Clear authentication and logout from Vibelog.
-
-### `npx vibe-log-cli privacy`
-View privacy settings and understand how your data is sanitized before upload.
 
 ## Configuration
 
-Configuration is stored in `~/.config/vibe-log/`
+Configuration is stored in `~/.vibe-log/`
 
-Configurable settings:
-- `apiUrl` - Vibe-Log API endpoint
 
-## Supported Tools
+## Supported Coding Engines 
 
 Currently supported:
 - ✅ Claude Code
 
-Coming soon:
+Future:
 - 🔜 Cursor
 - 🔜 VS Code
 
@@ -113,56 +65,41 @@ Coming soon:
 - **Input Validation**: All user inputs are validated to prevent injection attacks
 - **CSRF Protection**: Browser authentication uses CSRF tokens to prevent cross-site attacks
 - **Rate Limiting**: Built-in rate limiting to prevent brute force attempts
-- **Path Sanitization**: File paths are sanitized to prevent directory traversal attacks
 - **HTTPS Only**: All API communications are restricted to HTTPS
 - **Session Security**: Cryptographically secure session IDs (256-bit)
 - **Data Sanitization**: All data is sanitized before logging or transmission
 
 ### Security Best Practices
 - Never share your authentication token
-- Use `vibe-log logout` when switching users
-- Keep the CLI updated for latest security patches
-- Report security issues to security@vibe-log.dev
+- Keep the CLI updated for the latest security patches 
 
-### Running Security Checks
-```bash
-# Check for vulnerabilities
-npm run security-check
-
-# Fix security issues
-npm run security-fix
-```
 
 ### Privacy
 - **Context-Preserving Sanitization**: Messages are sanitized to remove sensitive data while preserving context
-- **What gets redacted**:
+- **What gets redacted/removed**:
   - Code blocks → `[CODE_BLOCK_1: javascript]`
   - API keys/tokens → `[CREDENTIAL_1]`
   - File paths → `[PATH_1]`
   - URLs → `[DATABASE_URL]`, `[API_URL]`
   - Emails → `[EMAIL_1]`
   - Environment variables → `[ENV_VAR_1]`
+  - Also Removed: Images/Binary files 
 - **What's preserved**: Conversation flow, questions, explanations
 - **Transparent**: Preview sanitized data with the interactive prompt
-- **Project-specific**: By default, only sends data from current project
 - **Open source**: Review our sanitization at [src/lib/message-sanitizer-v2.ts](src/lib/message-sanitizer-v2.ts)
-- **You can verify**: Use `--dry` flag or choose "Preview" when sending
 
 ## Troubleshooting
 
 ### Authentication Issues
-```bash
-# Re-authenticate
-npx vibe-log-cli auth
-
-# Use manual token
-npx vibe-log-cli auth --token YOUR_TOKEN
-```
+Try the following: 
+- Log out from the CLI
+- Clear cookies
+- Re-authenticate via the CLI 
 
 ### No Sessions Found
 - Make sure Claude Code is installed
 - Check that you've used Claude Code recently
-- Try specifying a date range: `npx vibe-log-cli send --since 2024-01-01`
+
 
 ### Debug Mode
 ```bash
@@ -172,7 +109,7 @@ VIBELOG_DEBUG=1 npx vibe-log-cli send
 
 ## Contributing
 
-We love your input! We want to make contributing to Vibelog CLI as easy and transparent as possible. Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+We love your input! We want to make contributing to Vibe-Log CLI as easy and transparent as possible. Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
 ### Quick Start for Contributors
 
@@ -213,4 +150,4 @@ MIT © Vibelog - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
-Built with love by the Vibelog team and our amazing contributors.
+Built with love by the Vibe-Log team and our amazing contributors.
