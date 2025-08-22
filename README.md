@@ -14,7 +14,12 @@
   <a href="https://nodejs.org"><img src="https://img.shields.io/node/v/vibe-log-cli.svg" alt="Node.js Version"></a>
   <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"></a>
 <a href="https://github.com/vibe-log/vibe-log-cli/actions/workflows/tests.yml"><img src="https://github.com/vibe-log/vibe-log-cli/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
+<a href="https://github.com/vibe-log/vibe-log-cli/actions/workflows/npm-publish.yml"><img src="https://github.com/vibe-log/vibe-log-cli/actions/workflows/npm-publish.yml/badge.svg" alt="NPM Publish"></a>
+<a href="https://github.com/vibe-log/vibe-log-cli/actions/workflows/build-verification.yml"><img src="https://github.com/vibe-log/vibe-log-cli/actions/workflows/build-verification.yml/badge.svg" alt="Build Verification"></a>
 <a href="SECURITY.md"><img src="https://img.shields.io/badge/Security-Policy-blue.svg" alt="Security Policy"></a>
+<a href="https://www.npmjs.com/package/vibe-log-cli"><img src="https://img.shields.io/badge/npm-provenance-green" alt="npm provenance"></a>
+<a href="https://github.com/vibe-log/vibe-log-cli"><img src="https://img.shields.io/badge/source-verified-brightgreen" alt="Source Verified"></a>
+<a href="#-security--transparency"><img src="https://img.shields.io/badge/build-transparent-blue" alt="Transparent Build"></a>
   <a href="https://github.com/vibe-log/vibe-log-cli">
   <img src="https://img.shields.io/badge/⭐_Star-this_repo-22C55E?labelColor=000000" alt="Star this repo">
 </a>
@@ -42,6 +47,15 @@ vibe-log is a comprehensive CLI tool that analyzes your coding sessions to extra
 </div>
 
 ## 🔒 Security & Transparency
+
+<div align="center">
+<a href="https://github.com/vibe-log/vibe-log-cli/actions/workflows/npm-publish.yml"><img src="https://img.shields.io/badge/Automated-Releases-success?logo=githubactions" alt="Automated Releases"></a>
+<a href="https://www.npmjs.com/package/vibe-log-cli"><img src="https://img.shields.io/badge/NPM-Provenance-green?logo=npm" alt="NPM Provenance"></a>
+<a href="#verify-our-package"><img src="https://img.shields.io/badge/SHA256-Checksums-blue?logo=shield" alt="SHA256 Checksums"></a>
+<a href="https://github.com/vibe-log/vibe-log-cli"><img src="https://img.shields.io/badge/Open-Source-orange?logo=github" alt="Open Source"></a>
+</div>
+
+<br>
 
 **This package is built with complete transparency:**
 
