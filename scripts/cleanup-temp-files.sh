@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Remove temporary fix scripts
+# Remove temporary fix scripts from the scripts directory
+cd "$(dirname "$0")"
 rm -f fix-control-chars.js
 rm -f fix-test-control-chars.js
 rm -f fix-all-control-chars.sh
