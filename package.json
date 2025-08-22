@@ -17,7 +17,14 @@
     "security-check": "npm audit && npm outdated",
     "security-fix": "npm audit fix",
     "validate-deps": "npm ls --depth=0",
-    "check-all": "npm run lint && npm run type-check && npm run test && npm run security-check"
+    "check-all": "npm run lint && npm run type-check && npm run test && npm run security-check",
+    "verify": "npm run verify:build && npm run verify:checksums",
+    "verify:build": "test -f dist/index.js && test -f dist/index.js.map && echo '✓ Build artifacts present'",
+    "verify:checksums": "if [ -f dist/checksums.sha256 ]; then cd dist && sha256sum -c checksums.sha256 && echo '✓ Checksums verified'; else echo '⚠ No checksums file found'; fi",
+    "prebuild": "npm run clean",
+    "clean": "rm -rf dist",
+    "postbuild": "npm run generate-checksums",
+    "generate-checksums": "cd dist && sha256sum * > checksums.sha256 && echo '✓ Checksums generated'"
   },
   "keywords": [
     "cli",
@@ -28,6 +35,14 @@
   ],
   "author": "Vibelog",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vibe-log/vibe-log-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vibe-log/vibe-log-cli/issues"
+  },
+  "homepage": "https://github.com/vibe-log/vibe-log-cli#readme",
   "files": [
     "dist",
     "bin"

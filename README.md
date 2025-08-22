@@ -41,6 +41,29 @@ vibe-log is a comprehensive CLI tool that analyzes your coding sessions to extra
 
 </div>
 
+## 🔒 Security & Transparency
+
+**This package is built with complete transparency:**
+
+- ✅ **Source Code**: Fully open source at [github.com/vibe-log/vibe-log-cli](https://github.com/vibe-log/vibe-log-cli)
+- ✅ **Not Minified**: Published code is readable and verifiable
+- ✅ **Source Maps**: Included for debugging and verification
+- ✅ **Automated Builds**: All releases via GitHub Actions (no manual publishing)
+- ✅ **npm Provenance**: Every package includes build attestation
+- ✅ **Checksums**: SHA256 hashes for integrity verification
+
+### Verify Our Package
+
+```bash
+# Download and inspect the package
+npm pack vibe-log-cli@latest
+tar -xzf vibe-log-cli-*.tgz
+head -100 package/dist/index.js  # Verify it's readable
+
+# Check checksums
+cd package/dist && sha256sum -c checksums.sha256
+```
+
 ## Quick Start
 
 **Get started with the interactive menu:**

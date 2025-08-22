@@ -117,6 +117,7 @@ export function padLeft(text: string, width: number): string {
 }
 
 export function truncate(text: string, maxLength: number): string {
+  // eslint-disable-next-line no-control-regex
   const cleanText = text.replace(/\u001b\[[0-9;]*m/g, '');
   if (cleanText.length <= maxLength) return text;
   return text.substring(0, maxLength - 3) + '...';
@@ -141,6 +142,7 @@ export function sectionDivider(title?: string): string {
   }
   
   const titleWithSpaces = ` ${title} `;
+  // eslint-disable-next-line no-control-regex
   const titleLength = titleWithSpaces.replace(/\u001b\[[0-9;]*m/g, '').length;
   const leftWidth = Math.floor((width - titleLength) / 2);
   const rightWidth = width - titleLength - leftWidth;

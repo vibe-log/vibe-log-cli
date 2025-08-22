@@ -2,6 +2,8 @@
 src/
 *.ts
 !*.d.ts
+# Include source maps for transparency
+!dist/*.js.map
 
 # Test files
 tests/

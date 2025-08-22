@@ -1,0 +1,425 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe-log Session Analysis Report</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 2rem;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header .date {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .dashboard {
+            display: grid;
+            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+        
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-4px);
+        }
+        
+        .card.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .card h2 {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.8rem;
+            padding: 0.5rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .metric-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .activity-chart {
+            margin-top: 1rem;
+        }
+        
+        .activity-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.8rem;
+        }
+        
+        .activity-label {
+            width: 120px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .bar-container {
+            flex: 1;
+            height: 32px;
+            background: #f0f0f0;
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            margin: 0 10px;
+        }
+        
+        .bar-fill {
+            height: 100%;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            color: white;
+            font-weight: bold;
+            font-size: 0.85rem;
+            transition: width 1s ease;
+        }
+        
+        .bar-debugging { background: linear-gradient(90deg, #ff6b6b, #ff8787); }
+        .bar-development { background: linear-gradient(90deg, #4ecdc4, #6ee5de); }
+        .bar-refactoring { background: linear-gradient(90deg, #667eea, #8b9aff); }
+        .bar-deployment { background: linear-gradient(90deg, #f093fb, #f5b3fc); }
+        .bar-research { background: linear-gradient(90deg, #fa8142, #ffab6b); }
+        
+        .accomplishment {
+            padding: 0.8rem;
+            margin-bottom: 0.8rem;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            border-left: 4px solid #667eea;
+            border-radius: 8px;
+        }
+        
+        .accomplishment strong {
+            color: #333;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th {
+            background: #667eea;
+            color: white;
+            padding: 0.8rem;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+        
+        td {
+            padding: 0.8rem;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 0.9rem;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .insight-type {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .type-clarity { background: #ffe4e1; color: #d32f2f; }
+        .type-context { background: #e3f2fd; color: #1976d2; }
+        .type-specificity { background: #f3e5f5; color: #7b1fa2; }
+        
+        .summary-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+        }
+        
+        .summary-box h3 {
+            margin-bottom: 0.5rem;
+        }
+        
+        .emoji {
+            font-size: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Vibe-log Session Analysis</h1>
+            <div class="date">August 21-22, 2025 | Last 24 Hours</div>
+        </div>
+
+        <div class="dashboard">
+            <!-- Executive Summary -->
+            <div class="card full-width">
+                <h2><span class="emoji">📋</span> Executive Summary</h2>
+                <div class="summary-box">
+                    <h3>Productivity Highlights</h3>
+                    <p>Exceptional development velocity achieved with 18 coding sessions spanning 22-23 hours of focused work on the vibe-log project. The team successfully shipped npm v0.3.17, resolved critical TypeScript build issues, and enhanced both CLI and web dashboard components. Primary focus on debugging WebSocket issues (33.3%) and new feature development (27.8%), with significant improvements to documentation and CI/CD workflows.</p>
+                </div>
+            </div>
+
+            <!-- Productivity Metrics -->
+            <div class="card">
+                <h2><span class="emoji">📊</span> Productivity Metrics</h2>
+                <div class="metric">
+                    <span class="metric-label">Total Sessions</span>
+                    <span class="metric-value">18</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Coding Hours</span>
+                    <span class="metric-value">~23h</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Avg Session Size</span>
+                    <span class="metric-value">1087 KB</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Sessions/Hour</span>
+                    <span class="metric-value">0.75</span>
+                </div>
+            </div>
+
+            <!-- Activity Breakdown -->
+            <div class="card">
+                <h2><span class="emoji">🎯</span> Activity Breakdown</h2>
+                <div class="activity-chart">
+                    <div class="activity-bar">
+                        <span class="activity-label">Debugging</span>
+                        <div class="bar-container">
+                            <div class="bar-fill bar-debugging" style="width: 33.3%">33.3%</div>
+                        </div>
+                    </div>
+                    <div class="activity-bar">
+                        <span class="activity-label">Development</span>
+                        <div class="bar-container">
+                            <div class="bar-fill bar-development" style="width: 27.8%">27.8%</div>
+                        </div>
+                    </div>
+                    <div class="activity-bar">
+                        <span class="activity-label">Refactoring</span>
+                        <div class="bar-container">
+                            <div class="bar-fill bar-refactoring" style="width: 16.7%">16.7%</div>
+                        </div>
+                    </div>
+                    <div class="activity-bar">
+                        <span class="activity-label">Deployment</span>
+                        <div class="bar-container">
+                            <div class="bar-fill bar-deployment" style="width: 11.1%">11.1%</div>
+                        </div>
+                    </div>
+                    <div class="activity-bar">
+                        <span class="activity-label">Research</span>
+                        <div class="bar-container">
+                            <div class="bar-fill bar-research" style="width: 11.2%">11.2%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Accomplishments -->
+            <div class="card full-width">
+                <h2><span class="emoji">🏆</span> Key Accomplishments</h2>
+                <div class="accomplishment">
+                    <strong>Released npm v0.3.17</strong> - Successfully published new CLI version with full release workflow execution
+                </div>
+                <div class="accomplishment">
+                    <strong>Fixed TypeScript Build Error</strong> - Resolved critical update-notifier module type definitions issue
+                </div>
+                <div class="accomplishment">
+                    <strong>Improved Documentation</strong> - Completely revamped README with professional branding and feature highlights
+                </div>
+                <div class="accomplishment">
+                    <strong>Repository Restructuring</strong> - Organized scripts into dedicated directory for better maintainability
+                </div>
+                <div class="accomplishment">
+                    <strong>Enhanced User Experience</strong> - Added help content and improved first-time user guidance
+                </div>
+            </div>
+
+            <!-- Prompt Engineering Insights -->
+            <div class="card full-width">
+                <h2><span class="emoji">💡</span> Prompt Engineering Insights</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Insight</th>
+                            <th>Observation</th>
+                            <th>Recommendation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="insight-type type-clarity">Clarity</span></td>
+                            <td>Some debugging sessions required multiple clarifications</td>
+                            <td>Start with specific error messages and exact reproduction steps</td>
+                        </tr>
+                        <tr>
+                            <td><span class="insight-type type-context">Context</span></td>
+                            <td>Best results when environment details were provided upfront</td>
+                            <td>Include environment, dependencies, and recent changes in initial prompt</td>
+                        </tr>
+                        <tr>
+                            <td><span class="insight-type type-specificity">Specificity</span></td>
+                            <td>Vague requests led to longer resolution times</td>
+                            <td>Use precise technical terms and specify exact desired outcomes</td>
+                        </tr>
+                        <tr>
+                            <td><span class="insight-type type-context">Context</span></td>
+                            <td>Successful sessions provided clear success criteria</td>
+                            <td>Define "done" criteria and expected behavior before starting</td>
+                        </tr>
+                        <tr>
+                            <td><span class="insight-type type-clarity">Clarity</span></td>
+                            <td>Structured requirements produced faster implementations</td>
+                            <td>Use numbered lists or bullet points for multi-step requirements</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Session Distribution -->
+            <div class="card">
+                <h2><span class="emoji">📈</span> Session Distribution</h2>
+                <div class="metric">
+                    <span class="metric-label">Large Sessions (>1MB)</span>
+                    <span class="metric-value">61%</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Medium (100KB-1MB)</span>
+                    <span class="metric-value">17%</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Small (<100KB)</span>
+                    <span class="metric-value">22%</span>
+                </div>
+            </div>
+
+            <!-- Focus Areas -->
+            <div class="card">
+                <h2><span class="emoji">🔍</span> Primary Focus Areas</h2>
+                <div class="accomplishment">
+                    <strong>WebSocket & Toast Notifications</strong> - Major debugging effort on staging
+                </div>
+                <div class="accomplishment">
+                    <strong>Database/D1 Context</strong> - Local analysis execution fixes
+                </div>
+                <div class="accomplishment">
+                    <strong>GitHub Actions</strong> - Windows test optimization
+                </div>
+                <div class="accomplishment">
+                    <strong>Analytics Page</strong> - Navigation improvements
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="background: white; 
+                margin: 40px auto 20px; 
+                max-width: 800px; 
+                padding: 25px; 
+                border-radius: 12px; 
+                border: 2px solid #e2e8f0;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+      <div style="font-size: 16px; color: #2d3748; margin-bottom: 20px; font-weight: 600;">
+        📊 Report Generation Stats
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;">
+        <div style="text-align: center; background: #f7fafc; padding: 15px; border-radius: 8px;">
+          <div style="font-size: 24px; font-weight: bold; color: #5a67d8;">5m 39s</div>
+          <div style="font-size: 12px; color: #4a5568; margin-top: 5px; font-weight: 500;">⏱️ Duration</div>
+        </div>
+        <div style="text-align: center; background: #f7fafc; padding: 15px; border-radius: 8px;">
+          <div style="font-size: 24px; font-weight: bold; color: #5a67d8;">8m 22s</div>
+          <div style="font-size: 12px; color: #4a5568; margin-top: 5px; font-weight: 500;">🚀 API Time</div>
+        </div>
+        <div style="text-align: center; background: #f7fafc; padding: 15px; border-radius: 8px;">
+          <div style="font-size: 24px; font-weight: bold; color: #5a67d8;">11</div>
+          <div style="font-size: 12px; color: #4a5568; margin-top: 5px; font-weight: 500;">🔄 Turns</div>
+        </div>
+        <div style="text-align: center; background: #f7fafc; padding: 15px; border-radius: 8px;">
+          <div style="font-size: 24px; font-weight: bold; color: #5a67d8;">$7.59</div>
+          <div style="font-size: 12px; color: #4a5568; margin-top: 5px; font-weight: 500;">💰 Cost</div>
+        </div>
+      </div>
+      <div style="text-align: center; padding-top: 20px; border-top: 2px solid #e2e8f0;">
+        <div style="font-size: 14px; color: #2d3748; margin-bottom: 12px; font-weight: 500;">
+          💡 Get instant reports without using your Claude Code subscription
+        </div>
+        <a href="https://vibe-log.dev" style="display: inline-block; 
+           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+           color: white; 
+           text-decoration: none; 
+           padding: 10px 24px; 
+           border-radius: 6px; 
+           font-size: 14px;
+           font-weight: 600;
+           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+           transition: transform 0.2s, box-shadow 0.2s;">
+          Visit vibe-log.dev →
+        </a>
+      </div>
+    </div>
+</body>
+</html>
+```

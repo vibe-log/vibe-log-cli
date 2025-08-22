@@ -2,6 +2,44 @@
 
 First off, thank you for considering contributing to Vibelog CLI! It's people like you that make Vibelog CLI such a great tool for the developer community.
 
+## Build Transparency and Verification
+
+We prioritize transparency and security in our build process:
+
+- **No Minification**: Our published packages are NOT minified to ensure code readability and verifiability
+- **Source Maps Included**: Every build includes source maps for debugging and verification
+- **Automated Releases**: All npm releases are automated via GitHub Actions for reproducibility
+- **Build Provenance**: npm packages include provenance attestation for supply chain security
+- **Checksums**: Every release includes SHA256 checksums for integrity verification
+
+### Verifying Published Packages
+
+You can verify any published package:
+
+```bash
+# Download and extract the package
+npm pack vibe-log-cli@latest
+tar -xzf vibe-log-cli-*.tgz
+
+# Verify the code is not minified
+head -100 package/dist/index.js
+
+# Check source maps are included
+ls -la package/dist/*.map
+
+# Verify checksums (if available)
+cd package/dist && sha256sum -c checksums.sha256
+```
+
+### Build Process
+
+Our build process is completely transparent:
+
+1. **Source Code**: Available at https://github.com/vibe-log/vibe-log-cli
+2. **Build Command**: `npm run build` (uses tsup with minification disabled)
+3. **Artifacts**: Non-minified JavaScript + source maps
+4. **Release**: Automated via GitHub Actions with npm provenance
+
 ## Code of Conduct
 
 This project and everyone participating in it is governed by the [Vibelog Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to conduct@vibe-log.dev.
@@ -293,13 +331,46 @@ Contributors who submit accepted PRs will be:
 
 ## Release Process
 
-Maintainers handle releases following semantic versioning:
+All releases are **fully automated** via GitHub Actions for transparency and reproducibility.
 
-1. Update version in package.json
-2. Update CHANGELOG.md
-3. Create a git tag
-4. Push to npm registry
-5. Create GitHub release
+### Automated Release Workflow
+
+1. **Update version** in package.json: `npm version patch|minor|major`
+2. **Update CHANGELOG.md** with release notes
+3. **Commit and push** the changes
+4. **Create and push tag**: `git tag v0.3.18 && git push origin v0.3.18`
+5. **GitHub Actions automatically**:
+   - Builds the package in a clean CI environment
+   - Runs all tests and security checks
+   - Generates SHA256 checksums
+   - Publishes to npm with provenance attestation
+   - Creates GitHub release with checksums
+   - Verifies the package is available on npm
+
+### Manual Release (Emergency Only)
+
+In case automated release fails:
+
+```bash
+# Build and verify locally
+npm run build
+npm run verify
+
+# Publish to npm
+npm publish --provenance
+
+# Create GitHub release manually with checksums
+cat dist/checksums.sha256
+```
+
+### Release Verification
+
+After any release:
+
+1. Check npm package: https://www.npmjs.com/package/vibe-log-cli
+2. Verify provenance badge is shown
+3. Test installation: `npx vibe-log-cli@latest --version`
+4. Check GitHub release includes checksums
 
 ## Questions?
 

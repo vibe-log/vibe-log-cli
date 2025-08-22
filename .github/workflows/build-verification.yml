@@ -1,0 +1,92 @@
+name: Build Verification
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  verify-build:
+    name: Verify Build Reproducibility
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: ['18.x', '20.x']
+        
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build project
+        run: npm run build
+        
+      - name: Verify build output
+        run: |
+          npm run verify:build
+          
+      - name: Check build is not minified
+        shell: bash
+        run: |
+          echo "Checking that build output is readable (not minified)..."
+          
+          # Check if the file contains readable function names and isn't minified
+          if grep -q "function " dist/index.js && grep -q "require(" dist/index.js; then
+            echo "✓ Build output is readable (not minified)"
+          else
+            # Additional check for line length (minified files typically have very long lines)
+            MAX_LINE_LENGTH=$(awk '{print length}' dist/index.js | sort -rn | head -1)
+            if [ "$MAX_LINE_LENGTH" -gt 500 ]; then
+              echo "✗ Build appears to be minified (max line length: $MAX_LINE_LENGTH)"
+              exit 1
+            fi
+            echo "✓ Build output appears readable"
+          fi
+          
+      - name: Verify source maps
+        shell: bash
+        run: |
+          if [ -f dist/index.js.map ]; then
+            echo "✓ Source map found"
+            # Verify source map references source files
+            if grep -q '"sources":\["' dist/index.js.map; then
+              echo "✓ Source map contains source references"
+            else
+              echo "✗ Source map appears invalid"
+              exit 1
+            fi
+          else
+            echo "✗ Source map not found"
+            exit 1
+          fi
+          
+      - name: Calculate build checksums
+        shell: bash
+        run: |
+          echo "Build checksums for ${{ matrix.os }} / Node ${{ matrix.node }}:"
+          if command -v sha256sum &> /dev/null; then
+            sha256sum dist/index.js dist/index.js.map
+          elif command -v shasum &> /dev/null; then
+            shasum -a 256 dist/index.js dist/index.js.map
+          else
+            echo "Warning: No checksum utility available"
+          fi
+          
+      - name: Upload build artifacts for comparison
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-${{ matrix.os }}-node${{ matrix.node }}
+          path: |
+            dist/index.js
+            dist/index.js.map

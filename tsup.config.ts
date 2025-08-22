@@ -7,7 +7,7 @@ export default defineConfig({
   splitting: false,
   sourcemap: true,
   clean: true,
-  minify: true,
+  minify: false, // Disabled for transparency and verifiability
   target: 'node16',
   shims: true,
   external: ['update-notifier'],
