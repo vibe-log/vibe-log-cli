@@ -41,10 +41,24 @@ vibe-log is a comprehensive CLI tool that analyzes your coding sessions to extra
 🔥 Vibe Coding Streaks - Keep your momentum alive! Track daily coding streaks with visual flame indicators and maintain consistency<br>
 🐦 Build in Public Automation - Draft authentic tweets based on your vibe-coding sessions<br>
 
+## Quick Start
 
-</div>
+**Get started with the interactive menu:**
+   ```bash
+   npx vibe-log-cli
+   ```
+## Supported Coding Engines 
 
-## 🔒 Security & Transparency
+Currently supported:
+- ✅ Claude Code
+
+Future:
+- 🔜 Cursor
+- 🔜 VS Code
+
+🌍 Cross-Platform - Runs on macOS, Windows, Linux, and any environment with Node.js
+
+## 🔒 Privacy & Security
 
 <div align="center">
 <a href="https://github.com/vibe-log/vibe-log-cli/actions/workflows/npm-publish.yml"><img src="https://img.shields.io/badge/Automated-Releases-success?logo=githubactions" alt="Automated Releases"></a>
@@ -76,29 +90,6 @@ head -100 package/dist/index.js  # Verify it's readable
 cd package/dist && sha256sum -c checksums.sha256
 ```
 
-## Quick Start
-
-**Get started with the interactive menu:**
-   ```bash
-   npx vibe-log-cli
-   ```
-
-## Configuration
-
-Configuration is stored in `~/.vibe-log/`
-
-
-## Supported Coding Engines 
-
-Currently supported:
-- ✅ Claude Code
-
-Future:
-- 🔜 Cursor
-- 🔜 VS Code
-
-## Privacy & Security
-
 ### Security Features
 - **Secure Token Storage**: Authentication tokens are encrypted using AES-256-GCM with random keys
 - **Input Validation**: All user inputs are validated to prevent injection attacks
@@ -107,11 +98,6 @@ Future:
 - **HTTPS Only**: All API communications are restricted to HTTPS
 - **Session Security**: Cryptographically secure session IDs (256-bit)
 - **Data Sanitization**: All data is sanitized before logging or transmission
-
-### Security Best Practices
-- Never share your authentication token
-- Keep the CLI updated for the latest security patches 
-
 
 ### Privacy
 - **Context-Preserving Sanitization**: Messages are sanitized to remove sensitive data while preserving context
@@ -149,8 +135,6 @@ VIBELOG_DEBUG=1 npx vibe-log-cli send
 ## Contributing
 
 We love your input! We want to make contributing to Vibe-Log CLI as easy and transparent as possible. Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-### Quick Start for Contributors
 
 ```bash
 # Clone the repository
