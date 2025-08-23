@@ -22,15 +22,13 @@
 <a href="#-security--transparency"><img src="https://img.shields.io/badge/build-transparent-blue" alt="Transparent Build"></a>
   <a href="https://github.com/vibe-log/vibe-log-cli">
   <img src="https://img.shields.io/badge/⭐_Star-this_repo-22C55E?labelColor=000000" alt="Star this repo">
-</a>
-  
+</a>  
 </p>
-
 
 [Website](https://vibe-log.dev) • [Report Bug](https://github.com/vibe-log/vibe-log-cli/issues) • [Request Feature](https://github.com/vibe-log/vibe-log-cli/issues)
 </div>
 
-![vibe-log](https://github.com/user-attachments/assets/6977e0fb-f02c-4e9c-977f-fe07cc8ba441)
+![vibe-log-cli](https://github.com/user-attachments/assets/d72bebde-f90d-432f-92dd-6f7f0e4ec480)
 
 <dib align=left> <h2>🎯 What is Vibe-Log?</h2>
 <p></p>
