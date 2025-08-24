@@ -312,6 +312,280 @@ describe('Claude Reader Module', () => {
     });
   });
 
+  describe('Model Tracking', () => {
+    it('should extract model from assistant messages', async () => {
+      vi.mocked(fs.access).mockResolvedValue(undefined);
+      vi.mocked(fs.readdir)
+        .mockResolvedValueOnce(['project1'] as any)
+        .mockResolvedValueOnce(['model.jsonl'] as any);
+      
+      vi.mocked(fs.stat).mockResolvedValue({ isDirectory: () => true } as any);
+      vi.mocked(fs.readFile).mockResolvedValue(claudeSessionFixtures.sessionWithSingleModel);
+      
+      const sessions = await readClaudeSessions();
+      
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0].modelInfo).toBeDefined();
+      expect(sessions[0].modelInfo?.models).toContain('claude-opus-4-1-20250805');
+      expect(sessions[0].modelInfo?.primaryModel).toBe('claude-opus-4-1-20250805');
+      expect(sessions[0].modelInfo?.modelUsage['claude-opus-4-1-20250805']).toBe(3);
+      expect(sessions[0].modelInfo?.modelSwitches).toBe(0);
+    });
+
+    it('should ignore model field in user messages', async () => {
+      const sessionWithUserModel = `{"sessionId":"test","cwd":"/test","timestamp":"2024-01-15T10:00:00Z"}
+{"message":{"role":"user","model":"should-be-ignored","content":"test"},"timestamp":"2024-01-15T10:01:00Z"}
+{"message":{"role":"assistant","model":"claude-opus-4-1-20250805","content":"response"},"timestamp":"2024-01-15T10:02:00Z"}`;
+      
+      vi.mocked(fs.access).mockResolvedValue(undefined);
+      vi.mocked(fs.readdir)
+        .mockResolvedValueOnce(['project1'] as any)
+        .mockResolvedValueOnce(['test.jsonl'] as any);
+      
+      vi.mocked(fs.stat).mockResolvedValue({ isDirectory: () => true } as any);
+      vi.mocked(fs.readFile).mockResolvedValue(sessionWithUserModel);
+      
+      const sessions = await readClaudeSessions();
+      
+      expect(sessions[0].modelInfo?.models).toEqual(['claude-opus-4-1-20250805']);
+      expect(sessions[0].modelInfo?.modelUsage).toEqual({
+        'claude-opus-4-1-20250805': 1
+      });
+    });
+
+    it('should handle sessions without model info', async () => {
+      vi.mocked(fs.access).mockResolvedValue(undefined);
+      vi.mocked(fs.readdir)
+        .mockResolvedValueOnce(['project1'] as any)
+        .mockResolvedValueOnce(['legacy.jsonl'] as any);
+      
+      vi.mocked(fs.stat).mockResolvedValue({ isDirectory: () => true } as any);
+      vi.mocked(fs.readFile).mockResolvedValue(claudeSessionFixtures.sessionWithoutModelInfo);
+      
+      const sessions = await readClaudeSessions();
+      
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0].modelInfo).toBeUndefined();
+    });
+
+    it('should count model usage correctly', async () => {
+      vi.mocked(fs.access).mockResolvedValue(undefined);
+      vi.mocked(fs.readdir)
+        .mockResolvedValueOnce(['project1'] as any)
+        .mockResolvedValueOnce(['multi.jsonl'] as any);
+      
+      vi.mocked(fs.stat).mockResolvedValue({ isDirectory: () => true } as any);
+      vi.mocked(fs.readFile).mockResolvedValue(claudeSessionFixtures.sessionWithMultipleModels);
+      
+      const sessions = await readClaudeSessions();
+      
+      expect(sessions[0].modelInfo?.modelUsage).toEqual({
+        'claude-opus-4-1-20250805': 3,
+        'claude-sonnet-4-20250514': 1
+      });
+    });
+
+    it('should identify primary model as most used', async () => {
+      vi.mocked(fs.access).mockResolvedValue(undefined);
+      vi.mocked(fs.readdir)
+        .mockResolvedValueOnce(['project1'] as any)
+        .mockResolvedValueOnce(['primary.jsonl'] as any);
+      
+      vi.mocked(fs.stat).mockResolvedValue({ isDirectory: () => true } as any);
+      vi.mocked(fs.readFile).mockResolvedValue(claudeSessionFixtures.sessionWithMultipleModels);
+      
+      const sessions = await readClaudeSessions();
+      
+      // Opus used 3 times, Sonnet 1 time
+      expect(sessions[0].modelInfo?.primaryModel).toBe('claude-opus-4-1-20250805');
+    });
+
+    it('should handle tie in model usage', async () => {
+      vi.mocked(fs.access).mockResolvedValue(undefined);
+      vi.mocked(fs.readdir)
+        .mockResolvedValueOnce(['project1'] as any)
+        .mockResolvedValueOnce(['tied.jsonl'] as any);
+      
+      vi.mocked(fs.stat).mockResolvedValue({ isDirectory: () => true } as any);
+      vi.mocked(fs.readFile).mockResolvedValue(claudeSessionFixtures.sessionWithTiedModelUsage);
+      
+      const sessions = await readClaudeSessions();
+      
+      // Both models used 2 times each
+      expect(sessions[0].modelInfo?.modelUsage).toEqual({
+        'claude-opus-4-1-20250805': 2,
+        'claude-sonnet-4-20250514': 2
+      });
+      // Primary model should be one of them (deterministic based on reduce)
+      expect(['claude-opus-4-1-20250805', 'claude-sonnet-4-20250514'])
+        .toContain(sessions[0].modelInfo?.primaryModel);
+    });
+
+    it('should detect model switches', async () => {
+      vi.mocked(fs.access).mockResolvedValue(undefined);
+      vi.mocked(fs.readdir)
+        .mockResolvedValueOnce(['project1'] as any)
+        .mockResolvedValueOnce(['switch.jsonl'] as any);
+      
+      vi.mocked(fs.stat).mockResolvedValue({ isDirectory: () => true } as any);
+      vi.mocked(fs.readFile).mockResolvedValue(claudeSessionFixtures.sessionWithModelSwitches);
+      
+      const sessions = await readClaudeSessions();
+      
+      // Switches: Opus->Sonnet, Sonnet->Opus4, Opus4->Opus4.1, Opus4.1->Haiku = 4 switches
+      expect(sessions[0].modelInfo?.modelSwitches).toBe(4);
+    });
+
+    it('should not count first model as switch', async () => {
+      const firstModelSession = `{"sessionId":"first","cwd":"/test","timestamp":"2024-01-15T10:00:00Z"}
+{"message":{"role":"user","content":"test"},"timestamp":"2024-01-15T10:01:00Z"}
+{"message":{"role":"assistant","model":"claude-opus-4-1-20250805","content":"first"},"timestamp":"2024-01-15T10:02:00Z"}
+{"message":{"role":"assistant","model":"claude-opus-4-1-20250805","content":"second"},"timestamp":"2024-01-15T10:03:00Z"}`;
+      
+      vi.mocked(fs.access).mockResolvedValue(undefined);
+      vi.mocked(fs.readdir)
+        .mockResolvedValueOnce(['project1'] as any)
+        .mockResolvedValueOnce(['first.jsonl'] as any);
+      
+      vi.mocked(fs.stat).mockResolvedValue({ isDirectory: () => true } as any);
+      vi.mocked(fs.readFile).mockResolvedValue(firstModelSession);
+      
+      const sessions = await readClaudeSessions();
+      
+      expect(sessions[0].modelInfo?.modelSwitches).toBe(0);
+    });
+
+    it('should handle multiple consecutive switches', async () => {
+      vi.mocked(fs.access).mockResolvedValue(undefined);
+      vi.mocked(fs.readdir)
+        .mockResolvedValueOnce(['project1'] as any)
+        .mockResolvedValueOnce(['rapid.jsonl'] as any);
+      
+      vi.mocked(fs.stat).mockResolvedValue({ isDirectory: () => true } as any);
+      vi.mocked(fs.readFile).mockResolvedValue(claudeSessionFixtures.sessionWithRapidModelSwitches);
+      
+      const sessions = await readClaudeSessions();
+      
+      // 5 assistant messages, 4 switches between them
+      expect(sessions[0].modelInfo?.modelSwitches).toBe(4);
+      expect(sessions[0].modelInfo?.models).toHaveLength(4);
+    });
+
+    it('should handle malformed model fields', async () => {
+      vi.mocked(fs.access).mockResolvedValue(undefined);
+      vi.mocked(fs.readdir)
+        .mockResolvedValueOnce(['project1'] as any)
+        .mockResolvedValueOnce(['malformed.jsonl'] as any);
+      
+      vi.mocked(fs.stat).mockResolvedValue({ isDirectory: () => true } as any);
+      vi.mocked(fs.readFile).mockResolvedValue(claudeSessionFixtures.sessionWithMalformedModel);
+      
+      const sessions = await readClaudeSessions();
+      
+      // Should only count the valid model
+      expect(sessions[0].modelInfo?.models).toEqual(['claude-opus-4-1-20250805']);
+      expect(sessions[0].modelInfo?.modelUsage).toEqual({
+        'claude-opus-4-1-20250805': 1
+      });
+    });
+
+    it('should handle sessions with only user messages', async () => {
+      vi.mocked(fs.access).mockResolvedValue(undefined);
+      vi.mocked(fs.readdir)
+        .mockResolvedValueOnce(['project1'] as any)
+        .mockResolvedValueOnce(['useronly.jsonl'] as any);
+      
+      vi.mocked(fs.stat).mockResolvedValue({ isDirectory: () => true } as any);
+      vi.mocked(fs.readFile).mockResolvedValue(claudeSessionFixtures.sessionWithOnlyUserMessages);
+      
+      const sessions = await readClaudeSessions();
+      
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0].modelInfo).toBeUndefined();
+    });
+
+    it('should process very long sessions with many model switches', async () => {
+      // Generate a session with 100 messages alternating between models
+      const longSession = [`{"sessionId":"long","cwd":"/test","timestamp":"2024-01-15T10:00:00Z"}`];
+      const models = [
+        'claude-opus-4-1-20250805',
+        'claude-sonnet-4-20250514',
+        'claude-opus-4-20250514'
+      ];
+      
+      for (let i = 0; i < 100; i++) {
+        const time = new Date(`2024-01-15T10:${String(i % 60).padStart(2, '0')}:00Z`);
+        longSession.push(
+          `{"message":{"role":"user","content":"msg ${i}"},"timestamp":"${time.toISOString()}"}`,
+          `{"message":{"role":"assistant","model":"${models[i % 3]}","content":"response ${i}"},"timestamp":"${time.toISOString()}"}`
+        );
+      }
+      
+      vi.mocked(fs.access).mockResolvedValue(undefined);
+      vi.mocked(fs.readdir)
+        .mockResolvedValueOnce(['project1'] as any)
+        .mockResolvedValueOnce(['long.jsonl'] as any);
+      
+      vi.mocked(fs.stat).mockResolvedValue({ isDirectory: () => true } as any);
+      vi.mocked(fs.readFile).mockResolvedValue(longSession.join('\n'));
+      
+      const sessions = await readClaudeSessions();
+      
+      expect(sessions[0].modelInfo).toBeDefined();
+      expect(sessions[0].modelInfo?.models).toHaveLength(3);
+      // Each model used ~33 times
+      expect(sessions[0].modelInfo?.modelUsage['claude-opus-4-1-20250805']).toBeGreaterThan(30);
+      // Many switches between the 3 models
+      expect(sessions[0].modelInfo?.modelSwitches).toBeGreaterThan(60);
+    });
+
+    it('should include all unique models in models array', async () => {
+      vi.mocked(fs.access).mockResolvedValue(undefined);
+      vi.mocked(fs.readdir)
+        .mockResolvedValueOnce(['project1'] as any)
+        .mockResolvedValueOnce(['all.jsonl'] as any);
+      
+      vi.mocked(fs.stat).mockResolvedValue({ isDirectory: () => true } as any);
+      vi.mocked(fs.readFile).mockResolvedValue(claudeSessionFixtures.sessionWithModelSwitches);
+      
+      const sessions = await readClaudeSessions();
+      
+      expect(sessions[0].modelInfo?.models).toEqual(expect.arrayContaining([
+        'claude-opus-4-1-20250805',
+        'claude-sonnet-4-20250514',
+        'claude-opus-4-20250514',
+        'claude-haiku-3-20240307'
+      ]));
+    });
+
+    it('should track model info alongside language detection', async () => {
+      // Session with both model info and file edits
+      const combinedSession = `{"sessionId":"combined","cwd":"/test","timestamp":"2024-01-15T10:00:00Z"}
+{"message":{"role":"user","content":"create files"},"timestamp":"2024-01-15T10:01:00Z"}
+{"message":{"role":"assistant","model":"claude-opus-4-1-20250805","content":"creating"},"timestamp":"2024-01-15T10:02:00Z"}
+{"toolUseResult":{"type":"create","filePath":"test.ts"},"timestamp":"2024-01-15T10:03:00Z"}
+{"message":{"role":"assistant","model":"claude-sonnet-4-20250514","content":"done"},"timestamp":"2024-01-15T10:04:00Z"}
+{"toolUseResult":{"type":"create","filePath":"test.py"},"timestamp":"2024-01-15T10:05:00Z"}`;
+      
+      vi.mocked(fs.access).mockResolvedValue(undefined);
+      vi.mocked(fs.readdir)
+        .mockResolvedValueOnce(['project1'] as any)
+        .mockResolvedValueOnce(['combined.jsonl'] as any);
+      
+      vi.mocked(fs.stat).mockResolvedValue({ isDirectory: () => true } as any);
+      vi.mocked(fs.readFile).mockResolvedValue(combinedSession);
+      
+      const sessions = await readClaudeSessions();
+      
+      // Should have both model info and languages
+      expect(sessions[0].modelInfo).toBeDefined();
+      expect(sessions[0].modelInfo?.models).toContain('claude-opus-4-1-20250805');
+      expect(sessions[0].modelInfo?.models).toContain('claude-sonnet-4-20250514');
+      expect(sessions[0].metadata?.languages).toContain('TypeScript');
+      expect(sessions[0].metadata?.languages).toContain('Python');
+    });
+  });
+
   describe('Language Detection', () => {
     it('should detect common programming languages', async () => {
       const testFiles = [

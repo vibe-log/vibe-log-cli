@@ -77,6 +77,74 @@ export const claudeSessionFixtures = {
   sessionWithLargeImage: `{"sessionId":"large-image","cwd":"/home/user/heavy-project","timestamp":"2024-01-15T14:00:00Z"}
 {"message":{"role":"user","content":[{"type":"text","text":"Analyze this data"},{"type":"image","source":{"type":"base64","media_type":"image/png","data":"${'A'.repeat(100000)}"}}]},"timestamp":"2024-01-15T14:01:00Z"}
 {"message":{"role":"assistant","content":"I've analyzed the data visualization you provided."},"timestamp":"2024-01-15T14:02:00Z"}`,
+
+  // Model tracking test fixtures
+  sessionWithSingleModel: `{"sessionId":"single-model","cwd":"/home/user/opus-project","timestamp":"2024-01-15T15:00:00Z"}
+{"message":{"role":"user","content":"Create a TypeScript function"},"timestamp":"2024-01-15T15:01:00Z"}
+{"message":{"role":"assistant","model":"claude-opus-4-1-20250805","content":"I'll create a TypeScript function for you"},"timestamp":"2024-01-15T15:02:00Z"}
+{"message":{"role":"user","content":"Add error handling"},"timestamp":"2024-01-15T15:03:00Z"}
+{"message":{"role":"assistant","model":"claude-opus-4-1-20250805","content":"I'll add comprehensive error handling"},"timestamp":"2024-01-15T15:04:00Z"}
+{"message":{"role":"user","content":"Add tests"},"timestamp":"2024-01-15T15:05:00Z"}
+{"message":{"role":"assistant","model":"claude-opus-4-1-20250805","content":"Let me add unit tests"},"timestamp":"2024-01-15T15:06:00Z"}`,
+
+  sessionWithMultipleModels: `{"sessionId":"multi-model","cwd":"/home/user/mixed-project","timestamp":"2024-01-15T16:00:00Z"}
+{"message":{"role":"user","content":"Start with Opus"},"timestamp":"2024-01-15T16:01:00Z"}
+{"message":{"role":"assistant","model":"claude-opus-4-1-20250805","content":"Starting with Opus model"},"timestamp":"2024-01-15T16:02:00Z"}
+{"message":{"role":"user","content":"Continue with Opus"},"timestamp":"2024-01-15T16:03:00Z"}
+{"message":{"role":"assistant","model":"claude-opus-4-1-20250805","content":"Continuing with Opus"},"timestamp":"2024-01-15T16:04:00Z"}
+{"message":{"role":"user","content":"Switch to Sonnet"},"timestamp":"2024-01-15T16:05:00Z"}
+{"message":{"role":"assistant","model":"claude-sonnet-4-20250514","content":"Now using Sonnet model"},"timestamp":"2024-01-15T16:06:00Z"}
+{"message":{"role":"user","content":"Back to Opus"},"timestamp":"2024-01-15T16:07:00Z"}
+{"message":{"role":"assistant","model":"claude-opus-4-1-20250805","content":"Switched back to Opus"},"timestamp":"2024-01-15T16:08:00Z"}`,
+
+  sessionWithModelSwitches: `{"sessionId":"switch-model","cwd":"/home/user/switch-project","timestamp":"2024-01-15T17:00:00Z"}
+{"message":{"role":"user","content":"Start coding"},"timestamp":"2024-01-15T17:01:00Z"}
+{"message":{"role":"assistant","model":"claude-opus-4-1-20250805","content":"Starting with Opus"},"timestamp":"2024-01-15T17:02:00Z"}
+{"message":{"role":"user","content":"Try Sonnet"},"timestamp":"2024-01-15T17:03:00Z"}
+{"message":{"role":"assistant","model":"claude-sonnet-4-20250514","content":"Switched to Sonnet"},"timestamp":"2024-01-15T17:04:00Z"}
+{"message":{"role":"user","content":"Try the older Opus"},"timestamp":"2024-01-15T17:05:00Z"}
+{"message":{"role":"assistant","model":"claude-opus-4-20250514","content":"Using older Opus version"},"timestamp":"2024-01-15T17:06:00Z"}
+{"message":{"role":"user","content":"Back to latest Opus"},"timestamp":"2024-01-15T17:07:00Z"}
+{"message":{"role":"assistant","model":"claude-opus-4-1-20250805","content":"Back to latest Opus"},"timestamp":"2024-01-15T17:08:00Z"}
+{"message":{"role":"user","content":"Try Haiku if available"},"timestamp":"2024-01-15T17:09:00Z"}
+{"message":{"role":"assistant","model":"claude-haiku-3-20240307","content":"Testing with Haiku model"},"timestamp":"2024-01-15T17:10:00Z"}`,
+
+  sessionWithoutModelInfo: `{"sessionId":"no-model","cwd":"/home/user/legacy-project","timestamp":"2024-01-15T18:00:00Z"}
+{"message":{"role":"user","content":"Old session format"},"timestamp":"2024-01-15T18:01:00Z"}
+{"message":{"role":"assistant","content":"Response without model field"},"timestamp":"2024-01-15T18:02:00Z"}
+{"message":{"role":"user","content":"Another message"},"timestamp":"2024-01-15T18:03:00Z"}
+{"message":{"role":"assistant","content":"Another response without model"},"timestamp":"2024-01-15T18:04:00Z"}`,
+
+  sessionWithOnlyUserMessages: `{"sessionId":"user-only","cwd":"/home/user/question-project","timestamp":"2024-01-15T19:00:00Z"}
+{"message":{"role":"user","content":"First question"},"timestamp":"2024-01-15T19:01:00Z"}
+{"message":{"role":"user","content":"Follow-up question"},"timestamp":"2024-01-15T19:02:00Z"}
+{"message":{"role":"user","content":"Another question"},"timestamp":"2024-01-15T19:03:00Z"}`,
+
+  sessionWithMalformedModel: `{"sessionId":"bad-model","cwd":"/home/user/broken-project","timestamp":"2024-01-15T20:00:00Z"}
+{"message":{"role":"user","content":"Test malformed models"},"timestamp":"2024-01-15T20:01:00Z"}
+{"message":{"role":"assistant","model":"","content":"Empty model string"},"timestamp":"2024-01-15T20:02:00Z"}
+{"message":{"role":"user","content":"Continue"},"timestamp":"2024-01-15T20:03:00Z"}
+{"message":{"role":"assistant","model":null,"content":"Null model"},"timestamp":"2024-01-15T20:04:00Z"}
+{"message":{"role":"user","content":"More"},"timestamp":"2024-01-15T20:05:00Z"}
+{"message":{"role":"assistant","model":"claude-opus-4-1-20250805","content":"Valid model"},"timestamp":"2024-01-15T20:06:00Z"}`,
+
+  sessionWithTiedModelUsage: `{"sessionId":"tied-models","cwd":"/home/user/balanced-project","timestamp":"2024-01-15T21:00:00Z"}
+{"message":{"role":"user","content":"First request"},"timestamp":"2024-01-15T21:01:00Z"}
+{"message":{"role":"assistant","model":"claude-opus-4-1-20250805","content":"Opus response 1"},"timestamp":"2024-01-15T21:02:00Z"}
+{"message":{"role":"user","content":"Second request"},"timestamp":"2024-01-15T21:03:00Z"}
+{"message":{"role":"assistant","model":"claude-sonnet-4-20250514","content":"Sonnet response 1"},"timestamp":"2024-01-15T21:04:00Z"}
+{"message":{"role":"user","content":"Third request"},"timestamp":"2024-01-15T21:05:00Z"}
+{"message":{"role":"assistant","model":"claude-opus-4-1-20250805","content":"Opus response 2"},"timestamp":"2024-01-15T21:06:00Z"}
+{"message":{"role":"user","content":"Fourth request"},"timestamp":"2024-01-15T21:07:00Z"}
+{"message":{"role":"assistant","model":"claude-sonnet-4-20250514","content":"Sonnet response 2"},"timestamp":"2024-01-15T21:08:00Z"}`,
+
+  sessionWithRapidModelSwitches: `{"sessionId":"rapid-switch","cwd":"/home/user/testing-project","timestamp":"2024-01-15T22:00:00Z"}
+{"message":{"role":"user","content":"Test rapid switches"},"timestamp":"2024-01-15T22:01:00Z"}
+{"message":{"role":"assistant","model":"claude-opus-4-1-20250805","content":"Model 1"},"timestamp":"2024-01-15T22:02:00Z"}
+{"message":{"role":"assistant","model":"claude-sonnet-4-20250514","content":"Model 2"},"timestamp":"2024-01-15T22:03:00Z"}
+{"message":{"role":"assistant","model":"claude-opus-4-20250514","content":"Model 3"},"timestamp":"2024-01-15T22:04:00Z"}
+{"message":{"role":"assistant","model":"claude-haiku-3-20240307","content":"Model 4"},"timestamp":"2024-01-15T22:05:00Z"}
+{"message":{"role":"assistant","model":"claude-opus-4-1-20250805","content":"Back to Model 1"},"timestamp":"2024-01-15T22:06:00Z"}`,
 };
 
 export const claudeProjectStructure = {
