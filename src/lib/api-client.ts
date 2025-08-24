@@ -19,6 +19,8 @@ export interface Session {
     metadata: {
       files_edited: number;
       languages: string[];
+      models?: string[];         // All models used in session
+      primaryModel?: string;     // Most frequently used model
     };
   };
 }

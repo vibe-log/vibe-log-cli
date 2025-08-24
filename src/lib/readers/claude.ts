@@ -10,6 +10,7 @@ interface ClaudeMessage {
   role: string;
   content: string;
   timestamp: string;
+  model?: string;  // Model ID for assistant messages
 }
 
 interface ClaudeLogEntry {
@@ -160,6 +161,11 @@ async function parseSessionFile(filePath: string): Promise<SessionData | null> {
       claudeSessionId?: string;
     } | null = null;
     const editedFiles = new Set<string>();
+    
+    // Model tracking variables
+    const modelStats: Record<string, number> = {};
+    let lastModel: string | null = null;
+    let modelSwitches = 0;
 
     for (const line of lines) {
       if (!line.trim()) continue;
@@ -177,7 +183,7 @@ async function parseSessionFile(filePath: string): Promise<SessionData | null> {
           };
         }
 
-        // Extract messages
+        // Extract messages and track model usage
         if (data.message && data.timestamp) {
           // Filter images from content before adding to messages
           const filteredContent = filterImageContent(data.message.content);
@@ -187,6 +193,17 @@ async function parseSessionFile(filePath: string): Promise<SessionData | null> {
             content: filteredContent,
             timestamp: new Date(data.timestamp),
           });
+          
+          // Track model usage for assistant messages
+          if (data.message.role === 'assistant' && data.message.model) {
+            modelStats[data.message.model] = (modelStats[data.message.model] || 0) + 1;
+            
+            // Track model switches
+            if (lastModel && lastModel !== data.message.model) {
+              modelSwitches++;
+            }
+            lastModel = data.message.model;
+          }
         }
 
         // Track edited files from toolUseResult (for backward compatibility)
@@ -208,6 +225,22 @@ async function parseSessionFile(filePath: string): Promise<SessionData | null> {
     
     // Use the language extractor to get all languages used in the session
     const languages = extractLanguagesFromSession(lines);
+    
+    // Prepare model info if models were detected
+    let modelInfo: SessionData['modelInfo'] = undefined;
+    if (Object.keys(modelStats).length > 0) {
+      const models = Object.keys(modelStats);
+      const primaryModel = models.reduce((a, b) => 
+        modelStats[a] > modelStats[b] ? a : b
+      );
+      
+      modelInfo = {
+        models,
+        primaryModel,
+        modelUsage: modelStats,
+        modelSwitches,
+      };
+    }
 
     return {
       ...metadata,
@@ -218,6 +251,7 @@ async function parseSessionFile(filePath: string): Promise<SessionData | null> {
         files_edited: editedFiles.size,
         languages: languages,
       },
+      modelInfo,
     };
   } catch (error) {
     console.error(`Error parsing session file ${filePath}:`, error);

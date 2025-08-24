@@ -4,6 +4,13 @@ export interface Message {
   timestamp: Date;
 }
 
+export interface ModelUsageStats {
+  models: string[];                    // All unique models used
+  primaryModel: string | null;         // Most frequently used model
+  modelUsage: Record<string, number>;  // Model ID -> message count
+  modelSwitches: number;                // Number of times model changed
+}
+
 export interface SessionMetadata {
   id: string;
   projectPath: string;
@@ -19,6 +26,7 @@ export interface SessionData extends SessionMetadata {
     files_edited: number;
     languages: string[];
   };
+  modelInfo?: ModelUsageStats;  // Model usage information
   // Source file information for re-reading if needed
   sourceFile?: {
     claudeProjectPath: string;  // e.g., ~/.claude/projects/-Users-danny-vibe-log

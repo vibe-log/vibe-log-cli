@@ -162,6 +162,11 @@ export class SendOrchestrator {
         let metadata: any = null;
         const editedFiles = new Set<string>();
         
+        // Model tracking variables
+        const modelStats: Record<string, number> = {};
+        let lastModel: string | null = null;
+        let modelSwitches = 0;
+        
         for (const line of lines) {
           if (!line.trim()) continue;
           
@@ -185,6 +190,17 @@ export class SendOrchestrator {
                 content: filteredContent,
                 timestamp: new Date(data.timestamp),
               });
+              
+              // Track model usage for assistant messages
+              if (data.message.role === 'assistant' && data.message.model) {
+                modelStats[data.message.model] = (modelStats[data.message.model] || 0) + 1;
+                
+                // Track model switches
+                if (lastModel && lastModel !== data.message.model) {
+                  modelSwitches++;
+                }
+                lastModel = data.message.model;
+              }
             }
             
             // Track edited files from toolUseResult (for backward compatibility)
@@ -207,6 +223,22 @@ export class SendOrchestrator {
           // Use the language extractor to get all languages used in the session
           const languages = extractLanguagesFromSession(lines);
           
+          // Prepare model info if models were detected
+          let modelInfo: SessionData['modelInfo'] = undefined;
+          if (Object.keys(modelStats).length > 0) {
+            const models = Object.keys(modelStats);
+            const primaryModel = models.reduce((a, b) => 
+              modelStats[a] > modelStats[b] ? a : b
+            );
+            
+            modelInfo = {
+              models,
+              primaryModel,
+              modelUsage: modelStats,
+              modelSwitches,
+            };
+          }
+          
           sessions.push({
             ...metadata,
             messages,
@@ -217,6 +249,7 @@ export class SendOrchestrator {
               files_edited: editedFiles.size,
               languages: languages,
             },
+            modelInfo,
           });
         }
       } catch (error) {
@@ -262,6 +295,8 @@ export class SendOrchestrator {
           metadata: {
             files_edited: session.metadata?.files_edited || 0,
             languages: session.metadata?.languages || [],
+            models: session.modelInfo?.models,
+            primaryModel: session.modelInfo?.primaryModel || undefined,
           },
         },
       });
