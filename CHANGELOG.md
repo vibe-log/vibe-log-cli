@@ -5,6 +5,19 @@ All notable changes to the vibe-log-cli project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.20] - 2025-08-24
+
+### Added
+- **Claude Model Tracking**: Sessions now capture and track the specific Claude model being used (Opus, Sonnet, Haiku)
+- **Comprehensive Unit Tests**: Added extensive test coverage for Claude model detection and session parsing
+
+### Improved
+- **Session Data**: Enhanced session metadata to include model information for better analytics
+- **README Documentation**: Updated documentation with improved visuals and mermaid diagrams
+
+### Fixed
+- **Package Distribution**: Added .npmignore to optimize package size and exclude unnecessary files
+
 ## [0.3.19] - 2025-08-22
 
 ### Fixed
