@@ -166,8 +166,6 @@ Check out our [open issues](https://github.com/vibe-log/vibe-log-cli/issues) for
 ## Support
 
 Need help? Here are some ways to get support:
-
-- 📖 Read the [documentation](https://vibe-log.dev/docs)
 - 🐛 Report bugs in [GitHub Issues](https://github.com/vibe-log/vibe-log-cli/issues)
 - 📧 Email us at support@vibe-log.dev
 
