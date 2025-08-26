@@ -21,45 +21,21 @@ export interface StatusLineConfig {
 }
 
 /**
- * Get the proper CLI command for the current environment
- */
-function getCliCommand(): string {
-  const cliPath = getCliPath();
-  
-  // For development, if cliPath is the default npx command,
-  // use the local built version with node
-  if (cliPath === 'npx vibe-log-cli') {
-    // Check if we're in development by looking for the local dist file
-    const localDistPath = path.join(__dirname, '..', 'index.js');
-    try {
-      // This will resolve to the actual dist path when bundled
-      if (require.resolve(localDistPath)) {
-        return `node ${localDistPath}`;
-      }
-    } catch {
-      // Not in local development, use the configured path
-    }
-  }
-  
-  return cliPath;
-}
-
-/**
- * Build the analyze-prompt hook command with dynamic path
+ * Build the analyze-prompt hook command
  */
 export function buildAnalyzePromptCommand(): string {
-  // Use dynamic CLI path that works across different installations
-  const cliCommand = getCliCommand();
-  return `${cliCommand} analyze-prompt --silent --stdin`;
+  // Use the configured CLI path from the config system
+  const cliPath = getCliPath();
+  return `${cliPath} analyze-prompt --silent --stdin`;
 }
 
 /**
- * Build the statusline display command with dynamic path
+ * Build the statusline display command
  */
 export function buildStatuslineCommand(): string {
-  // Use dynamic CLI path that works across different installations
-  const cliCommand = getCliCommand();
-  return `${cliCommand} statusline`;
+  // Use the configured CLI path from the config system
+  const cliPath = getCliPath();
+  return `${cliPath} statusline`;
 }
 
 /**
