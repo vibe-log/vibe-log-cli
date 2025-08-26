@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { logger } from '../utils/logger';
 import { readGlobalSettings, writeGlobalSettings } from './claude-settings-reader';
+import { getCliPath } from './config';
 
 /**
  * Status line installation state
@@ -20,21 +21,45 @@ export interface StatusLineConfig {
 }
 
 /**
- * Build the analyze-prompt hook command with absolute path
+ * Get the proper CLI command for the current environment
  */
-export function buildAnalyzePromptCommand(): string {
-  // Use absolute path to the built CLI
-  const cliPath = '/Users/danny/dev-personal/vibe-log/vibelog-cli/dist/index.js';
-  return `node ${cliPath} analyze-prompt --silent --stdin`;
+function getCliCommand(): string {
+  const cliPath = getCliPath();
+  
+  // For development, if cliPath is the default npx command,
+  // use the local built version with node
+  if (cliPath === 'npx vibe-log-cli') {
+    // Check if we're in development by looking for the local dist file
+    const localDistPath = path.join(__dirname, '..', 'index.js');
+    try {
+      // This will resolve to the actual dist path when bundled
+      if (require.resolve(localDistPath)) {
+        return `node ${localDistPath}`;
+      }
+    } catch {
+      // Not in local development, use the configured path
+    }
+  }
+  
+  return cliPath;
 }
 
 /**
- * Build the statusline display command with absolute path
+ * Build the analyze-prompt hook command with dynamic path
+ */
+export function buildAnalyzePromptCommand(): string {
+  // Use dynamic CLI path that works across different installations
+  const cliCommand = getCliCommand();
+  return `${cliCommand} analyze-prompt --silent --stdin`;
+}
+
+/**
+ * Build the statusline display command with dynamic path
  */
 export function buildStatuslineCommand(): string {
-  // Use absolute path to the built CLI
-  const cliPath = '/Users/danny/dev-personal/vibe-log/vibelog-cli/dist/index.js';
-  return `node ${cliPath} statusline`;
+  // Use dynamic CLI path that works across different installations
+  const cliCommand = getCliCommand();
+  return `${cliCommand} statusline`;
 }
 
 /**
