@@ -78,6 +78,13 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
     });
     
     items.push({
+      id: 'status-line',
+      label: `📊 Prompt quality status line`,
+      description: 'Real-time prompt feedback in Claude Code',
+      action: 'status-line'
+    });
+    
+    items.push({
       id: 'report',
       label: `${icons.chart} Generate local report (using Claude sub-agents)`,
       action: 'report'
@@ -111,6 +118,13 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
       label: `${icons.refresh} Configure auto-sync (Claude Code hooks)`,
       description: context.hasHooks ? 'Configure Claude Code hooks' : 'Install and configure hooks',
       action: 'manage-hooks'
+    });
+    
+    items.push({
+      id: 'status-line',
+      label: `📊 Prompt quality status line`,
+      description: 'Real-time prompt feedback in Claude Code',
+      action: 'status-line'
     });
 
     // Separator between cloud and local actions
