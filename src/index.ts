@@ -4,6 +4,7 @@ import { sendWithTimeout } from './commands/send';
 import { config } from './commands/config';
 import { logout } from './commands/logout';
 import { privacy } from './commands/privacy';
+import { createAnalyzePromptCommand } from './commands/analyze-prompt';
 import { showLogo } from './lib/ui';
 import { handleError } from './utils/errors';
 import { logger } from './utils/logger';
@@ -158,6 +159,9 @@ program
       handleError(error);
     }
   });
+
+// Add analyze-prompt command (hidden - for hook use)
+program.addCommand(createAnalyzePromptCommand());
 
 // Custom help function
 function showHelp(): void {
