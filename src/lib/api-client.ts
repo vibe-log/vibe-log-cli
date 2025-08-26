@@ -21,6 +21,10 @@ export interface Session {
       languages: string[];
       models?: string[];         // All models used in session
       primaryModel?: string;     // Most frequently used model
+      // Planning mode metadata
+      hasPlanningMode?: boolean;        // Whether planning mode was used
+      planningCycles?: number;          // Number of planning cycles
+      exitPlanTimestamps?: string[];    // ISO timestamps of ExitPlanMode calls
     };
   };
 }

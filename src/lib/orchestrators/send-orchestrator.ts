@@ -297,6 +297,10 @@ export class SendOrchestrator {
             languages: session.metadata?.languages || [],
             models: session.modelInfo?.models,
             primaryModel: session.modelInfo?.primaryModel || undefined,
+            // Planning mode metadata
+            hasPlanningMode: session.planningModeInfo?.hasPlanningMode || false,
+            planningCycles: session.planningModeInfo?.planningCycles || 0,
+            exitPlanTimestamps: session.planningModeInfo?.exitPlanTimestamps?.map(t => t.toISOString()) || [],
           },
         },
       });

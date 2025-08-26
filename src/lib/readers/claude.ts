@@ -8,7 +8,7 @@ import { extractLanguagesFromSession } from '../language-extractor';
 
 interface ClaudeMessage {
   role: string;
-  content: string;
+  content: string | any[];  // Content can be string or array of content items
   timestamp: string;
   model?: string;  // Model ID for assistant messages
 }
@@ -166,6 +166,9 @@ async function parseSessionFile(filePath: string): Promise<SessionData | null> {
     const modelStats: Record<string, number> = {};
     let lastModel: string | null = null;
     let modelSwitches = 0;
+    
+    // Planning mode tracking variables
+    const exitPlanTimestamps: Date[] = [];
 
     for (const line of lines) {
       if (!line.trim()) continue;
@@ -185,6 +188,15 @@ async function parseSessionFile(filePath: string): Promise<SessionData | null> {
 
         // Extract messages and track model usage
         if (data.message && data.timestamp) {
+          // Check for ExitPlanMode tool usage in message content
+          if (data.message.content && Array.isArray(data.message.content)) {
+            for (const item of data.message.content) {
+              if (item.type === 'tool_use' && item.name === 'ExitPlanMode') {
+                exitPlanTimestamps.push(new Date(data.timestamp));
+              }
+            }
+          }
+          
           // Filter images from content before adding to messages
           const filteredContent = filterImageContent(data.message.content);
           
@@ -241,6 +253,16 @@ async function parseSessionFile(filePath: string): Promise<SessionData | null> {
         modelSwitches,
       };
     }
+    
+    // Prepare planning mode info if detected
+    let planningModeInfo: SessionData['planningModeInfo'] = undefined;
+    if (exitPlanTimestamps.length > 0) {
+      planningModeInfo = {
+        hasPlanningMode: true,
+        planningCycles: exitPlanTimestamps.length,
+        exitPlanTimestamps: exitPlanTimestamps,
+      };
+    }
 
     return {
       ...metadata,
@@ -252,6 +274,7 @@ async function parseSessionFile(filePath: string): Promise<SessionData | null> {
         languages: languages,
       },
       modelInfo,
+      planningModeInfo,
     };
   } catch (error) {
     console.error(`Error parsing session file ${filePath}:`, error);

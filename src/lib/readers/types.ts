@@ -11,6 +11,12 @@ export interface ModelUsageStats {
   modelSwitches: number;                // Number of times model changed
 }
 
+export interface PlanningModeInfo {
+  hasPlanningMode: boolean;           // True if any ExitPlanMode detected
+  planningCycles: number;              // Count of ExitPlanMode tool uses
+  exitPlanTimestamps: Date[];          // Timestamps when ExitPlanMode was called
+}
+
 export interface SessionMetadata {
   id: string;
   projectPath: string;
@@ -27,6 +33,7 @@ export interface SessionData extends SessionMetadata {
     languages: string[];
   };
   modelInfo?: ModelUsageStats;  // Model usage information
+  planningModeInfo?: PlanningModeInfo;  // Planning mode tracking
   // Source file information for re-reading if needed
   sourceFile?: {
     claudeProjectPath: string;  // e.g., ~/.claude/projects/-Users-danny-vibe-log

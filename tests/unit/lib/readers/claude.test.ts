@@ -657,4 +657,165 @@ describe('Claude Reader Module', () => {
       expect(sessions[0].metadata?.languages).not.toContain('JPG');
     });
   });
+
+  describe('Planning Mode Detection', () => {
+    it('should detect single ExitPlanMode usage', async () => {
+      const sessionLines = [
+        JSON.stringify({ sessionId: 'test', cwd: '/test', timestamp: '2024-01-15T10:00:00Z' }),
+        JSON.stringify({ message: { role: 'user', content: 'Create a plan' }, timestamp: '2024-01-15T10:00:30Z' }),
+        JSON.stringify({ 
+          message: { 
+            role: 'assistant', 
+            content: [
+              { type: 'text', text: 'Here is my plan...' },
+              { type: 'tool_use', name: 'ExitPlanMode', id: 'tool_123', input: { plan: 'My plan details' } }
+            ]
+          }, 
+          timestamp: '2024-01-15T10:01:00Z' 
+        }),
+        JSON.stringify({ message: { role: 'user', content: 'Looks good' }, timestamp: '2024-01-15T10:02:00Z' })
+      ];
+      
+      vi.mocked(fs.access).mockResolvedValue(undefined);
+      vi.mocked(fs.readdir)
+        .mockResolvedValueOnce(['project1'] as any)
+        .mockResolvedValueOnce(['test.jsonl'] as any);
+      
+      vi.mocked(fs.stat).mockResolvedValue({ isDirectory: () => true } as any);
+      vi.mocked(fs.readFile).mockResolvedValue(sessionLines.join('\n'));
+      
+      const sessions = await readClaudeSessions();
+      
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0].planningModeInfo).toBeDefined();
+      expect(sessions[0].planningModeInfo?.hasPlanningMode).toBe(true);
+      expect(sessions[0].planningModeInfo?.planningCycles).toBe(1);
+      expect(sessions[0].planningModeInfo?.exitPlanTimestamps).toHaveLength(1);
+      expect(sessions[0].planningModeInfo?.exitPlanTimestamps[0]).toEqual(new Date('2024-01-15T10:01:00Z'));
+    });
+
+    it('should detect multiple planning cycles', async () => {
+      const sessionLines = [
+        JSON.stringify({ sessionId: 'test', cwd: '/test', timestamp: '2024-01-15T10:00:00Z' }),
+        JSON.stringify({ message: { role: 'user', content: 'First task' }, timestamp: '2024-01-15T10:00:30Z' }),
+        JSON.stringify({ 
+          message: { 
+            role: 'assistant', 
+            content: [
+              { type: 'tool_use', name: 'ExitPlanMode', id: 'tool_1' }
+            ]
+          }, 
+          timestamp: '2024-01-15T10:01:00Z' 
+        }),
+        JSON.stringify({ message: { role: 'user', content: 'Second task' }, timestamp: '2024-01-15T10:10:00Z' }),
+        JSON.stringify({ 
+          message: { 
+            role: 'assistant', 
+            content: [
+              { type: 'tool_use', name: 'ExitPlanMode', id: 'tool_2' }
+            ]
+          }, 
+          timestamp: '2024-01-15T10:11:00Z' 
+        }),
+        JSON.stringify({ 
+          message: { 
+            role: 'assistant', 
+            content: [
+              { type: 'tool_use', name: 'ExitPlanMode', id: 'tool_3' }
+            ]
+          }, 
+          timestamp: '2024-01-15T10:20:00Z' 
+        })
+      ];
+      
+      vi.mocked(fs.access).mockResolvedValue(undefined);
+      vi.mocked(fs.readdir)
+        .mockResolvedValueOnce(['project1'] as any)
+        .mockResolvedValueOnce(['test.jsonl'] as any);
+      
+      vi.mocked(fs.stat).mockResolvedValue({ isDirectory: () => true } as any);
+      vi.mocked(fs.readFile).mockResolvedValue(sessionLines.join('\n'));
+      
+      const sessions = await readClaudeSessions();
+      
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0].planningModeInfo).toBeDefined();
+      expect(sessions[0].planningModeInfo?.hasPlanningMode).toBe(true);
+      expect(sessions[0].planningModeInfo?.planningCycles).toBe(3);
+      expect(sessions[0].planningModeInfo?.exitPlanTimestamps).toHaveLength(3);
+      expect(sessions[0].planningModeInfo?.exitPlanTimestamps[0]).toEqual(new Date('2024-01-15T10:01:00Z'));
+      expect(sessions[0].planningModeInfo?.exitPlanTimestamps[1]).toEqual(new Date('2024-01-15T10:11:00Z'));
+      expect(sessions[0].planningModeInfo?.exitPlanTimestamps[2]).toEqual(new Date('2024-01-15T10:20:00Z'));
+    });
+
+    it('should not detect planning mode when absent', async () => {
+      const sessionLines = [
+        JSON.stringify({ sessionId: 'test', cwd: '/test', timestamp: '2024-01-15T10:00:00Z' }),
+        JSON.stringify({ message: { role: 'user', content: 'Just a normal conversation' }, timestamp: '2024-01-15T10:00:30Z' }),
+        JSON.stringify({ 
+          message: { 
+            role: 'assistant', 
+            content: 'Sure, I can help with that.'
+          }, 
+          timestamp: '2024-01-15T10:01:00Z' 
+        }),
+        JSON.stringify({ 
+          message: { 
+            role: 'assistant', 
+            content: [
+              { type: 'tool_use', name: 'Edit', id: 'tool_123', input: { file_path: 'test.ts' } }
+            ]
+          }, 
+          timestamp: '2024-01-15T10:02:00Z' 
+        })
+      ];
+      
+      vi.mocked(fs.access).mockResolvedValue(undefined);
+      vi.mocked(fs.readdir)
+        .mockResolvedValueOnce(['project1'] as any)
+        .mockResolvedValueOnce(['test.jsonl'] as any);
+      
+      vi.mocked(fs.stat).mockResolvedValue({ isDirectory: () => true } as any);
+      vi.mocked(fs.readFile).mockResolvedValue(sessionLines.join('\n'));
+      
+      const sessions = await readClaudeSessions();
+      
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0].planningModeInfo).toBeUndefined();
+    });
+
+    it('should handle mixed content types with planning mode', async () => {
+      const sessionLines = [
+        JSON.stringify({ sessionId: 'test', cwd: '/test', timestamp: '2024-01-15T10:00:00Z' }),
+        JSON.stringify({ message: { role: 'user', content: 'Do something complex' }, timestamp: '2024-01-15T10:00:30Z' }),
+        JSON.stringify({ 
+          message: { 
+            role: 'assistant', 
+            content: [
+              { type: 'text', text: 'Let me create a plan first' },
+              { type: 'tool_use', name: 'Read', id: 'tool_1', input: { file_path: 'config.json' } },
+              { type: 'tool_use', name: 'ExitPlanMode', id: 'tool_2', input: { plan: 'Step 1: Read\nStep 2: Process' } },
+              { type: 'text', text: 'Now executing the plan...' }
+            ]
+          }, 
+          timestamp: '2024-01-15T10:01:00Z' 
+        })
+      ];
+      
+      vi.mocked(fs.access).mockResolvedValue(undefined);
+      vi.mocked(fs.readdir)
+        .mockResolvedValueOnce(['project1'] as any)
+        .mockResolvedValueOnce(['test.jsonl'] as any);
+      
+      vi.mocked(fs.stat).mockResolvedValue({ isDirectory: () => true } as any);
+      vi.mocked(fs.readFile).mockResolvedValue(sessionLines.join('\n'));
+      
+      const sessions = await readClaudeSessions();
+      
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0].planningModeInfo).toBeDefined();
+      expect(sessions[0].planningModeInfo?.hasPlanningMode).toBe(true);
+      expect(sessions[0].planningModeInfo?.planningCycles).toBe(1);
+    });
+  });
 });
