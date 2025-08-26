@@ -1,0 +1,200 @@
+import { Command } from 'commander';
+import { readFileSync, existsSync } from 'fs';
+import path from 'path';
+import os from 'os';
+import { PromptAnalysis } from '../lib/prompt-analyzer';
+import { logger } from '../utils/logger';
+
+/**
+ * Output format types for the statusline
+ */
+type OutputFormat = 'compact' | 'detailed' | 'emoji' | 'minimal' | 'json';
+
+/**
+ * Format the analysis for compact output (default)
+ * Example: [GOOD 75/100] Add more context
+ */
+function formatCompact(analysis: PromptAnalysis): string {
+  const quality = analysis.quality.toUpperCase();
+  const score = analysis.score;
+  const suggestion = analysis.suggestion;
+  
+  // Handle recursion detection case
+  if (suggestion.includes('Recursion prevented')) {
+    return '[SKIP] Analysis loop prevented';
+  }
+  
+  return `[${quality} ${score}/100] ${suggestion}`;
+}
+
+/**
+ * Format the analysis for detailed output
+ * Example: Quality: Good (75/100) | Missing: context | Improve: Add details
+ */
+function formatDetailed(analysis: PromptAnalysis): string {
+  const quality = analysis.quality.charAt(0).toUpperCase() + analysis.quality.slice(1);
+  const score = analysis.score;
+  const missing = analysis.missing.length > 0 ? analysis.missing.join(', ') : 'none';
+  const suggestion = analysis.suggestion;
+  
+  // Handle recursion detection case
+  if (suggestion.includes('Recursion prevented')) {
+    return 'Status: Skip | Reason: Analysis loop prevented';
+  }
+  
+  return `Quality: ${quality} (${score}/100) | Missing: ${missing} | Improve: ${suggestion}`;
+}
+
+/**
+ * Format the analysis for emoji output
+ * Example: 📊 Good (75) | 💡 Add context
+ */
+function formatEmoji(analysis: PromptAnalysis): string {
+  const qualityEmoji = {
+    'excellent': '🌟',
+    'good': '✅',
+    'fair': '⚠️',
+    'poor': '❌'
+  }[analysis.quality] || '📊';
+  
+  const quality = analysis.quality.charAt(0).toUpperCase() + analysis.quality.slice(1);
+  const score = analysis.score;
+  const suggestion = analysis.suggestion;
+  
+  // Handle recursion detection case
+  if (suggestion.includes('Recursion prevented')) {
+    return '🔄 Skip | Analysis loop prevented';
+  }
+  
+  return `${qualityEmoji} ${quality} (${score}) | 💡 ${suggestion}`;
+}
+
+/**
+ * Format the analysis for minimal output
+ * Example: Good • 75% • Add context
+ */
+function formatMinimal(analysis: PromptAnalysis): string {
+  const quality = analysis.quality.charAt(0).toUpperCase() + analysis.quality.slice(1);
+  const score = analysis.score;
+  const suggestion = analysis.suggestion;
+  
+  // Handle recursion detection case
+  if (suggestion.includes('Recursion prevented')) {
+    return 'Skip • Loop prevented';
+  }
+  
+  // Shorten the suggestion for minimal format
+  const shortSuggestion = suggestion.length > 30 
+    ? suggestion.substring(0, 27) + '...' 
+    : suggestion;
+  
+  return `${quality} • ${score}% • ${shortSuggestion}`;
+}
+
+/**
+ * Format the analysis based on the selected format
+ */
+function formatAnalysis(analysis: PromptAnalysis, format: OutputFormat): string {
+  switch (format) {
+    case 'json':
+      return JSON.stringify(analysis);
+    case 'detailed':
+      return formatDetailed(analysis);
+    case 'emoji':
+      return formatEmoji(analysis);
+    case 'minimal':
+      return formatMinimal(analysis);
+    case 'compact':
+    default:
+      return formatCompact(analysis);
+  }
+}
+
+/**
+ * Create the statusline command for displaying prompt analysis in Claude Code
+ * This command is designed to be fast (<100ms) and fail gracefully
+ */
+export function createStatuslineCommand(): Command {
+  const command = new Command('statusline')
+    .description('Display prompt analysis in Claude Code status line (hidden command)')
+    .option('-f, --format <type>', 'Output format: compact, detailed, emoji, minimal, json', 'compact')
+    .action(async (options) => {
+      const startTime = Date.now();
+      
+      try {
+        // Parse and validate format option
+        const format = (options.format || 'compact').toLowerCase() as OutputFormat;
+        const validFormats: OutputFormat[] = ['compact', 'detailed', 'emoji', 'minimal', 'json'];
+        
+        if (!validFormats.includes(format)) {
+          // Invalid format, use default
+          logger.debug(`Invalid format '${options.format}', using 'compact'`);
+          options.format = 'compact';
+        }
+        
+        // Build path to latest analysis file
+        const homeDir = os.homedir();
+        const analysisFile = path.join(homeDir, '.vibe-log', 'analyzed-prompts', 'latest.json');
+        
+        // Check if file exists
+        if (!existsSync(analysisFile)) {
+          // No analysis yet - return empty string (show nothing)
+          logger.debug('No analysis file found, returning empty');
+          process.stdout.write('');
+          process.exit(0);
+        }
+        
+        // Read the analysis file synchronously for speed
+        let content: string;
+        try {
+          content = readFileSync(analysisFile, 'utf8');
+        } catch (readError) {
+          // File exists but can't be read - return empty
+          logger.debug('Failed to read analysis file:', readError);
+          process.stdout.write('');
+          process.exit(0);
+        }
+        
+        // Parse the JSON content
+        let analysis: PromptAnalysis;
+        try {
+          analysis = JSON.parse(content);
+        } catch (parseError) {
+          // Corrupted JSON - show error
+          logger.debug('Failed to parse analysis JSON:', parseError);
+          process.stdout.write('[Error] Invalid analysis data');
+          process.exit(0);
+        }
+        
+        // Validate the analysis has required fields
+        if (!analysis.quality || typeof analysis.score !== 'number' || !analysis.suggestion) {
+          logger.debug('Invalid analysis structure:', analysis);
+          process.stdout.write('[Error] Invalid analysis data');
+          process.exit(0);
+        }
+        
+        // Format and output the analysis
+        const output = formatAnalysis(analysis, format);
+        process.stdout.write(output);
+        
+        // Log performance metrics
+        const elapsed = Date.now() - startTime;
+        logger.debug(`Statusline rendered in ${elapsed}ms`);
+        
+        // Ensure we exit cleanly
+        process.exit(0);
+        
+      } catch (error) {
+        // Unexpected error - log but return empty to not break status line
+        logger.error('Unexpected error in statusline command:', error);
+        process.stdout.write('');
+        process.exit(0);
+      }
+    });
+
+  // Mark as hidden since this is for internal use
+  // Note: Command.hidden might not be directly settable in some versions
+  // The command is registered as hidden via the parent program instead
+  
+  return command;
+}

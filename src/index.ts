@@ -5,6 +5,7 @@ import { config } from './commands/config';
 import { logout } from './commands/logout';
 import { privacy } from './commands/privacy';
 import { createAnalyzePromptCommand } from './commands/analyze-prompt';
+import { createStatuslineCommand } from './commands/statusline';
 import { showLogo } from './lib/ui';
 import { handleError } from './utils/errors';
 import { logger } from './utils/logger';
@@ -80,9 +81,11 @@ program
     }
     // Skip logo in silent mode - check command line args directly since --silent is command-specific
     const isSilent = process.argv.includes('--silent');
+    // Skip logo for statusline command (used by Claude Code status line)
+    const isStatusline = process.argv[2] === 'statusline';
     // Only show logo if a command is specified (not the default interactive menu)
     const hasCommand = process.argv.length > 2 && !process.argv[2].startsWith('-');
-    if (!isSilent && hasCommand) {
+    if (!isSilent && !isStatusline && hasCommand) {
       await showLogo(currentVersion);
     }
   });
@@ -162,6 +165,9 @@ program
 
 // Add analyze-prompt command (hidden - for hook use)
 program.addCommand(createAnalyzePromptCommand());
+
+// Add statusline command (hidden - for Claude Code status line)
+program.addCommand(createStatuslineCommand());
 
 // Custom help function
 function showHelp(): void {
