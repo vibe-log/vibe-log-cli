@@ -57,6 +57,11 @@ export function createAnalyzePromptCommand(): Command {
       const { timeout, verbose, silent } = options;
       let transcriptPath: string | undefined;
 
+      // Enable debug logging if verbose mode
+      if (verbose) {
+        process.env.DEBUG_PERSONALITY = 'true';
+      }
+
       // In silent mode, suppress all console output
       if (silent) {
         console.log = () => {};

@@ -2,6 +2,7 @@ import { logger } from '../utils/logger';
 import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
+import { getPersonalitySystemPrompt } from './personality-manager';
 
 /**
  * Analysis result for a prompt
@@ -82,6 +83,16 @@ IMPORTANT Context Rules:
 - DO NOT ask for more context when user is answering a question
 - Suggestion for direct answers should be "Direct answer" or "Good response"` : '';
 
+    // Get personality-specific system prompt addition
+    const personalityPrompt = getPersonalitySystemPrompt();
+    
+    // Debug logging to verify personality is being applied
+    if (process.env.VIBELOG_DEBUG === 'true' || process.env.DEBUG_PERSONALITY === 'true') {
+      logger.debug('=== PERSONALITY SYSTEM PROMPT DEBUG ===');
+      logger.debug('Personality prompt addition:', personalityPrompt);
+      logger.debug('=======================================');
+    }
+
     return `Analyze the prompt quality. Respond ONLY with JSON:
 {
   "quality": "poor|fair|good|excellent",
@@ -91,7 +102,7 @@ IMPORTANT Context Rules:
   "contextualEmoji": "emoji"
 }
 Scoring: poor(0-40) fair(41-60) good(61-80) excellent(81-100)
-Evaluate: clarity, context, success criteria, examples if needed.${contextAwareness}
+Evaluate: clarity, context, success criteria, examples if needed.${contextAwareness}${personalityPrompt}
 
 Emoji selection:
 - 📏 if lacking specificity, measurements, or exact details

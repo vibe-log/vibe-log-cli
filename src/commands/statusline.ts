@@ -4,6 +4,7 @@ import path from 'path';
 import os from 'os';
 import { PromptAnalysis } from '../lib/prompt-analyzer';
 import { logger } from '../utils/logger';
+import { transformSuggestion, getPersonalityIcon, getStatusLinePersonality } from '../lib/personality-manager';
 
 /**
  * Output format types for the statusline
@@ -39,19 +40,27 @@ function getPromotionalTip(): string {
  */
 function formatCompact(analysis: PromptAnalysis): string {
   const score = analysis.score;
-  const suggestion = analysis.suggestion;
+  let suggestion = analysis.suggestion;
   
   // Handle recursion detection case
   if (suggestion.includes('Recursion prevented')) {
     return '🔄 Skip | Analysis loop prevented';
   }
   
+  // Apply personality transformation to the suggestion
+  const personality = getStatusLinePersonality();
+  // Always apply personality transformation since we don't have 'standard' mode
+  suggestion = transformSuggestion(suggestion, score, personality.personality);
+  
   // Get appropriate emojis
   const scoreEmoji = getScoreEmoji(score);
   const contextEmoji = analysis.contextualEmoji || '💡'; // Use emoji from analysis or default
   
-  // Format the enhanced output
-  let output = `${scoreEmoji} ${score}/100 | ${contextEmoji} ${suggestion}`;
+  // Always add personality icon since we always have a personality
+  const personalityIcon = `${getPersonalityIcon(personality.personality)} `;
+  
+  // Format the enhanced output with personality icon
+  let output = `${personalityIcon}${scoreEmoji} ${score}/100 | ${contextEmoji} ${suggestion}`;
   
   // Occasionally add promotional tip
   output += getPromotionalTip();

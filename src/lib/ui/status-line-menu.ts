@@ -9,18 +9,25 @@ import {
 } from '../status-line-manager';
 import { showSuccess, showError, showInfo } from '../ui';
 import { logger } from '../../utils/logger';
+import { 
+  getStatusLinePersonality, 
+  setStatusLinePersonality,
+  getPersonalityDisplayName,
+  getPersonalityIcon 
+} from '../personality-manager';
+import { createCustomPersonality, editCustomPersonality } from './personality-creator';
 
 /**
  * Display educational header about status line
  */
 async function displayEducationalHeader(config: StatusLineConfig): Promise<void> {
-  console.log(colors.accent('\n📊 Prompt Quality Status Line\n'));
+  console.log(colors.accent('\n💡 Real-time Prompt Coach Status Line\n'));
   
   // Educational content
   console.log(colors.subdued('Real-time prompt quality feedback directly in Claude Code.\n'));
   
   console.log(colors.info('What is the Status Line?'));
-  console.log(colors.subdued('  • Analyzes each prompt using Claude AI (Haiku model)'));
+  console.log(colors.subdued('  • Analyzes each prompt using Claude Code (Haiku model)'));
   console.log(colors.subdued('  • Shows quality score (0-100) in your status bar'));
   console.log(colors.subdued('  • Provides instant improvement suggestions\n'));
   
@@ -52,6 +59,14 @@ async function displayEducationalHeader(config: StatusLineConfig): Promise<void>
   }
   
   console.log(`${statusIcon} Status: ${statusColor(statusText)}`);
+  
+  // Show personality if status line is installed
+  if (config.state === 'FULLY_INSTALLED') {
+    const personality = getStatusLinePersonality();
+    const personalityIcon = getPersonalityIcon(personality.personality);
+    const personalityName = getPersonalityDisplayName(personality.personality);
+    console.log(`${personalityIcon} Personality: ${colors.accent(personalityName)}`);
+  }
   
   // Show component status if partially installed
   if (config.state === 'PARTIALLY_INSTALLED') {
@@ -285,6 +300,110 @@ async function performUninstall(): Promise<void> {
 }
 
 /**
+ * Manage personality settings
+ */
+async function managePersonality(): Promise<void> {
+  console.clear();
+  
+  const personality = getStatusLinePersonality();
+  const currentPersonality = personality.personality;
+  const currentName = getPersonalityDisplayName(currentPersonality);
+  const currentIcon = getPersonalityIcon(currentPersonality);
+  
+  console.log(colors.accent('\n🎭 Manage Status Line Personality\n'));
+  console.log(`Current: ${currentIcon} ${colors.highlight(currentName)}\n`);
+  
+  // Build choices with current status indicators
+  const choices = [
+    {
+      name: `🔥 Gordon ${currentPersonality === 'gordon' ? colors.success('(Active)') : ''}`,
+      value: 'gordon',
+      disabled: currentPersonality === 'gordon' ? 'Currently active' : false
+    },
+    {
+      name: `💜 Vibe-Log ${currentPersonality === 'vibe-log' ? colors.success('(Active)') : ''}`,
+      value: 'vibe-log',
+      disabled: currentPersonality === 'vibe-log' ? 'Currently active' : false
+    },
+    new inquirer.Separator(),
+    {
+      name: '✨ Create Custom Personality',
+      value: 'create-custom'
+    }
+  ];
+  
+  // Add edit option if custom personality exists
+  if (personality.customPersonality) {
+    const customName = personality.customPersonality.name;
+    choices.push({
+      name: `📝 Edit Custom: "${customName}" ${currentPersonality === 'custom' ? colors.success('(Active)') : ''}`,
+      value: 'edit-custom'
+    });
+    
+    // Add activate option if not currently active
+    if (currentPersonality !== 'custom') {
+      choices.push({
+        name: `✨ Activate Custom: "${customName}"`,
+        value: 'custom'
+      });
+    }
+  }
+  
+  choices.push(
+    new inquirer.Separator(),
+    {
+      name: '← Back',
+      value: 'back'
+    }
+  );
+  
+  const { choice } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'choice',
+      message: 'Choose a personality:',
+      choices,
+      pageSize: 10
+    }
+  ]);
+  
+  switch (choice) {
+    case 'gordon':
+    case 'vibe-log':
+      setStatusLinePersonality(choice);
+      console.log('');
+      showSuccess(`Personality switched to ${getPersonalityDisplayName(choice)}!`);
+      console.log(colors.dim('\n  The status line will now use this personality style'));
+      await promptToContinue();
+      break;
+      
+    case 'custom':
+      if (personality.customPersonality) {
+        setStatusLinePersonality('custom');
+        console.log('');
+        showSuccess(`Activated custom personality "${personality.customPersonality.name}"!`);
+        console.log(colors.dim('\n  The status line will now use your custom style'));
+        await promptToContinue();
+      }
+      break;
+      
+    case 'create-custom':
+      await createCustomPersonality();
+      await promptToContinue();
+      break;
+      
+    case 'edit-custom':
+      await editCustomPersonality();
+      await promptToContinue();
+      break;
+      
+    case 'back':
+      // Return to main menu
+      break;
+  }
+}
+
+/**
  * Wait for user to press Enter
  */
 async function promptToContinue(): Promise<void> {
@@ -334,6 +453,10 @@ export async function showStatusLineMenu(): Promise<void> {
         value: 'reinstall'
       });
       choices.push({
+        name: `🎭 Manage Personality`,
+        value: 'personality'
+      });
+      choices.push({
         name: `❌ Uninstall Status Line`,
         value: 'uninstall'
       });
@@ -371,6 +494,10 @@ export async function showStatusLineMenu(): Promise<void> {
       case 'reinstall':
         await performInstallation();
         await promptToContinue();
+        break;
+      
+      case 'personality':
+        await managePersonality();
         break;
         
       case 'uninstall':

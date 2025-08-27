@@ -6,6 +6,7 @@ import { logout } from './commands/logout';
 import { privacy } from './commands/privacy';
 import { createAnalyzePromptCommand } from './commands/analyze-prompt';
 import { createStatuslineCommand } from './commands/statusline';
+import { createTestPersonalityCommand } from './commands/test-personality';
 import { showLogo } from './lib/ui';
 import { handleError } from './utils/errors';
 import { logger } from './utils/logger';
@@ -168,6 +169,9 @@ program.addCommand(createAnalyzePromptCommand());
 
 // Add statusline command (hidden - for Claude Code status line)
 program.addCommand(createStatuslineCommand());
+
+// Add test-personality command (hidden - for debugging)
+program.addCommand(createTestPersonalityCommand());
 
 // Custom help function
 function showHelp(): void {
