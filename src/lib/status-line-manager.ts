@@ -52,11 +52,9 @@ export async function getStatusLineInfo(): Promise<StatusLineFeatureStatus> {
 export async function installStatusLine(cliPath?: string): Promise<void> {
   try {
     const finalCliPath = cliPath || getCliPath();
-    logger.info(`Installing status line with CLI path: ${finalCliPath}`);
+    logger.debug(`Installing status line with CLI path: ${finalCliPath}`);
     
     await claudeSettingsManager.installStatusLineFeature({ cliPath: finalCliPath });
-    
-    logger.info('Status line installed successfully');
   } catch (error) {
     logger.error('Error installing status line:', error);
     throw new Error(`Failed to install status line: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -69,11 +67,9 @@ export async function installStatusLine(cliPath?: string): Promise<void> {
  */
 export async function uninstallStatusLine(): Promise<void> {
   try {
-    logger.info('Uninstalling status line');
+    logger.debug('Uninstalling status line');
     
     await claudeSettingsManager.removeStatusLineFeature();
-    
-    logger.info('Status line uninstalled successfully');
   } catch (error) {
     logger.error('Error uninstalling status line:', error);
     throw new Error(`Failed to uninstall status line: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -85,11 +81,9 @@ export async function uninstallStatusLine(): Promise<void> {
  */
 export async function updateStatusLineCliPath(newCliPath: string): Promise<void> {
   try {
-    logger.info(`Updating status line CLI path: ${newCliPath}`);
+    logger.debug(`Updating status line CLI path: ${newCliPath}`);
     
     await claudeSettingsManager.updateCliPath(newCliPath);
-    
-    logger.info('Status line CLI path updated successfully');
   } catch (error) {
     logger.error('Error updating status line CLI path:', error);
     throw new Error(`Failed to update CLI path: ${error instanceof Error ? error.message : 'Unknown error'}`);

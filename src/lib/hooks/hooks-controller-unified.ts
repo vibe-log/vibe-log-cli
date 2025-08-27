@@ -96,7 +96,7 @@ export async function getHooksStatus(): Promise<HooksStatus> {
  * Install selected hooks
  */
 export async function installSelectedHooks(selection: HookSelection): Promise<void> {
-  logger.info(`Installing selected hooks: ${JSON.stringify(selection)}`);
+  logger.debug(`Installing selected hooks: ${JSON.stringify(selection)}`);
   
   await claudeSettingsManager.installAutoSyncHooks({
     installSessionStart: selection.sessionStartHook,
@@ -109,7 +109,7 @@ export async function installSelectedHooks(selection: HookSelection): Promise<vo
  * Install global hooks (track all projects)
  */
 export async function installGlobalHooks(): Promise<void> {
-  logger.info('Installing global hooks');
+  logger.debug('Installing global hooks');
   
   await claudeSettingsManager.installAutoSyncHooks({
     installSessionStart: true,
@@ -122,7 +122,7 @@ export async function installGlobalHooks(): Promise<void> {
  * Install hooks for specific projects
  */
 export async function installProjectHooks(projects: Array<{ path: string; name: string; actualPath?: string }>): Promise<void> {
-  logger.info(`Installing hooks for ${projects.length} projects`);
+  logger.debug(`Installing hooks for ${projects.length} projects`);
   
   // For now, install hooks globally with selected mode
   // Project-specific installation would require implementing writeProjectLocalSettings
@@ -132,14 +132,14 @@ export async function installProjectHooks(projects: Array<{ path: string; name: 
     mode: 'selected'
   });
   
-  logger.info('Hooks configured for selected projects mode');
+  logger.debug('Hooks configured for selected projects mode');
 }
 
 /**
  * Install selective project hooks (different hooks per project)
  */
 export async function installSelectiveProjectHooks(projectConfigs: ProjectHookConfig[]): Promise<void> {
-  logger.info(`Installing selective hooks for ${projectConfigs.length} projects`);
+  logger.debug(`Installing selective hooks for ${projectConfigs.length} projects`);
   
   // Install hooks based on the most common configuration
   // Individual project configuration would require project-specific settings support
@@ -153,7 +153,7 @@ export async function installSelectiveProjectHooks(projectConfigs: ProjectHookCo
       mode: 'selected'
     });
     
-    logger.info(`Configured hooks: SessionStart=${hasSessionStart}, PreCompact=${hasPreCompact}`);
+    logger.debug(`Configured hooks: SessionStart=${hasSessionStart}, PreCompact=${hasPreCompact}`);
   }
 }
 
@@ -161,7 +161,7 @@ export async function installSelectiveProjectHooks(projectConfigs: ProjectHookCo
  * Remove all vibe-log hooks
  */
 export async function uninstallAllHooks(): Promise<{ removedCount: number }> {
-  logger.info('Uninstalling all hooks');
+  logger.debug('Uninstalling all hooks');
   
   // Remove auto-sync hooks
   await claudeSettingsManager.removeAllVibeLogSettings();
@@ -174,7 +174,7 @@ export async function uninstallAllHooks(): Promise<{ removedCount: number }> {
  * Toggle a specific hook on/off
  */
 export async function toggleHook(hookType: 'sessionstart' | 'precompact', enable: boolean): Promise<void> {
-  logger.info(`${enable ? 'Enabling' : 'Disabling'} ${hookType} hook`);
+  logger.debug(`${enable ? 'Enabling' : 'Disabling'} ${hookType} hook`);
   
   const status = await claudeSettingsManager.getFeatureStatus();
   const currentMode = status.autoSync.mode || 'selected';
@@ -192,7 +192,7 @@ export async function toggleHook(hookType: 'sessionstart' | 'precompact', enable
   // If both hooks would be disabled, remove all
   if (!installSessionStart && !installPreCompact) {
     await claudeSettingsManager.removeAllVibeLogSettings();
-    logger.info('All hooks removed');
+    logger.debug('All hooks removed');
   } else {
     // Reinstall with updated configuration
     await claudeSettingsManager.installAutoSyncHooks({
@@ -200,7 +200,7 @@ export async function toggleHook(hookType: 'sessionstart' | 'precompact', enable
       installPreCompact,
       mode: currentMode
     });
-    logger.info(`Hook configuration updated`);
+    logger.debug(`Hook configuration updated`);
   }
 }
 
@@ -211,7 +211,7 @@ export async function updateHookConfig(
   hookType: 'sessionstart' | 'precompact',
   config: { timeout?: number; debug?: boolean }
 ): Promise<void> {
-  logger.info(`Updating ${hookType} configuration: ${JSON.stringify(config)}`);
+  logger.debug(`Updating ${hookType} configuration: ${JSON.stringify(config)}`);
   
   // Get current status and reinstall with updated configuration
   const status = await claudeSettingsManager.getFeatureStatus();
@@ -226,7 +226,7 @@ export async function updateHookConfig(
   });
   
   if (config.timeout) {
-    logger.info(`Note: Timeout configuration requires manual editing in settings.json`);
+    logger.debug(`Note: Timeout configuration requires manual editing in settings.json`);
   }
 }
 

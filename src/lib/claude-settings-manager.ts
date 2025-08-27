@@ -118,7 +118,7 @@ export class ClaudeSettingsManager {
    * These must be installed together as they're useless separately
    */
   async installStatusLineFeature(config?: StatusLineConfig): Promise<void> {
-    logger.info('Installing status line feature');
+    logger.debug('Installing status line feature');
     
     const cliPath = config?.cliPath || getCliPath();
     const settings = await readGlobalSettings() || { hooks: {} };
@@ -153,14 +153,14 @@ export class ClaudeSettingsManager {
     
     // 4. Save settings
     await writeGlobalSettings(settings);
-    logger.info('Status line feature installed successfully');
+    logger.debug('Status line feature installed successfully');
   }
   
   /**
    * Remove the Status Line feature completely
    */
   async removeStatusLineFeature(): Promise<void> {
-    logger.info('Removing status line feature');
+    logger.debug('Removing status line feature');
     
     const settings = await readGlobalSettings();
     if (!settings) return;
@@ -168,7 +168,7 @@ export class ClaudeSettingsManager {
     this.removeStatusLineComponents(settings);
     
     await writeGlobalSettings(settings);
-    logger.info('Status line feature removed successfully');
+    logger.debug('Status line feature removed successfully');
   }
   
   /**
@@ -205,7 +205,7 @@ export class ClaudeSettingsManager {
    * Install Auto-Sync hooks (SessionStart and/or PreCompact)
    */
   async installAutoSyncHooks(config: AutoSyncConfig): Promise<void> {
-    logger.info(`Installing auto-sync hooks: ${JSON.stringify(config)}`);
+    logger.debug(`Installing auto-sync hooks: ${JSON.stringify(config)}`);
     
     const cliPath = config.cliPath || getCliPath();
     
@@ -268,7 +268,7 @@ export class ClaudeSettingsManager {
       await writeGlobalSettings(settings);
     }
     
-    logger.info('Auto-sync hooks installed successfully');
+    logger.debug('Auto-sync hooks installed successfully');
   }
   
   /**
@@ -310,7 +310,7 @@ export class ClaudeSettingsManager {
    * Remove ALL vibe-log hooks and configurations
    */
   async removeAllVibeLogSettings(): Promise<void> {
-    logger.info('Removing all vibe-log settings');
+    logger.debug('Removing all vibe-log settings');
     
     const settings = await readGlobalSettings();
     if (!settings) return;
@@ -323,7 +323,7 @@ export class ClaudeSettingsManager {
     this.removeAutoSyncHook(settings, 'PreCompact');
     
     await writeGlobalSettings(settings);
-    logger.info('All vibe-log settings removed successfully');
+    logger.debug('All vibe-log settings removed successfully');
   }
   
   /**
@@ -455,7 +455,7 @@ export class ClaudeSettingsManager {
    * Useful when switching between development and production
    */
   async updateCliPath(newCliPath: string): Promise<void> {
-    logger.info(`Updating CLI path for all vibe-log commands: ${newCliPath}`);
+    logger.debug(`Updating CLI path for all vibe-log commands: ${newCliPath}`);
     
     const settings = await readGlobalSettings();
     if (!settings) return;
@@ -501,7 +501,7 @@ export class ClaudeSettingsManager {
     }
     
     await writeGlobalSettings(settings);
-    logger.info('CLI path updated successfully');
+    logger.debug('CLI path updated successfully');
   }
 }
 
