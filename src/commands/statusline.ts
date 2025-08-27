@@ -322,14 +322,22 @@ export function createStatuslineCommand(): Command {
           options.format = 'compact';
         }
         
-        // Build path to latest analysis file
+        // If no session ID from stdin, show default message
+        if (!currentSessionId) {
+          logger.debug('No session ID provided, showing default message');
+          const output = formatDefault(format);
+          process.stdout.write(output);
+          process.exit(0);
+        }
+        
+        // Build path to session-specific analysis file
         const homeDir = os.homedir();
-        const analysisFile = path.join(homeDir, '.vibe-log', 'analyzed-prompts', 'latest.json');
+        const analysisFile = path.join(homeDir, '.vibe-log', 'analyzed-prompts', `${currentSessionId}.json`);
         
         // Check if file exists
         if (!existsSync(analysisFile)) {
-          // No analysis yet - show default message
-          logger.debug('No analysis file found, showing default message');
+          // No analysis for this session yet - show default message
+          logger.debug(`No analysis file found for session ${currentSessionId}, showing default message`);
           const output = formatDefault(format);
           process.stdout.write(output);
           process.exit(0);
@@ -375,15 +383,7 @@ export function createStatuslineCommand(): Command {
           process.exit(0);
         }
         
-        // Check if the analysis is for the current session
-        if (currentSessionId && analysis.sessionId && analysis.sessionId !== currentSessionId) {
-          logger.debug(`Session mismatch - current: ${currentSessionId}, analysis: ${analysis.sessionId}`);
-          // Show default message for new session
-          const output = formatDefault(format);
-          process.stdout.write(output);
-          process.exit(0);
-        }
-        
+        // No need to check session ID - we're reading the session-specific file
         // Format and output the analysis
         const output = formatAnalysis(analysis, format);
         process.stdout.write(output);

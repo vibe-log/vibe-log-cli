@@ -330,10 +330,15 @@ ${previousAssistantMessage.substring(0, 500)}${previousAssistantMessage.length >
   }
 
   /**
-   * Write loading state to latest.json
+   * Write loading state to session file
    * This provides immediate feedback while analysis is running
    */
   private async writeLoadingState(sessionId?: string): Promise<void> {
+    if (!sessionId) {
+      logger.debug('No session ID provided, skipping loading state');
+      return;
+    }
+    
     try {
       // Ensure the analysis directory exists
       await this.ensureAnalysisDir();
@@ -351,15 +356,15 @@ ${previousAssistantMessage.substring(0, 500)}${previousAssistantMessage.length >
         message: getLoadingMessage(personality.personality, customName)
       };
       
-      // Write directly to latest.json
-      const latestPath = path.join(this.analysisDir, 'latest.json');
+      // Write to session-specific file
+      const sessionPath = path.join(this.analysisDir, `${sessionId}.json`);
       await fs.writeFile(
-        latestPath,
+        sessionPath,
         JSON.stringify(loadingState, null, 2),
         'utf8'
       );
       
-      logger.debug('Loading state written to latest.json');
+      logger.debug(`Loading state written to session file: ${sessionId}.json`);
     } catch (error) {
       logger.error('Failed to write loading state:', error);
       // Don't throw - loading state is nice-to-have, not critical
@@ -388,45 +393,13 @@ ${previousAssistantMessage.substring(0, 500)}${previousAssistantMessage.length >
         'utf8'
       );
 
-      // Create/update the latest symlink
-      const latestPath = path.join(this.analysisDir, 'latest.json');
-      
-      // Remove old symlink if it exists
-      try {
-        await fs.unlink(latestPath);
-      } catch {
-        // Ignore if doesn't exist
-      }
-
-      // Create new symlink
-      try {
-        await fs.symlink(filename, latestPath);
-      } catch (symlinkError) {
-        // On Windows, symlinks might fail, so copy the file instead
-        await fs.copyFile(filepath, latestPath);
-      }
-
       logger.debug(`Analysis saved to: ${filepath}`);
-      logger.debug(`Latest symlink updated: ${latestPath}`);
 
     } catch (error) {
       logger.error('Failed to save analysis:', error);
     }
   }
 
-  /**
-   * Load the latest analysis
-   */
-  public async loadLatestAnalysis(): Promise<PromptAnalysis | null> {
-    try {
-      const latestPath = path.join(this.analysisDir, 'latest.json');
-      const content = await fs.readFile(latestPath, 'utf8');
-      return JSON.parse(content);
-    } catch (error) {
-      logger.debug('No latest analysis found:', error);
-      return null;
-    }
-  }
 
   /**
    * Load analysis by session ID
@@ -452,7 +425,8 @@ ${previousAssistantMessage.substring(0, 500)}${previousAssistantMessage.length >
       const sevenDays = 7 * 24 * 60 * 60 * 1000;
 
       for (const file of files) {
-        if (file === 'latest.json') continue; // Don't delete the latest symlink
+        // Skip non-JSON files and old latest.json files
+        if (!file.endsWith('.json')) continue;
 
         const filepath = path.join(this.analysisDir, file);
         const stats = await fs.stat(filepath);
