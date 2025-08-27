@@ -4,7 +4,7 @@ import path from 'path';
 import os from 'os';
 import { PromptAnalysis } from '../lib/prompt-analyzer';
 import { logger } from '../utils/logger';
-import { transformSuggestion, getStatusLinePersonality, getPersonalityDisplayName, getPersonalityIcon } from '../lib/personality-manager';
+import { transformSuggestion, getStatusLinePersonality, getPersonalityDisplayName } from '../lib/personality-manager';
 import { isLoadingState, isStaleLoadingState, LoadingState, getLoadingMessage } from '../types/loading-state';
 import { getToken } from '../lib/config';
 
@@ -233,11 +233,10 @@ function formatDefault(format: OutputFormat): string {
   const personality = getStatusLinePersonality();
   
   // Get personality icon and name
-  const emoji = getPersonalityIcon(personality.personality);
   const personalityName = getPersonalityDisplayName(personality.personality);
   
   // Create unified message for all personalities
-  const baseMessage = `${emoji} ${personalityName} is ready to analyze and improve your prompts`;
+  const baseMessage = `💭 ${personalityName} is ready to analyze and improve your prompts`;
   
   // Generate promotional tip (10% chance)
   const showTip = Math.random() < 0.1;
@@ -263,7 +262,7 @@ function formatDefault(format: OutputFormat): string {
     case 'detailed':
       return `Status: Ready | ${baseMessage}${tip}`;
     case 'emoji':
-      return `${emoji} Ready${tip}`;
+      return `Ready${tip}`;
     case 'minimal':
       return 'Ready';
     case 'compact':
