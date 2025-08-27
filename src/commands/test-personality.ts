@@ -9,17 +9,10 @@ import {
   transformSuggestion
 } from '../lib/personality-manager';
 import { setCustomPersonality } from '../lib/config';
-import { PromptAnalyzer } from '../lib/prompt-analyzer';
-
-/**
- * Test prompts with different scores
- */
-const TEST_PROMPTS = [
-  { text: 'fix this', expectedScore: 20, description: 'Poor prompt - minimal context' },
-  { text: 'I need help with my React component that handles user authentication', expectedScore: 55, description: 'Fair prompt - some context' },
-  { text: 'I\'m building a Next.js app with TypeScript. My UserProfile component at src/components/UserProfile.tsx is not updating when the user data changes. Here\'s the relevant code...', expectedScore: 75, description: 'Good prompt - detailed context' },
-  { text: 'I need to implement a debounced search feature in my React app. Users type in a search box, and after 500ms of no typing, it should query the /api/search endpoint. The response is an array of {id, title, description}. I want to display results in a dropdown below the search box with keyboard navigation support. Using TypeScript and React 18.', expectedScore: 90, description: 'Excellent prompt - complete context' }
-];
+import { 
+  runPersonalityTest,
+  STANDARD_TEST_PROMPTS
+} from '../lib/personality-test-engine';
 
 /**
  * Create the test-personality command for debugging personality system
@@ -114,26 +107,27 @@ export function createTestPersonalityCommand(): Command {
         console.log(colors.info('Analyzing Test Prompts with Claude SDK:'));
         console.log(colors.subdued('(This will make actual API calls to Claude)\n'));
         
-        const analyzer = new PromptAnalyzer();
+        // Use shared test engine
+        const results = await runPersonalityTest(STANDARD_TEST_PROMPTS, {
+          verbose: options.verbose,
+          personality: currentConfig.personality,
+          onProgress: (message) => {
+            console.log(colors.subdued(message));
+          }
+        });
         
-        for (const testPrompt of TEST_PROMPTS) {
-          console.log(colors.accent(`Testing: "${testPrompt.text.substring(0, 50)}..."`));
-          console.log(colors.subdued(`  Expected: ${testPrompt.description}`));
+        // Display results
+        for (const result of results) {
+          console.log(colors.accent(`Prompt: "${result.prompt.substring(0, 50)}..."`));
+          console.log(colors.subdued(`  Context: ${result.promptDescription}`));
           
-          try {
-            const analysis = await analyzer.analyze(testPrompt.text, {
-              verbose: options.verbose
-            });
-            
-            console.log(`  Result: ${getScoreEmoji(analysis.score)} ${analysis.score}/100`);
-            console.log(`  Suggestion: "${analysis.suggestion}"`);
-            
-            // Show if the personality transformation worked
-            const expectedTransformed = transformSuggestion(analysis.suggestion, analysis.score);
-            console.log(`  Personality: "${expectedTransformed}"`);
-            
-          } catch (error) {
-            console.log(colors.error(`  Error: ${error}`));
+          if (result.error) {
+            console.log(colors.error(`  Error: ${result.error}`));
+          } else {
+            console.log(`  Result: ${result.emoji} ${result.aiScore}/100 (${result.aiQuality})`);
+            console.log(`  AI Suggestion: "${result.aiSuggestion}"`);
+            console.log(`  With Personality: "${result.personalityTransformed}"`);
+            console.log(colors.dim(`  Processing: ${(result.processingTime / 1000).toFixed(1)}s`));
           }
           console.log('');
         }
@@ -155,14 +149,4 @@ export function createTestPersonalityCommand(): Command {
     });
   
   return command;
-}
-
-/**
- * Get emoji for score
- */
-function getScoreEmoji(score: number): string {
-  if (score <= 40) return '🔴';
-  if (score <= 60) return '🟠';
-  if (score <= 80) return '🟡';
-  return '🟢';
 }

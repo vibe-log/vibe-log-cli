@@ -16,6 +16,7 @@ import {
   getPersonalityIcon 
 } from '../personality-manager';
 import { createCustomPersonality, editCustomPersonality } from './personality-creator';
+import { interactivePersonalityTester } from './personality-tester';
 
 /**
  * Display educational header about status line
@@ -316,6 +317,11 @@ async function managePersonality(): Promise<void> {
   // Build choices with current status indicators
   const choices = [
     {
+      name: '🧪 Test Current Personality',
+      value: 'test'
+    },
+    new inquirer.Separator(),
+    {
       name: `🔥 Gordon ${currentPersonality === 'gordon' ? colors.success('(Active)') : ''}`,
       value: 'gordon',
       disabled: currentPersonality === 'gordon' ? 'Currently active' : false
@@ -368,6 +374,10 @@ async function managePersonality(): Promise<void> {
   ]);
   
   switch (choice) {
+    case 'test':
+      await interactivePersonalityTester();
+      break;
+      
     case 'gordon':
     case 'vibe-log':
       setStatusLinePersonality(choice);
@@ -457,6 +467,10 @@ export async function showStatusLineMenu(): Promise<void> {
         value: 'personality'
       });
       choices.push({
+        name: `🧪 Test Personality System`,
+        value: 'test-quick'
+      });
+      choices.push({
         name: `❌ Uninstall Status Line`,
         value: 'uninstall'
       });
@@ -498,6 +512,11 @@ export async function showStatusLineMenu(): Promise<void> {
       
       case 'personality':
         await managePersonality();
+        break;
+      
+      case 'test-quick':
+        await interactivePersonalityTester();
+        await promptToContinue();
         break;
         
       case 'uninstall':

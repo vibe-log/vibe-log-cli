@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe-log Productivity Report - Last 7 Days</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 2rem;
+        }
+        
+        .section {
+            margin-bottom: 2.5rem;
+        }
+        
+        .section h2 {
+            color: #333;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 1.5rem;
+            border-radius: 15px;
+            color: white;
+        }
+        
+        .metric-card.blue {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .metric-card.green {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+        
+        .metric-card.purple {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+        
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .metric-label {
+            font-size: 1rem;
+            opacity: 0.95;
+        }
+        
+        .activity-chart {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-top: 1rem;
+        }
+        
+        .bar-container {
+            margin-bottom: 1rem;
+        }
+        
+        .bar-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #444;
+        }
+        
+        .bar-wrapper {
+            background: #e9ecef;
+            border-radius: 10px;
+            height: 30px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .bar-fill {
+            height: 100%;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            transition: width 0.5s ease-in-out;
+        }
+        
+        .bar-development { background: linear-gradient(90deg, #00d2ff, #3a7bd5); }
+        .bar-debugging { background: linear-gradient(90deg, #ff9a00, #ff5722); }
+        .bar-refactoring { background: linear-gradient(90deg, #667eea, #764ba2); }
+        .bar-review { background: linear-gradient(90deg, #f093fb, #f5576c); }
+        .bar-research { background: linear-gradient(90deg, #4facfe, #00f2fe); }
+        .bar-testing { background: linear-gradient(90deg, #43e97b, #38f9d7); }
+        .bar-planning { background: linear-gradient(90deg, #fa709a, #fee140); }
+        .bar-learning { background: linear-gradient(90deg, #30cfd0, #330867); }
+        
+        .accomplishments {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-top: 1rem;
+        }
+        
+        .accomplishment-item {
+            padding: 1rem;
+            background: white;
+            border-left: 4px solid #667eea;
+            margin-bottom: 1rem;
+            border-radius: 5px;
+        }
+        
+        .accomplishment-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .insights-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 1rem;
+            overflow: hidden;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        .insights-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .insights-table td {
+            padding: 1rem;
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .insights-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .insights-table tr:nth-child(even) td {
+            background: #f8f9fa;
+        }
+        
+        .pattern-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+        
+        .pattern-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .pattern-card h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+        
+        .time-slot {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .time-slot:last-child {
+            border-bottom: none;
+        }
+        
+        .percentage {
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            text-align: center;
+            padding: 1.5rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Vibe-log Productivity Report</h1>
+            <div class="subtitle">Last 7 Days Analysis • Generated on August 27, 2025</div>
+        </div>
+        
+        <div class="content">
+            <!-- Executive Summary -->
+            <div class="section">
+                <h2>📊 Executive Summary</h2>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value">162</div>
+                        <div class="metric-label">Total Sessions</div>
+                    </div>
+                    <div class="metric-card blue">
+                        <div class="metric-value">2</div>
+                        <div class="metric-label">Active Projects</div>
+                    </div>
+                    <div class="metric-card green">
+                        <div class="metric-value">147</div>
+                        <div class="metric-label">vibe-log Sessions</div>
+                    </div>
+                    <div class="metric-card purple">
+                        <div class="metric-value">15</div>
+                        <div class="metric-label">Marketing Sessions</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Activity Breakdown -->
+            <div class="section">
+                <h2>🎯 Activity Breakdown</h2>
+                <div class="activity-chart">
+                    <div class="bar-container">
+                        <div class="bar-label">
+                            <span>Development</span>
+                            <span>28.6%</span>
+                        </div>
+                        <div class="bar-wrapper">
+                            <div class="bar-fill bar-development" style="width: 28.6%">42 sessions</div>
+                        </div>
+                    </div>
+                    <div class="bar-container">
+                        <div class="bar-label">
+                            <span>Debugging</span>
+                            <span>21.1%</span>
+                        </div>
+                        <div class="bar-wrapper">
+                            <div class="bar-fill bar-debugging" style="width: 21.1%">31 sessions</div>
+                        </div>
+                    </div>
+                    <div class="bar-container">
+                        <div class="bar-label">
+                            <span>Refactoring</span>
+                            <span>15.6%</span>
+                        </div>
+                        <div class="bar-wrapper">
+                            <div class="bar-fill bar-refactoring" style="width: 15.6%">23 sessions</div>
+                        </div>
+                    </div>
+                    <div class="bar-container">
+                        <div class="bar-label">
+                            <span>Code Review</span>
+                            <span>12.2%</span>
+                        </div>
+                        <div class="bar-wrapper">
+                            <div class="bar-fill bar-review" style="width: 12.2%">18 sessions</div>
+                        </div>
+                    </div>
+                    <div class="bar-container">
+                        <div class="bar-label">
+                            <span>Research</span>
+                            <span>10.2%</span>
+                        </div>
+                        <div class="bar-wrapper">
+                            <div class="bar-fill bar-research" style="width: 10.2%">15 sessions</div>
+                        </div>
+                    </div>
+                    <div class="bar-container">
+                        <div class="bar-label">
+                            <span>Testing</span>
+                            <span>6.1%</span>
+                        </div>
+                        <div class="bar-wrapper">
+                            <div class="bar-fill bar-testing" style="width: 6.1%">9 sessions</div>
+                        </div>
+                    </div>
+                    <div class="bar-container">
+                        <div class="bar-label">
+                            <span>Planning</span>
+                            <span>4.1%</span>
+                        </div>
+                        <div class="bar-wrapper">
+                            <div class="bar-fill bar-planning" style="width: 4.1%">6 sessions</div>
+                        </div>
+                    </div>
+                    <div class="bar-container">
+                        <div class="bar-label">
+                            <span>Learning</span>
+                            <span>2.0%</span>
+                        </div>
+                        <div class="bar-wrapper">
+                            <div class="bar-fill bar-learning" style="width: 2.0%">3 sessions</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Key Accomplishments -->
+            <div class="section">
+                <h2>🏆 Key Accomplishments</h2>
+                <div class="accomplishments">
+                    <div class="accomplishment-item">
+                        <strong>Status Line Feature (Phases 1-5)</strong> - Implemented a comprehensive real-time prompt quality analyzer with Claude Code integration, including hook installation and visual feedback system.
+                    </div>
+                    <div class="accomplishment-item">
+                        <strong>Enhanced Visual UI</strong> - Upgraded status line with color-coded quality indicators (🔴🟠🟡🟢), contextual emojis, and actionable improvement suggestions.
+                    </div>
+                    <div class="accomplishment-item">
+                        <strong>Context-Aware Analysis</strong> - Added Phase 5 intelligence to handle contextual responses, preventing false negatives for short answers to Claude's questions.
+                    </div>
+                    <div class="accomplishment-item">
+                        <strong>Installation Menu System</strong> - Created interactive menu interface for installing and configuring status line features, similar to auto-sync hooks.
+                    </div>
+                    <div class="accomplishment-item">
+                        <strong>UserPromptSubmit Hook</strong> - Integrated background analysis with Claude SDK (Haiku model) for real-time prompt evaluation with recursion detection.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Prompt Engineering Insights -->
+            <div class="section">
+                <h2>💡 Prompt Engineering Insights</h2>
+                <table class="insights-table">
+                    <thead>
+                        <tr>
+                            <th width="25%">Issue Pattern</th>
+                            <th width="35%">Your Examples</th>
+                            <th width="40%">Specific Recommendation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Vague Error Descriptions</strong></td>
+                            <td>"fix cli npm run build!" without error output</td>
+                            <td>Always paste complete error output and relevant code. Example: "Getting TypeError [full error] in vibelog-cli/dist/"</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Context Switching</strong></td>
+                            <td>Jumping between status line and Reddit research</td>
+                            <td>Start prompts with context: "Continuing Phase 4..." or "New task: Research Reddit posts"</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Incomplete Specifications</strong></td>
+                            <td>"cleanup the html generated report" with unclear changes</td>
+                            <td>Specify exactly: "Replace all instances of X with Y in file Z"</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Assuming Memory</strong></td>
+                            <td>Referencing "Phase 5" without context</td>
+                            <td>Brief recap: "Phases 1-4 complete: [summary]. Phase 5: Add context awareness"</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Multi-Part Questions</strong></td>
+                            <td>Combining security review with file analysis</td>
+                            <td>Use numbered steps: "1. Security review 2. Identify files 3. Recommendations"</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Productivity Patterns -->
+            <div class="section">
+                <h2>⏰ Productivity Patterns</h2>
+                <div class="pattern-grid">
+                    <div class="pattern-card">
+                        <h3>Peak Productivity Hours</h3>
+                        <div class="time-slot">
+                            <span>🌙 Evening (6 PM - 12 AM)</span>
+                            <span class="percentage">45%</span>
+                        </div>
+                        <div class="time-slot">
+                            <span>☀️ Morning (9 AM - 12 PM)</span>
+                            <span class="percentage">25%</span>
+                        </div>
+                        <div class="time-slot">
+                            <span>🌤️ Afternoon (12 PM - 6 PM)</span>
+                            <span class="percentage">20%</span>
+                        </div>
+                        <div class="time-slot">
+                            <span>🌃 Late Night (12 AM - 3 AM)</span>
+                            <span class="percentage">10%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="pattern-card">
+                        <h3>Session Insights</h3>
+                        <div class="time-slot">
+                            <span>Optimal Focus Time</span>
+                            <span class="percentage">7-11 PM</span>
+                        </div>
+                        <div class="time-slot">
+                            <span>Most Productive Days</span>
+                            <span class="percentage">Mon-Tue</span>
+                        </div>
+                        <div class="time-slot">
+                            <span>Average Session Block</span>
+                            <span class="percentage">2-3 hours</span>
+                        </div>
+                        <div class="time-slot">
+                            <span>Deep Work Sessions</span>
+                            <span class="percentage">Late Evening</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Generated by Vibe-log Analysis Suite • Powered by Claude Code Sub-Agents</p>
+            <p style="margin-top: 0.5rem; font-size: 0.9rem;">📈 Keep tracking, keep improving!</p>
+        </div>
+    </div>
+
+    <div style="background: white; 
+                margin: 40px auto 20px; 
+                max-width: 800px; 
+                padding: 25px; 
+                border-radius: 12px; 
+                border: 2px solid #e2e8f0;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+      <div style="font-size: 16px; color: #2d3748; margin-bottom: 20px; font-weight: 600;">
+        📊 Report Generation Stats
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;">
+        <div style="text-align: center; background: #f7fafc; padding: 15px; border-radius: 8px;">
+          <div style="font-size: 24px; font-weight: bold; color: #5a67d8;">12m 5s</div>
+          <div style="font-size: 12px; color: #4a5568; margin-top: 5px; font-weight: 500;">⏱️ Duration</div>
+        </div>
+        <div style="text-align: center; background: #f7fafc; padding: 15px; border-radius: 8px;">
+          <div style="font-size: 24px; font-weight: bold; color: #5a67d8;">20m 38s</div>
+          <div style="font-size: 12px; color: #4a5568; margin-top: 5px; font-weight: 500;">🚀 API Time</div>
+        </div>
+        <div style="text-align: center; background: #f7fafc; padding: 15px; border-radius: 8px;">
+          <div style="font-size: 24px; font-weight: bold; color: #5a67d8;">16</div>
+          <div style="font-size: 12px; color: #4a5568; margin-top: 5px; font-weight: 500;">🔄 Turns</div>
+        </div>
+        <div style="text-align: center; background: #f7fafc; padding: 15px; border-radius: 8px;">
+          <div style="font-size: 24px; font-weight: bold; color: #5a67d8;">$8.63</div>
+          <div style="font-size: 12px; color: #4a5568; margin-top: 5px; font-weight: 500;">💰 Cost</div>
+        </div>
+      </div>
+      <div style="text-align: center; padding-top: 20px; border-top: 2px solid #e2e8f0;">
+        <div style="font-size: 14px; color: #2d3748; margin-bottom: 12px; font-weight: 500;">
+          💡 Get instant reports without using your Claude Code subscription
+        </div>
+        <a href="https://vibe-log.dev" style="display: inline-block; 
+           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+           color: white; 
+           text-decoration: none; 
+           padding: 10px 24px; 
+           border-radius: 6px; 
+           font-size: 14px;
+           font-weight: 600;
+           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+           transition: transform 0.2s, box-shadow 0.2s;">
+          Visit vibe-log.dev →
+        </a>
+      </div>
+    </div>
+</body>
+</html>
