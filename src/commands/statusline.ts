@@ -5,6 +5,7 @@ import os from 'os';
 import { PromptAnalysis } from '../lib/prompt-analyzer';
 import { logger } from '../utils/logger';
 import { transformSuggestion, getStatusLinePersonality, getPersonalityDisplayName } from '../lib/personality-manager';
+import { isLoadingState, isStaleLoadingState, LoadingState, getLoadingMessage } from '../types/loading-state';
 
 /**
  * Output format types for the statusline
@@ -122,6 +123,40 @@ function formatMinimal(analysis: PromptAnalysis): string {
 }
 
 /**
+ * Format loading state for display
+ */
+function formatLoadingState(state: LoadingState, format: OutputFormat): string {
+  // Check if state is stale (older than 15 seconds)
+  if (isStaleLoadingState(state)) {
+    logger.debug('Loading state is stale, returning empty');
+    return '';
+  }
+
+  // Use the loading message from the state or generate based on personality
+  // If we need to regenerate, check for custom personality name
+  let message = state.message;
+  if (!message) {
+    const personality = getStatusLinePersonality();
+    const customName = personality.personality === 'custom' ? personality.customPersonality?.name : undefined;
+    message = getLoadingMessage(state.personality, customName);
+  }
+
+  switch (format) {
+    case 'json':
+      return JSON.stringify(state);
+    case 'detailed':
+      return `Status: Loading | ${message}`;
+    case 'emoji':
+      return `⏳ ${message}`;
+    case 'minimal':
+      return 'Loading...';
+    case 'compact':
+    default:
+      return message;
+  }
+}
+
+/**
  * Format the analysis based on the selected format
  */
 function formatAnalysis(analysis: PromptAnalysis, format: OutputFormat): string {
@@ -186,15 +221,26 @@ export function createStatuslineCommand(): Command {
         }
         
         // Parse the JSON content
-        let analysis: PromptAnalysis;
+        let parsedContent: any;
         try {
-          analysis = JSON.parse(content);
+          parsedContent = JSON.parse(content);
         } catch (parseError) {
           // Corrupted JSON - show error
-          logger.debug('Failed to parse analysis JSON:', parseError);
-          process.stdout.write('[Error] Invalid analysis data');
+          logger.debug('Failed to parse JSON:', parseError);
+          process.stdout.write('[Error] Invalid data');
           process.exit(0);
         }
+        
+        // Check if this is a loading state
+        if (isLoadingState(parsedContent)) {
+          logger.debug('Detected loading state');
+          const output = formatLoadingState(parsedContent as LoadingState, format);
+          process.stdout.write(output);
+          process.exit(0);
+        }
+        
+        // Otherwise, treat as completed analysis
+        const analysis = parsedContent as PromptAnalysis;
         
         // Validate the analysis has required fields
         if (!analysis.quality || typeof analysis.score !== 'number' || !analysis.suggestion) {

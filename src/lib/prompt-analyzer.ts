@@ -2,8 +2,9 @@ import { logger } from '../utils/logger';
 import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
-import { getPersonalitySystemPrompt } from './personality-manager';
+import { getPersonalitySystemPrompt, getStatusLinePersonality } from './personality-manager';
 import { getToken } from './config';
+import { LoadingState, getLoadingMessage } from '../types/loading-state';
 
 /**
  * Analysis result for a prompt
@@ -159,26 +160,41 @@ Emoji selection:
       previousAssistantMessage
     } = options;
 
-    // Check if we're already inside an analysis call to prevent recursion
-    if (process.env.VIBELOG_ANALYZING === 'true') {
-      logger.debug('Skipping analysis - already inside an analysis call (recursion prevention)');
-      // Return a skip response without saving
-      return {
-        quality: 'fair',
-        missing: [],
-        suggestion: 'Analysis skipped (nested call)',
-        score: 50,
-        contextualEmoji: '⏭️',
-        timestamp: new Date().toISOString(),
-        sessionId,
-        originalPrompt: '[Nested call - not analyzed]',
-        promotionalTip: ''
-      };
+    // Check for recursion guard in the prompt itself
+    // This prevents infinite loops when SDK triggers UserPromptSubmit hook
+    const guardMatch = promptText.match(/<!--VIBE_LOG_GUARD:(\d+)-->/); 
+    if (guardMatch) {
+      const depth = parseInt(guardMatch[1]);
+      if (depth > 0) {
+        logger.debug(`Recursion guard detected (depth: ${depth}) - skipping analysis`);
+        // Return minimal skip response without saving
+        return {
+          quality: 'fair',
+          missing: [],
+          suggestion: 'Analysis in progress...',
+          score: 50,
+          contextualEmoji: '⏭️',
+          timestamp: new Date().toISOString(),
+          sessionId,
+          originalPrompt: '[Recursive call - skipped]',
+          promotionalTip: ''
+        };
+      }
     }
 
     logger.debug(`Starting prompt analysis - length: ${promptText.length} chars`);
 
-    // Ensure the analysis directory exists
+    // Write loading state immediately for instant feedback
+    await this.writeLoadingState(sessionId);
+    
+    // Add a small delay to ensure loading state is visible
+    // This helps with very fast analyses that complete in <100ms
+    if (process.env.VIBELOG_DEBUG === 'true') {
+      logger.debug('Loading state written, ensuring visibility...');
+    }
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Ensure the analysis directory exists (already done in writeLoadingState but kept for clarity)
     await this.ensureAnalysisDir();
 
     // Build the analysis prompt
@@ -201,6 +217,10 @@ ${previousAssistantMessage.substring(0, 500)}${previousAssistantMessage.length >
     }
 
     analysisPrompt += '\nRespond with JSON only.';
+    
+    // Add recursion guard to prevent infinite loops
+    // This guard is invisible to Claude but detectable by our code
+    analysisPrompt += '\n<!--VIBE_LOG_GUARD:1-->';
 
     let analysisResult: PromptAnalysis | null = null;
     let rawResponse = '';
@@ -231,10 +251,7 @@ ${previousAssistantMessage.substring(0, 500)}${previousAssistantMessage.length >
             disallowedTools: ['*'],         // No tools needed for JSON response
             customSystemPrompt: this.getSystemPrompt(!!previousAssistantMessage), // Context-aware system prompt
             maxThinkingTokens: 1000,        // Limit thinking for speed
-            abortController,                // Clean cancellation support
-            env: {                          // Set environment to prevent recursion
-              VIBELOG_ANALYZING: 'true'
-            }
+            abortController                 // Clean cancellation support
           }
         })) {
           // Simplified message handling - only care about assistant text
@@ -283,13 +300,10 @@ ${previousAssistantMessage.substring(0, 500)}${previousAssistantMessage.length >
         } catch (parseError) {
           logger.error('Failed to parse SDK response:', parseError);
           logger.debug('Raw SDK response was:', rawResponse);
-          
-          // Return a fallback analysis
-          analysisResult = this.getFallbackAnalysis(promptText, sessionId);
+          throw new Error(`Failed to parse analysis response: ${parseError}`);
         }
       } else {
-        logger.warn('No response received from Claude SDK');
-        analysisResult = this.getFallbackAnalysis(promptText, sessionId);
+        throw new Error('No response received from Claude SDK - please try again');
       }
 
     } catch (error) {
@@ -297,12 +311,13 @@ ${previousAssistantMessage.substring(0, 500)}${previousAssistantMessage.length >
       
       // Check if it's an abort/timeout
       if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('abort'))) {
-        logger.warn('SDK analysis timed out (aborted), using fallback');
+        throw new Error('Analysis timed out - please try again');
       } else if (error instanceof Error && error.message.includes('overloaded')) {
-        logger.warn('Model overloaded, fallback should have been used automatically');
+        throw new Error('Claude is currently overloaded - please try again in a moment');
       }
       
-      analysisResult = this.getFallbackAnalysis(promptText, sessionId);
+      // Re-throw the error for proper error handling
+      throw error;
     }
 
     // Generate promotional tip for this analysis (10% chance)
@@ -315,65 +330,40 @@ ${previousAssistantMessage.substring(0, 500)}${previousAssistantMessage.length >
   }
 
   /**
-   * Get a fallback analysis when Claude analysis fails
+   * Write loading state to latest.json
+   * This provides immediate feedback while analysis is running
    */
-  private getFallbackAnalysis(promptText: string, sessionId?: string): PromptAnalysis {
-    // Basic heuristic analysis
-    const wordCount = promptText.split(/\s+/).length;
-    const hasQuestion = /\?/.test(promptText);
-    const hasCode = /```|`/.test(promptText);
-    const hasPath = /\/[\w.-]+|\\[\w.-]+/.test(promptText);
-
-    let score = 30; // Base score
-    let quality: PromptAnalysis['quality'] = 'poor';
-    const missing: string[] = [];
-    let suggestion = 'Add more context and be specific about what you want';
-    let contextualEmoji = '💡'; // Default emoji
-
-    // Scoring based on heuristics
-    if (wordCount > 10) score += 10;
-    if (wordCount > 30) score += 10;
-    if (wordCount > 50) score += 10;
-    if (hasQuestion) score += 5;
-    if (hasCode) score += 15;
-    if (hasPath) score += 10;
-
-    // Determine quality, feedback, and emoji
-    if (score >= 90) {
-      quality = 'excellent';
-      suggestion = 'Perfect prompt! Well structured and clear';
-      contextualEmoji = '✅';
-    } else if (score >= 80) {
-      quality = 'excellent';
-      suggestion = 'Great prompt! Consider adding success criteria';
-      contextualEmoji = '✨';
-    } else if (score >= 60) {
-      quality = 'good';
-      suggestion = 'Good context. Add specific examples if applicable';
-      contextualEmoji = '🎯';
-      if (!hasCode) missing.push('code examples');
-    } else if (score >= 40) {
-      quality = 'fair';
-      suggestion = 'Add more context about your project';
-      contextualEmoji = '📝';
-      if (wordCount < 30) missing.push('detailed context');
-      if (!hasCode && !hasPath) missing.push('specific files or code');
-    } else {
-      quality = 'poor';
-      missing.push('clear objective', 'context', 'specific details');
-      contextualEmoji = wordCount < 10 ? '💭' : '📏';
+  private async writeLoadingState(sessionId?: string): Promise<void> {
+    try {
+      // Ensure the analysis directory exists
+      await this.ensureAnalysisDir();
+      
+      // Get current personality for loading message
+      const personality = getStatusLinePersonality();
+      const customName = personality.personality === 'custom' ? personality.customPersonality?.name : undefined;
+      
+      // Create loading state
+      const loadingState: LoadingState = {
+        status: 'loading',
+        timestamp: new Date().toISOString(),
+        sessionId,
+        personality: personality.personality,
+        message: getLoadingMessage(personality.personality, customName)
+      };
+      
+      // Write directly to latest.json
+      const latestPath = path.join(this.analysisDir, 'latest.json');
+      await fs.writeFile(
+        latestPath,
+        JSON.stringify(loadingState, null, 2),
+        'utf8'
+      );
+      
+      logger.debug('Loading state written to latest.json');
+    } catch (error) {
+      logger.error('Failed to write loading state:', error);
+      // Don't throw - loading state is nice-to-have, not critical
     }
-
-    return {
-      quality,
-      missing: missing.slice(0, 3), // Max 3 items
-      suggestion,
-      score,
-      contextualEmoji,
-      timestamp: new Date().toISOString(),
-      sessionId,
-      originalPrompt: promptText  // Include original prompt in fallback too
-    };
   }
 
   /**
