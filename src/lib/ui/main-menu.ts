@@ -405,6 +405,12 @@ async function handleMenuAction(
       await showHooksManagementMenu();
       break;
     }
+    
+    case 'status-line': {
+      const { showStatusLineMenu } = await import('./status-line-menu');
+      await showStatusLineMenu();
+      break;
+    }
       
     case 'install-hooks': {
       // Legacy support - redirect to new hooks management

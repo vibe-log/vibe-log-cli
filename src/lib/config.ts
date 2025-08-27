@@ -30,6 +30,19 @@ interface ConfigSchema {
     timestamp: string;
     description: string;
   };
+  statusLine?: {
+    personality: 'gordon' | 'vibe-log' | 'custom';
+    customPersonality?: {
+      name: string;
+      description: string;
+      templates?: {
+        poor: string;      // Template for 0-40
+        fair: string;      // Template for 41-60
+        good: string;      // Template for 61-80
+        excellent: string; // Template for 81-100
+      };
+    };
+  };
 }
 
 const config = new Conf<ConfigSchema>({
@@ -230,6 +243,32 @@ export function getCliPath(): string {
 
 export function setCliPath(path: string): void {
   config.set('cliPath', path);
+}
+
+export function getStatusLinePersonality(): NonNullable<ConfigSchema['statusLine']> {
+  const statusLine = config.get('statusLine');
+  // Default to 'gordon' personality for new installations
+  if (!statusLine) {
+    return { personality: 'gordon' };
+  }
+  return statusLine;
+}
+
+export function setStatusLinePersonality(personality: 'gordon' | 'vibe-log' | 'custom'): void {
+  const current = config.get('statusLine') || {};
+  config.set('statusLine', {
+    ...current,
+    personality
+  });
+}
+
+export function setCustomPersonality(customPersonality: NonNullable<ConfigSchema['statusLine']>['customPersonality']): void {
+  const current = config.get('statusLine') || {};
+  config.set('statusLine', {
+    ...current,
+    personality: 'custom',
+    customPersonality
+  });
 }
 
 export function getLastSync(): Date | null {

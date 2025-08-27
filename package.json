@@ -54,6 +54,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "@anthropic-ai/claude-code": "^1.0.0",
     "axios": "^1.6.0",
     "boxen": "^5.1.2",
     "chalk": "^4.1.2",
