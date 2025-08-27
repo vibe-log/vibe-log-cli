@@ -1,3 +1,17 @@
+/**
+ * PHASE 6.1 UPDATE: Personality System Fixed
+ * 
+ * The personality system now uses enhanced system prompts to guide Claude's
+ * natural language generation instead of template substitution.
+ * 
+ * Key changes:
+ * - transformSuggestion() no longer replaces suggestions with templates
+ * - Personalities influence HOW Claude writes, not REPLACE what Claude writes
+ * - Each suggestion is unique and contextual while maintaining personality
+ * - Gordon naturally uses kitchen metaphors without scripted phrases
+ * - Vibe-Log naturally uses dev metaphors without repetition
+ */
+
 import { Command } from 'commander';
 import { colors } from '../lib/ui/styles';
 import { 

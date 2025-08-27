@@ -47,7 +47,7 @@ function displayPersonalityHeader(): void {
  */
 async function testSamplePrompts(): Promise<void> {
   console.log(colors.info('Testing with Claude AI (Real Analysis):\n'));
-  console.log(colors.subdued('This will make actual API calls to Claude...\n'));
+  console.log(colors.subdued('This will make actual calls to your local Claude Code...\n'));
   
   const config = getStatusLinePersonality();
   const personalityIcon = getPersonalityIcon(config.personality);
@@ -207,7 +207,7 @@ export async function interactivePersonalityTester(): Promise<void> {
     console.log('');
   }
   
-  console.log(colors.warning('⚠️  Tests will make real API calls to Claude SDK\n'));
+  console.log(colors.warning('⚠️  Tests will make real calls to your local Claude Code SDK\n'));
   
   let shouldContinue = true;
   
@@ -219,11 +219,11 @@ export async function interactivePersonalityTester(): Promise<void> {
         message: 'What would you like to test?',
         choices: [
           {
-            name: '🤖 Test with sample prompts (4 API calls)',
+            name: '🤖 Test with sample prompts (4 calls to Claude Code)',
             value: 'samples'
           },
           {
-            name: '✍️  Test with your own prompt (1 API call)',
+            name: '✍️  Test with your own prompt (1 call to Claude Code)',
             value: 'custom'
           },
           {
