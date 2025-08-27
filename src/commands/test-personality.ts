@@ -119,7 +119,7 @@ export function createTestPersonalityCommand(): Command {
       // Analyze test prompts if requested
       if (options.analyze) {
         console.log(colors.info('Analyzing Test Prompts with Claude SDK:'));
-        console.log(colors.subdued('(This will make actual API calls to Claude)\n'));
+        console.log(colors.subdued('(This will make actual calls to Claude Code)\n'));
         
         // Use shared test engine
         const results = await runPersonalityTest(STANDARD_TEST_PROMPTS, {
