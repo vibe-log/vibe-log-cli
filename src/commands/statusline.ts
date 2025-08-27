@@ -6,6 +6,7 @@ import { PromptAnalysis } from '../lib/prompt-analyzer';
 import { logger } from '../utils/logger';
 import { transformSuggestion, getStatusLinePersonality, getPersonalityDisplayName } from '../lib/personality-manager';
 import { isLoadingState, isStaleLoadingState, LoadingState, getLoadingMessage } from '../types/loading-state';
+import { getToken } from '../lib/config';
 
 /**
  * Output format types for the statusline
@@ -176,6 +177,89 @@ function formatAnalysis(analysis: PromptAnalysis, format: OutputFormat): string 
 }
 
 /**
+ * Read stdin with a timeout to get Claude Code context
+ */
+async function readStdinWithTimeout(timeoutMs: number = 50): Promise<string | null> {
+  return new Promise((resolve) => {
+    let input = '';
+    let hasData = false;
+    
+    // Set timeout to return null if no data
+    const timeout = setTimeout(() => {
+      if (!hasData) {
+        resolve(null);
+      }
+    }, timeoutMs);
+    
+    process.stdin.setEncoding('utf8');
+    
+    process.stdin.on('readable', () => {
+      let chunk;
+      while ((chunk = process.stdin.read()) !== null) {
+        hasData = true;
+        input += chunk;
+      }
+    });
+    
+    process.stdin.on('end', () => {
+      clearTimeout(timeout);
+      resolve(hasData ? input : null);
+    });
+    
+    // Handle error gracefully
+    process.stdin.on('error', () => {
+      clearTimeout(timeout);
+      resolve(null);
+    });
+  });
+}
+
+/**
+ * Format default message for new sessions or when no analysis exists
+ */
+function formatDefault(format: OutputFormat): string {
+  // Check if user is authenticated for customized message
+  const token = getToken();
+  const isAuthenticated = !!token;
+  
+  // Generate promotional tip (10% chance)
+  const showTip = Math.random() < 0.1;
+  let tip = '';
+  if (showTip) {
+    if (isAuthenticated) {
+      // Cloud mode: show link to analytics
+      const analyticsUrl = 'https://app.vibe-log.dev/dashboard/analytics?tab=improve&time=week';
+      const yellow = '\u001b[93m';
+      const reset = '\u001b[0m';
+      const linkStart = `\u001b]8;;${analyticsUrl}\u001b\\`;
+      const linkEnd = `\u001b]8;;\u001b\\`;
+      tip = ` | ${linkStart}${yellow}See improvements${reset}${linkEnd}`;
+    } else {
+      // Local mode: suggest npx command
+      tip = ' | 💡 npx vibe-log-cli → Local Report';
+    }
+  }
+  
+  const baseMessage = isAuthenticated 
+    ? '💭 Ready to analyze | Type to get started'
+    : '💭 vibe-log ready | Type your first prompt';
+    
+  switch (format) {
+    case 'json':
+      return JSON.stringify({ status: 'ready', message: baseMessage });
+    case 'detailed':
+      return `Status: Ready | ${baseMessage}${tip}`;
+    case 'emoji':
+      return `💭 Ready${tip}`;
+    case 'minimal':
+      return 'Ready';
+    case 'compact':
+    default:
+      return `${baseMessage}${tip}`;
+  }
+}
+
+/**
  * Create the statusline command for displaying prompt analysis in Claude Code
  * This command is designed to be fast (<100ms) and fail gracefully
  */
@@ -187,6 +271,19 @@ export function createStatuslineCommand(): Command {
       const startTime = Date.now();
       
       try {
+        // Try to read Claude Code context from stdin
+        let currentSessionId: string | undefined;
+        const stdinData = await readStdinWithTimeout(50); // 50ms timeout for speed
+        
+        if (stdinData) {
+          try {
+            const claudeContext = JSON.parse(stdinData);
+            currentSessionId = claudeContext.session_id;
+            logger.debug(`Statusline received session ID: ${currentSessionId}`);
+          } catch (parseError) {
+            logger.debug('Failed to parse Claude context from stdin:', parseError);
+          }
+        }
         // Parse and validate format option
         const format = (options.format || 'compact').toLowerCase() as OutputFormat;
         const validFormats: OutputFormat[] = ['compact', 'detailed', 'emoji', 'minimal', 'json'];
@@ -203,9 +300,10 @@ export function createStatuslineCommand(): Command {
         
         // Check if file exists
         if (!existsSync(analysisFile)) {
-          // No analysis yet - return empty string (show nothing)
-          logger.debug('No analysis file found, returning empty');
-          process.stdout.write('');
+          // No analysis yet - show default message
+          logger.debug('No analysis file found, showing default message');
+          const output = formatDefault(format);
+          process.stdout.write(output);
           process.exit(0);
         }
         
@@ -246,6 +344,15 @@ export function createStatuslineCommand(): Command {
         if (!analysis.quality || typeof analysis.score !== 'number' || !analysis.suggestion) {
           logger.debug('Invalid analysis structure:', analysis);
           process.stdout.write('[Error] Invalid analysis data');
+          process.exit(0);
+        }
+        
+        // Check if the analysis is for the current session
+        if (currentSessionId && analysis.sessionId && analysis.sessionId !== currentSessionId) {
+          logger.debug(`Session mismatch - current: ${currentSessionId}, analysis: ${analysis.sessionId}`);
+          // Show default message for new session
+          const output = formatDefault(format);
+          process.stdout.write(output);
           process.exit(0);
         }
         
