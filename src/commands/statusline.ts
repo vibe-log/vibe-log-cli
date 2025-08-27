@@ -239,26 +239,20 @@ function formatDefault(format: OutputFormat): string {
   switch (personality.personality) {
     case 'gordon':
       emoji = '🔥';
-      baseMessage = isAuthenticated
-        ? '🔥 Gordon is ready to judge your culinary code skills'
-        : '🔥 Gordon is ready to analyze and improve your prompts';
+      baseMessage = '🔥 Gordon is ready to analyze and improve your prompts';
       break;
     case 'vibe-log':
       emoji = '💜';
-      baseMessage = isAuthenticated
-        ? '💜 Vibe-log is ready to boost your productivity'
-        : '💜 Vibe-log is ready to help you write better prompts';
+      baseMessage = '💜 Vibe-log is ready to analyze and improve your prompts';
       break;
     case 'custom':
       emoji = '✨';
       const customName = personality.customPersonality?.name || 'Your assistant';
-      baseMessage = `✨ ${customName} is ready to analyze your prompts`;
+      baseMessage = `✨ ${customName} is ready to analyze and improve your prompts`;
       break;
     default:
       emoji = '💭';
-      baseMessage = isAuthenticated 
-        ? '💭 Ready to analyze | Type to get started'
-        : '💭 vibe-log ready | Type your first prompt';
+      baseMessage = '💭 vibe-log is ready to analyze and improve your prompts';
   }
   
   // Generate promotional tip (10% chance)
