@@ -93,10 +93,10 @@ export class PromptAnalyzer {
       const linkStart = `\u001b]8;;${analyticsUrl}\u001b\\`;
       const linkEnd = `\u001b]8;;\u001b\\`;
       const hyperlink = `${linkStart}${yellow}${linkText}${reset}${linkEnd}`;
-      return `\n💡 Want to see how you improved over time? ${hyperlink}`;
+      return `\n💡 See detailed prompt analysis here ${hyperlink}`;
     } else {
       // Local mode: Show npx command suggestion
-      return '\n💡 run: \`npx vibe-log-cli\` → Generate Local Report to see your improvements over time';
+      return '\n💡 run: \`npx vibe-log-cli\` → Generate Local Report to see your productivity over time';
     }
   }
 
