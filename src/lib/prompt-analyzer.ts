@@ -29,7 +29,8 @@ export interface AnalysisOptions {
   timeout?: number; // Default 10 seconds
   model?: 'haiku' | 'sonnet'; // For future use when model selection is available
   verbose?: boolean;
-  previousAssistantMessage?: string; // Context from previous assistant message
+  conversationContext?: string; // Context from previous 2-3 conversation turns
+  previousAssistantMessage?: string; // Deprecated: Use conversationContext instead
 }
 
 // Cache the SDK import to avoid re-importing on every analysis
@@ -106,14 +107,20 @@ export class PromptAnalyzer {
   private getSystemPrompt(hasContext: boolean = false): string {
     const contextAwareness = hasContext ? `
 IMPORTANT Context Rules:
+- You are given conversation context with multiple previous messages (labeled as "Previous User" and "Previous Assistant")
+- Consider the FULL conversation flow, not just the last message
+- If the conversation shows an ongoing discussion, score based on continuity
 - If the previous assistant message ends with "?" it's a QUESTION
 - Direct answers to questions (even 1-2 words) should score 80-100
 - "PostgreSQL" answering "PostgreSQL or MySQL?" = excellent (90+ score)
 - "Yes" or "No" to yes/no questions = excellent (90+ score)
 - Short responses are PERFECT when answering direct questions
+- If user is continuing a multi-part discussion coherently = good (70+ score)
+- If user is providing requested clarification = excellent (80+ score)
 - Use ✅ emoji for direct answers to questions
-- DO NOT ask for more context when user is answering a question
-- Suggestion for direct answers should be "Direct answer" or "Good response"` : '';
+- DO NOT ask for more context when user is answering a question or continuing discussion
+- Suggestion for direct answers should be "Direct answer" or "Good response"
+- Consider if the user is building upon previous messages in the conversation` : '';
 
     // Get personality-specific system prompt addition
     const personalityPrompt = getPersonalitySystemPrompt();
@@ -157,8 +164,12 @@ Emoji selection:
       sessionId, 
       timeout = 10000, // 10 seconds default
       verbose = false,
-      previousAssistantMessage
+      conversationContext,
+      previousAssistantMessage // For backward compatibility
     } = options;
+    
+    // Use conversationContext if available, fallback to previousAssistantMessage for compatibility
+    const context = conversationContext || previousAssistantMessage;
 
     // Check for recursion guard in the prompt itself
     // This prevents infinite loops when SDK triggers UserPromptSubmit hook
@@ -205,15 +216,18 @@ ${promptText}
 ---
 `;
 
-    // Add context if available
-    if (previousAssistantMessage) {
+    // Add conversation context if available
+    if (context) {
       analysisPrompt += `
-Previous assistant message for context:
+Conversation context (previous messages):
 ---
-${previousAssistantMessage.substring(0, 500)}${previousAssistantMessage.length > 500 ? '...' : ''}
+${context.substring(0, 1500)}${context.length > 1500 ? '...' : ''}
 ---
 `;
-      logger.debug('Including previous assistant message in analysis');
+      logger.debug('Including conversation context in analysis', {
+        contextLength: context.length,
+        isMultiMessage: context.includes('Previous User') || context.includes('Previous Assistant')
+      });
     }
 
     analysisPrompt += '\nRespond with JSON only.';
@@ -249,7 +263,7 @@ ${previousAssistantMessage.substring(0, 500)}${previousAssistantMessage.length >
             model: selectedModel,           // Use selected model (haiku by default)
             fallbackModel: 'sonnet',        // Fallback if primary model is overloaded
             disallowedTools: ['*'],         // No tools needed for JSON response
-            customSystemPrompt: this.getSystemPrompt(!!previousAssistantMessage), // Context-aware system prompt
+            customSystemPrompt: this.getSystemPrompt(!!context), // Context-aware system prompt
             maxThinkingTokens: 1000,        // Limit thinking for speed
             abortController                 // Clean cancellation support
           }

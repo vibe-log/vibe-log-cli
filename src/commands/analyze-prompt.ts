@@ -4,7 +4,7 @@ import { logger } from '../utils/logger';
 import { colors } from '../lib/ui/styles';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { extractLastAssistantMessage } from '../lib/session-context-extractor';
+import { extractConversationContext } from '../lib/session-context-extractor';
 
 /**
  * Read stdin with a timeout
@@ -114,14 +114,16 @@ export function createAnalyzePromptCommand(): Command {
           process.exit(1);
         }
 
-        // Extract context from transcript if available
-        let previousAssistantMessage: string | undefined;
+        // Extract conversation context from transcript if available
+        let conversationContext: string | undefined;
         if (transcriptPath) {
           try {
-            previousAssistantMessage = await extractLastAssistantMessage(transcriptPath) || undefined;
-            if (previousAssistantMessage) {
-              logger.debug('Extracted previous assistant message for context', {
-                length: previousAssistantMessage.length
+            // Extract last 2-3 conversation turns for better context
+            conversationContext = await extractConversationContext(transcriptPath, 3) || undefined;
+            if (conversationContext) {
+              logger.debug('Extracted conversation context', {
+                length: conversationContext.length,
+                preview: conversationContext.substring(0, 100)
               });
             }
           } catch (error) {
@@ -133,7 +135,7 @@ export function createAnalyzePromptCommand(): Command {
           sessionId,
           promptLength: prompt.length,
           timeout,
-          hasContext: !!previousAssistantMessage
+          hasContext: !!conversationContext
         });
 
         // Create analyzer instance (no Claude CLI check needed - using SDK)
@@ -150,7 +152,7 @@ export function createAnalyzePromptCommand(): Command {
           sessionId,
           timeout: parseInt(timeout),
           verbose,
-          previousAssistantMessage
+          conversationContext
         });
 
         const duration = Date.now() - startTime;
