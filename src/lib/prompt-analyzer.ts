@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
 import { getPersonalitySystemPrompt } from './personality-manager';
+import { getToken } from './config';
 
 /**
  * Analysis result for a prompt
@@ -16,6 +17,7 @@ export interface PromptAnalysis {
   timestamp: string;
   sessionId?: string;
   originalPrompt?: string;  // The original prompt that was analyzed
+  promotionalTip?: string;  // Pre-generated promotional tip (10% chance)
 }
 
 /**
@@ -66,6 +68,37 @@ export class PromptAnalyzer {
    */
   private async ensureAnalysisDir(): Promise<void> {
     await fs.mkdir(this.analysisDir, { recursive: true });
+  }
+
+  /**
+   * Generate promotional tip (10% chance)
+   * Returns empty string 90% of the time
+   */
+  private async generatePromotionalTip(): Promise<string> {
+    // Only show tip 10% of the time
+    if (Math.random() > 0.1) {
+      return '';
+    }
+    
+    // Check if user is authenticated (cloud mode)
+    const token = await getToken();
+    
+    if (token) {
+      // Cloud mode: Show clickable hyperlink to analytics dashboard
+      // Terminal hyperlink format: OSC 8 escape sequence
+      const analyticsUrl = 'https://app.vibe-log.dev/dashboard/analytics?tab=improve&time=week';
+      const linkText = 'click here to see your improvements';
+      // Using \u001b format and adding color for better visibility
+      const yellow = '\u001b[93m';
+      const reset = '\u001b[0m';
+      const linkStart = `\u001b]8;;${analyticsUrl}\u001b\\`;
+      const linkEnd = `\u001b]8;;\u001b\\`;
+      const hyperlink = `${linkStart}${yellow}${linkText}${reset}${linkEnd}`;
+      return `\n💡 Want to see how you improved over time? ${hyperlink}`;
+    } else {
+      // Local mode: Show npx command suggestion
+      return '\n💡 run: \`npx vibe-log-cli\` → Generate Local Report to see your improvements over time';
+    }
   }
 
   /**
@@ -270,8 +303,9 @@ ${previousAssistantMessage.substring(0, 500)}${previousAssistantMessage.length >
       analysisResult = this.getFallbackAnalysis(promptText, sessionId);
     }
 
-    // Save the analysis result
+    // Generate promotional tip for this analysis (10% chance)
     if (analysisResult) {
+      analysisResult.promotionalTip = await this.generatePromotionalTip();
       await this.saveAnalysis(analysisResult, sessionId);
     }
 
