@@ -11,20 +11,52 @@ import { logger } from '../utils/logger';
 type OutputFormat = 'compact' | 'detailed' | 'emoji' | 'minimal' | 'json';
 
 /**
+ * Get color-coded emoji based on score
+ */
+function getScoreEmoji(score: number): string {
+  if (score <= 40) return '🔴';      // Poor (0-40)
+  if (score <= 60) return '🟠';      // Fair (41-60)
+  if (score <= 80) return '🟡';      // Good (61-80)
+  return '🟢';                       // Excellent (81-100)
+}
+
+/**
+ * Get promotional tip (shows ~10% of the time)
+ */
+function getPromotionalTip(): string {
+  // Only show tip 10% of the time
+  if (Math.random() > 0.1) {
+    return '';
+  }
+  
+  // Return tip on a new line
+  return '\n💡 run: `npx vibe-log-cli` → Generate Local Report to see your improvements over time';
+}
+
+/**
  * Format the analysis for compact output (default)
- * Example: [GOOD 75/100] Add more context
+ * Example: 🟢 85/100 | ✨ Great context! Consider adding expected output format
  */
 function formatCompact(analysis: PromptAnalysis): string {
-  const quality = analysis.quality.toUpperCase();
   const score = analysis.score;
   const suggestion = analysis.suggestion;
   
   // Handle recursion detection case
   if (suggestion.includes('Recursion prevented')) {
-    return '[SKIP] Analysis loop prevented';
+    return '🔄 Skip | Analysis loop prevented';
   }
   
-  return `[${quality} ${score}/100] ${suggestion}`;
+  // Get appropriate emojis
+  const scoreEmoji = getScoreEmoji(score);
+  const contextEmoji = analysis.contextualEmoji || '💡'; // Use emoji from analysis or default
+  
+  // Format the enhanced output
+  let output = `${scoreEmoji} ${score}/100 | ${contextEmoji} ${suggestion}`;
+  
+  // Occasionally add promotional tip
+  output += getPromotionalTip();
+  
+  return output;
 }
 
 /**

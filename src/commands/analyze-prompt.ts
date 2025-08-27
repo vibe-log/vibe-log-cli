@@ -52,7 +52,8 @@ export function createAnalyzePromptCommand(): Command {
     .option('--silent', 'Silent mode for hook execution', false)
     .option('--stdin', 'Read input from stdin (auto-detected for hooks)', false)
     .action(async (options) => {
-      let { sessionId, prompt, timeout, verbose, silent } = options;
+      let { sessionId, prompt } = options;
+      const { timeout, verbose, silent } = options;
 
       // In silent mode, suppress all console output
       if (silent) {

@@ -11,6 +11,7 @@ export interface PromptAnalysis {
   missing: string[];
   suggestion: string;
   score: number;
+  contextualEmoji?: string;  // Emoji indicating what needs improvement
   timestamp: string;
   sessionId?: string;
   originalPrompt?: string;  // The original prompt that was analyzed
@@ -74,10 +75,20 @@ export class PromptAnalyzer {
   "quality": "poor|fair|good|excellent",
   "missing": ["1-3 missing elements"],
   "suggestion": "One improvement (max 15 words)",
-  "score": 0-100
+  "score": 0-100,
+  "contextualEmoji": "emoji"
 }
 Scoring: poor(0-40) fair(41-60) good(61-80) excellent(81-100)
-Evaluate: clarity, context, success criteria, examples if needed.`;
+Evaluate: clarity, context, success criteria, examples if needed.
+
+Emoji selection:
+- 📏 if lacking specificity, measurements, or exact details
+- 📝 if missing context, project info, or background
+- 🎯 if missing success criteria or goals
+- 💭 if vague, unclear, or ambiguous
+- ✨ if excellent (score 81-89)
+- ✅ if perfect (score 90+)
+- 💡 for general improvements`;
   }
 
   /**
@@ -102,6 +113,7 @@ Evaluate: clarity, context, success criteria, examples if needed.`;
         missing: [],
         suggestion: 'Recursion prevented - analysis skipped',
         score: 50,
+        contextualEmoji: '🔄',
         timestamp: new Date().toISOString(),
         sessionId,
         originalPrompt: '[Recursion detected - not saved]'
@@ -187,6 +199,7 @@ Respond with JSON only.`;
               missing: Array.isArray(parsed.missing) ? parsed.missing : [],
               suggestion: parsed.suggestion || 'Add more context to your prompt',
               score: typeof parsed.score === 'number' ? parsed.score : 50,
+              contextualEmoji: parsed.contextualEmoji || '💡',
               timestamp: new Date().toISOString(),
               sessionId,
               originalPrompt: promptText  // Add the original prompt for debugging
@@ -243,6 +256,7 @@ Respond with JSON only.`;
     let quality: PromptAnalysis['quality'] = 'poor';
     const missing: string[] = [];
     let suggestion = 'Add more context and be specific about what you want';
+    let contextualEmoji = '💡'; // Default emoji
 
     // Scoring based on heuristics
     if (wordCount > 10) score += 10;
@@ -252,22 +266,30 @@ Respond with JSON only.`;
     if (hasCode) score += 15;
     if (hasPath) score += 10;
 
-    // Determine quality and feedback
-    if (score >= 80) {
+    // Determine quality, feedback, and emoji
+    if (score >= 90) {
+      quality = 'excellent';
+      suggestion = 'Perfect prompt! Well structured and clear';
+      contextualEmoji = '✅';
+    } else if (score >= 80) {
       quality = 'excellent';
       suggestion = 'Great prompt! Consider adding success criteria';
+      contextualEmoji = '✨';
     } else if (score >= 60) {
       quality = 'good';
       suggestion = 'Good context. Add specific examples if applicable';
+      contextualEmoji = '🎯';
       if (!hasCode) missing.push('code examples');
     } else if (score >= 40) {
       quality = 'fair';
       suggestion = 'Add more context about your project';
+      contextualEmoji = '📝';
       if (wordCount < 30) missing.push('detailed context');
       if (!hasCode && !hasPath) missing.push('specific files or code');
     } else {
       quality = 'poor';
       missing.push('clear objective', 'context', 'specific details');
+      contextualEmoji = wordCount < 10 ? '💭' : '📏';
     }
 
     return {
@@ -275,6 +297,7 @@ Respond with JSON only.`;
       missing: missing.slice(0, 3), // Max 3 items
       suggestion,
       score,
+      contextualEmoji,
       timestamp: new Date().toISOString(),
       sessionId,
       originalPrompt: promptText  // Include original prompt in fallback too
