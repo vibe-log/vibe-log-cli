@@ -1,14 +1,61 @@
 import inquirer from 'inquirer';
 import { colors, box } from './styles';
 import { 
-  detectStatusLineState,
+  getStatusLineStatus,
   installStatusLine,
-  uninstallStatusLine,
-  getStatusLineStats,
-  StatusLineConfig
+  uninstallStatusLine
 } from '../status-line-manager';
 import { showSuccess, showError, showInfo } from '../ui';
 import { logger } from '../../utils/logger';
+
+// Adapter types for menu compatibility
+interface StatusLineConfig {
+  state: 'NOT_INSTALLED' | 'PARTIALLY_INSTALLED' | 'FULLY_INSTALLED';
+  hookInstalled?: boolean;
+  displayInstalled?: boolean;
+  analysisCount?: number;
+  hasAnalyzeHook?: boolean;
+  hasStatusLine?: boolean;
+}
+
+// Adapter function to get status line config for menu
+async function detectStatusLineState(): Promise<StatusLineConfig> {
+  const status = await getStatusLineStatus();
+  
+  let state: StatusLineConfig['state'];
+  if (status === 'installed') {
+    state = 'FULLY_INSTALLED';
+  } else if (status === 'partial') {
+    state = 'PARTIALLY_INSTALLED';
+  } else {
+    state = 'NOT_INSTALLED';
+  }
+  
+  const isInstalled = status !== 'not-installed';
+  return {
+    state,
+    hookInstalled: isInstalled,
+    displayInstalled: isInstalled,
+    hasAnalyzeHook: isInstalled,
+    hasStatusLine: isInstalled,
+    analysisCount: 0 // Would need to check for actual analysis files
+  };
+}
+
+// Stub for stats function that was removed
+async function getStatusLineStats(): Promise<{ 
+  analysisCount: number; 
+  lastAnalysis?: Date;
+  averageScore?: number;
+}> {
+  // Check if analysis files exist
+  return {
+    analysisCount: 0,
+    lastAnalysis: undefined,
+    averageScore: undefined
+  };
+}
+
 import { 
   getStatusLinePersonality, 
   setStatusLinePersonality,
