@@ -26,10 +26,12 @@ function getScoreEmoji(score: number): string {
 /**
  * Format the analysis for compact output (default)
  * Example: 🟢 85/100 | ✨ Great context! Consider adding expected output format
+ * With actionableSteps: Adds second line with "✅ TRY THIS:" prefix
  */
 function formatCompact(analysis: PromptAnalysis): string {
   const score = analysis.score;
   let suggestion = analysis.suggestion;
+  let actionableSteps = analysis.actionableSteps;
   
   // Handle recursion detection case
   if (suggestion.includes('Recursion prevented')) {
@@ -50,6 +52,11 @@ function formatCompact(analysis: PromptAnalysis): string {
   
   // Format the enhanced output with personality name before suggestion
   let output = `${scoreEmoji} ${score}/100 | ${contextEmoji} ${personalityName} says: ${suggestion}`;
+  
+  // Add actionable steps on second line if present
+  if (actionableSteps && actionableSteps.trim()) {
+    output += `\n✅ TRY THIS: ${actionableSteps}`;
+  }
   
   // Add persisted promotional tip if it exists
   if (analysis.promotionalTip) {

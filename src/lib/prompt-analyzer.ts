@@ -13,6 +13,7 @@ export interface PromptAnalysis {
   quality: 'poor' | 'fair' | 'good' | 'excellent';
   missing: string[];
   suggestion: string;
+  actionableSteps?: string;  // Concrete "TRY THIS" steps with examples
   score: number;
   contextualEmoji?: string;  // Emoji indicating what needs improvement
   timestamp: string;
@@ -136,12 +137,24 @@ IMPORTANT Context Rules:
 {
   "quality": "poor|fair|good|excellent",
   "missing": ["1-3 missing elements"],
-  "suggestion": "One improvement (max 15 words)",
+  "suggestion": "Specific diagnosis of what's wrong with THIS prompt (max 20 words)",
+  "actionableSteps": "Concrete steps to fix it, with examples (max 25 words)",
   "score": 0-100,
   "contextualEmoji": "emoji"
 }
 Scoring: poor(0-40) fair(41-60) good(61-80) excellent(81-100)
 Evaluate: clarity, context, success criteria, examples if needed.${contextAwareness}${personalityPrompt}
+
+IMPORTANT: Your response must have TWO parts:
+1. "suggestion": Diagnose the SPECIFIC issue with THIS prompt (not generic advice)
+2. "actionableSteps": Provide CONCRETE steps with examples they can immediately apply
+
+Example responses:
+- suggestion: "Mixing database migration with UI updates in one request"
+  actionableSteps: "Split into: 1) Migrate user table, 2) Update login form, 3) Test auth flow"
+  
+- suggestion: "No context about existing code structure or framework"
+  actionableSteps: "Add: 'Using Next.js 14 with app router and Prisma ORM'"
 
 Emoji selection:
 - 📏 if lacking specificity, measurements, or exact details
@@ -300,6 +313,7 @@ ${context.substring(0, 1500)}${context.length > 1500 ? '...' : ''}
               quality: parsed.quality || 'fair',
               missing: Array.isArray(parsed.missing) ? parsed.missing : [],
               suggestion: parsed.suggestion || 'Add more context to your prompt',
+              actionableSteps: parsed.actionableSteps || undefined,  // Include if present
               score: typeof parsed.score === 'number' ? parsed.score : 50,
               contextualEmoji: parsed.contextualEmoji || '💡',
               timestamp: new Date().toISOString(),
