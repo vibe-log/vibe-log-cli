@@ -4,7 +4,7 @@ import { logger } from '../utils/logger';
 import { colors } from '../lib/ui/styles';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { extractConversationContext } from '../lib/session-context-extractor';
+import { extractConversationContext, DEFAULT_CONVERSATION_TURNS_TO_EXTRACT_AS_CONTEXT } from '../lib/session-context-extractor';
 
 /**
  * Read stdin with a timeout
@@ -118,8 +118,8 @@ export function createAnalyzePromptCommand(): Command {
         let conversationContext: string | undefined;
         if (transcriptPath) {
           try {
-            // Extract last 2-3 conversation turns for better context
-            conversationContext = await extractConversationContext(transcriptPath, 3) || undefined;
+            // Extract last conversation turns for better context
+            conversationContext = await extractConversationContext(transcriptPath, DEFAULT_CONVERSATION_TURNS_TO_EXTRACT_AS_CONTEXT) || undefined;
             if (conversationContext) {
               logger.debug('Extracted conversation context', {
                 length: conversationContext.length,

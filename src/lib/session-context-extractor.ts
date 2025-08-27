@@ -7,12 +7,19 @@ import { ClaudeFileSystem } from './claude-fs';
 import { logger } from '../utils/logger';
 
 /**
+ * Number of conversation turns to extract for context when analyzing prompts
+ * Each turn is a user-assistant message pair
+ * Increase for more context, decrease for faster analysis
+ */
+export const DEFAULT_CONVERSATION_TURNS_TO_EXTRACT_AS_CONTEXT = 3;
+
+/**
  * Extract conversation context (last 2-3 message pairs) from a transcript file
  * Returns formatted conversation history for better context understanding
  */
 export async function extractConversationContext(
   transcriptPath: string,
-  turnsToExtract: number = 3
+  turnsToExtract: number = DEFAULT_CONVERSATION_TURNS_TO_EXTRACT_AS_CONTEXT
 ): Promise<string | null> {
   try {
     // Normalize path (handle ~/ expansion)
