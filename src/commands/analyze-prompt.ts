@@ -4,6 +4,7 @@ import { logger } from '../utils/logger';
 import { colors } from '../lib/ui/styles';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { extractLastAssistantMessage } from '../lib/session-context-extractor';
 
 /**
  * Read stdin with a timeout
@@ -54,6 +55,7 @@ export function createAnalyzePromptCommand(): Command {
     .action(async (options) => {
       let { sessionId, prompt } = options;
       const { timeout, verbose, silent } = options;
+      let transcriptPath: string | undefined;
 
       // In silent mode, suppress all console output
       if (silent) {
@@ -72,6 +74,7 @@ export function createAnalyzePromptCommand(): Command {
               const hookData = JSON.parse(stdinData);
               prompt = hookData.prompt || prompt;
               sessionId = hookData.session_id || sessionId;
+              transcriptPath = hookData.transcript_path;
               
               logger.debug('Received hook input via stdin:', {
                 sessionId: hookData.session_id,
@@ -106,10 +109,26 @@ export function createAnalyzePromptCommand(): Command {
           process.exit(1);
         }
 
+        // Extract context from transcript if available
+        let previousAssistantMessage: string | undefined;
+        if (transcriptPath) {
+          try {
+            previousAssistantMessage = await extractLastAssistantMessage(transcriptPath) || undefined;
+            if (previousAssistantMessage) {
+              logger.debug('Extracted previous assistant message for context', {
+                length: previousAssistantMessage.length
+              });
+            }
+          } catch (error) {
+            logger.debug('Could not extract context from transcript:', error);
+          }
+        }
+
         logger.debug('Starting prompt analysis', {
           sessionId,
           promptLength: prompt.length,
-          timeout
+          timeout,
+          hasContext: !!previousAssistantMessage
         });
 
         // Create analyzer instance (no Claude CLI check needed - using SDK)
@@ -125,7 +144,8 @@ export function createAnalyzePromptCommand(): Command {
         const analysis = await analyzer.analyze(prompt, {
           sessionId,
           timeout: parseInt(timeout),
-          verbose
+          verbose,
+          previousAssistantMessage
         });
 
         const duration = Date.now() - startTime;

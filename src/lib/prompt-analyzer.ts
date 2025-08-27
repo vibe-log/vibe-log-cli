@@ -25,6 +25,7 @@ export interface AnalysisOptions {
   timeout?: number; // Default 10 seconds
   model?: 'haiku' | 'sonnet'; // For future use when model selection is available
   verbose?: boolean;
+  previousAssistantMessage?: string; // Context from previous assistant message
 }
 
 // Cache the SDK import to avoid re-importing on every analysis
@@ -69,7 +70,18 @@ export class PromptAnalyzer {
   /**
    * Generate the system prompt for analysis
    */
-  private getSystemPrompt(): string {
+  private getSystemPrompt(hasContext: boolean = false): string {
+    const contextAwareness = hasContext ? `
+IMPORTANT Context Rules:
+- If the previous assistant message ends with "?" it's a QUESTION
+- Direct answers to questions (even 1-2 words) should score 80-100
+- "PostgreSQL" answering "PostgreSQL or MySQL?" = excellent (90+ score)
+- "Yes" or "No" to yes/no questions = excellent (90+ score)
+- Short responses are PERFECT when answering direct questions
+- Use ✅ emoji for direct answers to questions
+- DO NOT ask for more context when user is answering a question
+- Suggestion for direct answers should be "Direct answer" or "Good response"` : '';
+
     return `Analyze the prompt quality. Respond ONLY with JSON:
 {
   "quality": "poor|fair|good|excellent",
@@ -79,7 +91,7 @@ export class PromptAnalyzer {
   "contextualEmoji": "emoji"
 }
 Scoring: poor(0-40) fair(41-60) good(61-80) excellent(81-100)
-Evaluate: clarity, context, success criteria, examples if needed.
+Evaluate: clarity, context, success criteria, examples if needed.${contextAwareness}
 
 Emoji selection:
 - 📏 if lacking specificity, measurements, or exact details
@@ -101,7 +113,8 @@ Emoji selection:
     const { 
       sessionId, 
       timeout = 10000, // 10 seconds default
-      verbose = false
+      verbose = false,
+      previousAssistantMessage
     } = options;
 
     // Recursion detection - check if this is a recursive call from our own analysis
@@ -126,13 +139,25 @@ Emoji selection:
     await this.ensureAnalysisDir();
 
     // Build the analysis prompt using the constant prefix
-    const analysisPrompt = `${ANALYSIS_PROMPT_PREFIX}
+    let analysisPrompt = `${ANALYSIS_PROMPT_PREFIX}
 
 ---
 ${promptText}
 ---
+`;
 
-Respond with JSON only.`;
+    // Add context if available
+    if (previousAssistantMessage) {
+      analysisPrompt += `
+Previous assistant message for context:
+---
+${previousAssistantMessage.substring(0, 500)}${previousAssistantMessage.length > 500 ? '...' : ''}
+---
+`;
+      logger.debug('Including previous assistant message in analysis');
+    }
+
+    analysisPrompt += '\nRespond with JSON only.';
 
     let analysisResult: PromptAnalysis | null = null;
     let rawResponse = '';
@@ -161,7 +186,7 @@ Respond with JSON only.`;
             model: selectedModel,           // Use selected model (haiku by default)
             fallbackModel: 'sonnet',        // Fallback if primary model is overloaded
             disallowedTools: ['*'],         // No tools needed for JSON response
-            customSystemPrompt: this.getSystemPrompt(), // Use proper system prompt
+            customSystemPrompt: this.getSystemPrompt(!!previousAssistantMessage), // Context-aware system prompt
             maxThinkingTokens: 1000,        // Limit thinking for speed
             abortController                 // Clean cancellation support
           }
