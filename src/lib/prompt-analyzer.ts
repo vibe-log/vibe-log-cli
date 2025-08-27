@@ -34,8 +34,6 @@ export interface AnalysisOptions {
 // Cache the SDK import to avoid re-importing on every analysis
 let cachedSDK: { query: any } | null = null;
 
-// Constant for the analysis prompt prefix to prevent recursion
-const ANALYSIS_PROMPT_PREFIX = 'Analyze this Claude Code user prompt:';
 
 /**
  * Get the Claude SDK, caching it after first import
@@ -161,19 +159,20 @@ Emoji selection:
       previousAssistantMessage
     } = options;
 
-    // Recursion detection - check if this is a recursive call from our own analysis
-    if (promptText.includes(ANALYSIS_PROMPT_PREFIX)) {
-      logger.warn('Recursion detected - prompt contains analysis prefix, skipping to prevent infinite loop');
-      // Return a special analysis indicating recursion was prevented
+    // Check if we're already inside an analysis call to prevent recursion
+    if (process.env.VIBELOG_ANALYZING === 'true') {
+      logger.debug('Skipping analysis - already inside an analysis call (recursion prevention)');
+      // Return a skip response without saving
       return {
         quality: 'fair',
         missing: [],
-        suggestion: 'Recursion prevented - analysis skipped',
+        suggestion: 'Analysis skipped (nested call)',
         score: 50,
-        contextualEmoji: '🔄',
+        contextualEmoji: '⏭️',
         timestamp: new Date().toISOString(),
         sessionId,
-        originalPrompt: '[Recursion detected - not saved]'
+        originalPrompt: '[Nested call - not analyzed]',
+        promotionalTip: ''
       };
     }
 
@@ -182,8 +181,8 @@ Emoji selection:
     // Ensure the analysis directory exists
     await this.ensureAnalysisDir();
 
-    // Build the analysis prompt using the constant prefix
-    let analysisPrompt = `${ANALYSIS_PROMPT_PREFIX}
+    // Build the analysis prompt
+    let analysisPrompt = `Analyze this Claude Code user prompt:
 
 ---
 ${promptText}
@@ -232,7 +231,10 @@ ${previousAssistantMessage.substring(0, 500)}${previousAssistantMessage.length >
             disallowedTools: ['*'],         // No tools needed for JSON response
             customSystemPrompt: this.getSystemPrompt(!!previousAssistantMessage), // Context-aware system prompt
             maxThinkingTokens: 1000,        // Limit thinking for speed
-            abortController                 // Clean cancellation support
+            abortController,                // Clean cancellation support
+            env: {                          // Set environment to prevent recursion
+              VIBELOG_ANALYZING: 'true'
+            }
           }
         })) {
           // Simplified message handling - only care about assistant text
