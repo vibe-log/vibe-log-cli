@@ -263,21 +263,6 @@ async function performUninstall(): Promise<void> {
     return;
   }
 
-  // Double confirmation
-  const { confirmAgain } = await inquirer.prompt([
-    {
-      type: 'confirm',
-      name: 'confirmAgain',
-      message: 'Really uninstall the status line?',
-      default: false
-    }
-  ]);
-
-  if (!confirmAgain) {
-    console.log(colors.muted('\nUninstall cancelled'));
-    return;
-  }
-
   try {
     console.log('');
     console.log(colors.muted('Uninstalling...'));

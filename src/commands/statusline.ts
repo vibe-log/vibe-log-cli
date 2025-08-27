@@ -4,7 +4,8 @@ import path from 'path';
 import os from 'os';
 import { PromptAnalysis } from '../lib/prompt-analyzer';
 import { logger } from '../utils/logger';
-import { transformSuggestion, getPersonalityIcon, getStatusLinePersonality } from '../lib/personality-manager';
+import { transformSuggestion, getStatusLinePersonality, getPersonalityDisplayName } from '../lib/personality-manager';
+import { getToken } from '../lib/config';
 
 /**
  * Output format types for the statusline
@@ -23,22 +24,40 @@ function getScoreEmoji(score: number): string {
 
 /**
  * Get promotional tip (shows ~10% of the time)
+ * Now context-aware based on authentication status
  */
-function getPromotionalTip(): string {
+async function getPromotionalTip(): Promise<string> {
   // Only show tip 10% of the time
   if (Math.random() > 0.1) {
     return '';
   }
   
-  // Return tip on a new line
-  return '\n💡 run: `npx vibe-log-cli` → Generate Local Report to see your improvements over time';
+  // Check if user is authenticated (cloud mode)
+  const token = await getToken();
+  
+  if (token) {
+    // Cloud mode: Show clickable hyperlink to analytics dashboard
+    // Terminal hyperlink format: OSC 8 escape sequence
+    const analyticsUrl = 'https://app.vibe-log.dev/dashboard/analytics?tab=improve&time=week';
+    const linkText = 'click here to see your improvements';
+    // Using \u001b format and adding color for better visibility
+    const yellow = '\u001b[93m';
+    const reset = '\u001b[0m';
+    const linkStart = `\u001b]8;;${analyticsUrl}\u001b\\`;
+    const linkEnd = `\u001b]8;;\u001b\\`;
+    const hyperlink = `${linkStart}${yellow}${linkText}${reset}${linkEnd}`;
+    return `\n💡 Want to see how you improved over time? ${hyperlink}`;
+  } else {
+    // Local mode: Show npx command suggestion
+    return '\n💡 run: `npx vibe-log-cli` → Generate Local Report to see your improvements over time';
+  }
 }
 
 /**
  * Format the analysis for compact output (default)
  * Example: 🟢 85/100 | ✨ Great context! Consider adding expected output format
  */
-function formatCompact(analysis: PromptAnalysis): string {
+async function formatCompact(analysis: PromptAnalysis): Promise<string> {
   const score = analysis.score;
   let suggestion = analysis.suggestion;
   
@@ -56,14 +75,14 @@ function formatCompact(analysis: PromptAnalysis): string {
   const scoreEmoji = getScoreEmoji(score);
   const contextEmoji = analysis.contextualEmoji || '💡'; // Use emoji from analysis or default
   
-  // Always add personality icon since we always have a personality
-  const personalityIcon = `${getPersonalityIcon(personality.personality)} `;
+  // Get the personality name for attribution
+  const personalityName = getPersonalityDisplayName(personality.personality);
   
-  // Format the enhanced output with personality icon
-  let output = `${personalityIcon}${scoreEmoji} ${score}/100 | ${contextEmoji} ${suggestion}`;
+  // Format the enhanced output with personality name before suggestion
+  let output = `${scoreEmoji} ${score}/100 | ${contextEmoji} ${personalityName} says: ${suggestion}`;
   
-  // Occasionally add promotional tip
-  output += getPromotionalTip();
+  // Occasionally add promotional tip (now async)
+  output += await getPromotionalTip();
   
   return output;
 }
@@ -135,7 +154,7 @@ function formatMinimal(analysis: PromptAnalysis): string {
 /**
  * Format the analysis based on the selected format
  */
-function formatAnalysis(analysis: PromptAnalysis, format: OutputFormat): string {
+async function formatAnalysis(analysis: PromptAnalysis, format: OutputFormat): Promise<string> {
   switch (format) {
     case 'json':
       return JSON.stringify(analysis);
@@ -147,7 +166,7 @@ function formatAnalysis(analysis: PromptAnalysis, format: OutputFormat): string 
       return formatMinimal(analysis);
     case 'compact':
     default:
-      return formatCompact(analysis);
+      return await formatCompact(analysis);
   }
 }
 
@@ -214,8 +233,8 @@ export function createStatuslineCommand(): Command {
           process.exit(0);
         }
         
-        // Format and output the analysis
-        const output = formatAnalysis(analysis, format);
+        // Format and output the analysis (now async)
+        const output = await formatAnalysis(analysis, format);
         process.stdout.write(output);
         
         // Log performance metrics
