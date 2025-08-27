@@ -4,7 +4,7 @@ import path from 'path';
 import os from 'os';
 import { PromptAnalysis } from '../lib/prompt-analyzer';
 import { logger } from '../utils/logger';
-import { transformSuggestion, getStatusLinePersonality, getPersonalityDisplayName } from '../lib/personality-manager';
+import { transformSuggestion, getStatusLinePersonality, getPersonalityDisplayName, getPersonalityIcon } from '../lib/personality-manager';
 import { isLoadingState, isStaleLoadingState, LoadingState, getLoadingMessage } from '../types/loading-state';
 import { getToken } from '../lib/config';
 
@@ -232,28 +232,12 @@ function formatDefault(format: OutputFormat): string {
   // Get current personality for personalized message
   const personality = getStatusLinePersonality();
   
-  // Create personality-specific default messages
-  let baseMessage: string;
-  let emoji: string;
+  // Get personality icon and name
+  const emoji = getPersonalityIcon(personality.personality);
+  const personalityName = getPersonalityDisplayName(personality.personality);
   
-  switch (personality.personality) {
-    case 'gordon':
-      emoji = '🔥';
-      baseMessage = '🔥 Gordon is ready to analyze and improve your prompts';
-      break;
-    case 'vibe-log':
-      emoji = '💜';
-      baseMessage = '💜 Vibe-log is ready to analyze and improve your prompts';
-      break;
-    case 'custom':
-      emoji = '✨';
-      const customName = personality.customPersonality?.name || 'Your assistant';
-      baseMessage = `✨ ${customName} is ready to analyze and improve your prompts`;
-      break;
-    default:
-      emoji = '💭';
-      baseMessage = '💭 vibe-log is ready to analyze and improve your prompts';
-  }
+  // Create unified message for all personalities
+  const baseMessage = `${emoji} ${personalityName} is ready to analyze and improve your prompts`;
   
   // Generate promotional tip (10% chance)
   const showTip = Math.random() < 0.1;
