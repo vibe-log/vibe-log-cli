@@ -222,6 +222,38 @@ function formatDefault(format: OutputFormat): string {
   const token = getToken();
   const isAuthenticated = !!token;
   
+  // Get current personality for personalized message
+  const personality = getStatusLinePersonality();
+  
+  // Create personality-specific default messages
+  let baseMessage: string;
+  let emoji: string;
+  
+  switch (personality.personality) {
+    case 'gordon':
+      emoji = '🔥';
+      baseMessage = isAuthenticated
+        ? '🔥 Gordon is ready to judge your culinary code skills'
+        : '🔥 Gordon is ready to analyze and improve your prompts';
+      break;
+    case 'vibe-log':
+      emoji = '💜';
+      baseMessage = isAuthenticated
+        ? '💜 Vibe-log is ready to boost your productivity'
+        : '💜 Vibe-log is ready to help you write better prompts';
+      break;
+    case 'custom':
+      emoji = '✨';
+      const customName = personality.customPersonality?.name || 'Your assistant';
+      baseMessage = `✨ ${customName} is ready to analyze your prompts`;
+      break;
+    default:
+      emoji = '💭';
+      baseMessage = isAuthenticated 
+        ? '💭 Ready to analyze | Type to get started'
+        : '💭 vibe-log ready | Type your first prompt';
+  }
+  
   // Generate promotional tip (10% chance)
   const showTip = Math.random() < 0.1;
   let tip = '';
@@ -239,18 +271,14 @@ function formatDefault(format: OutputFormat): string {
       tip = ' | 💡 npx vibe-log-cli → Local Report';
     }
   }
-  
-  const baseMessage = isAuthenticated 
-    ? '💭 Ready to analyze | Type to get started'
-    : '💭 vibe-log ready | Type your first prompt';
     
   switch (format) {
     case 'json':
-      return JSON.stringify({ status: 'ready', message: baseMessage });
+      return JSON.stringify({ status: 'ready', message: baseMessage, personality: personality.personality });
     case 'detailed':
       return `Status: Ready | ${baseMessage}${tip}`;
     case 'emoji':
-      return `💭 Ready${tip}`;
+      return `${emoji} Ready${tip}`;
     case 'minimal':
       return 'Ready';
     case 'compact':
