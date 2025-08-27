@@ -124,16 +124,15 @@ export async function installGlobalHooks(): Promise<void> {
 export async function installProjectHooks(projects: Array<{ path: string; name: string; actualPath?: string }>): Promise<void> {
   logger.info(`Installing hooks for ${projects.length} projects`);
   
-  for (const project of projects) {
-    const projectPath = project.actualPath || project.path;
-    
-    await claudeSettingsManager.installAutoSyncHooks({
-      installSessionStart: true,
-      installPreCompact: true,
-      mode: 'selected',
-      projectPath
-    });
-  }
+  // For now, install hooks globally with selected mode
+  // Project-specific installation would require implementing writeProjectLocalSettings
+  await claudeSettingsManager.installAutoSyncHooks({
+    installSessionStart: true,
+    installPreCompact: true,
+    mode: 'selected'
+  });
+  
+  logger.info('Hooks configured for selected projects mode');
 }
 
 /**
@@ -142,15 +141,19 @@ export async function installProjectHooks(projects: Array<{ path: string; name: 
 export async function installSelectiveProjectHooks(projectConfigs: ProjectHookConfig[]): Promise<void> {
   logger.info(`Installing selective hooks for ${projectConfigs.length} projects`);
   
-  for (const config of projectConfigs) {
-    const projectPath = config.actualPath || config.path;
-    
+  // Install hooks based on the most common configuration
+  // Individual project configuration would require project-specific settings support
+  const hasSessionStart = projectConfigs.some(c => c.hooks.sessionStart);
+  const hasPreCompact = projectConfigs.some(c => c.hooks.preCompact);
+  
+  if (hasSessionStart || hasPreCompact) {
     await claudeSettingsManager.installAutoSyncHooks({
-      installSessionStart: config.hooks.sessionStart,
-      installPreCompact: config.hooks.preCompact,
-      mode: 'selected',
-      projectPath
+      installSessionStart: hasSessionStart,
+      installPreCompact: hasPreCompact,
+      mode: 'selected'
     });
+    
+    logger.info(`Configured hooks: SessionStart=${hasSessionStart}, PreCompact=${hasPreCompact}`);
   }
 }
 
@@ -173,20 +176,32 @@ export async function uninstallAllHooks(): Promise<{ removedCount: number }> {
 export async function toggleHook(hookType: 'sessionstart' | 'precompact', enable: boolean): Promise<void> {
   logger.info(`${enable ? 'Enabling' : 'Disabling'} ${hookType} hook`);
   
-  if (!enable) {
-    // For disabling, we need to remove the hook
-    // The unified manager doesn't have individual hook removal yet
-    // For now, we'll log a warning
-    logger.warn('Individual hook disabling not yet implemented in unified manager');
-    return;
+  const status = await claudeSettingsManager.getFeatureStatus();
+  const currentMode = status.autoSync.mode || 'selected';
+  
+  // Determine which hooks should be installed
+  let installSessionStart = status.autoSync.sessionStartInstalled;
+  let installPreCompact = status.autoSync.preCompactInstalled;
+  
+  if (hookType === 'sessionstart') {
+    installSessionStart = enable;
+  } else {
+    installPreCompact = enable;
   }
   
-  // For enabling, install the hook
-  await claudeSettingsManager.installAutoSyncHooks({
-    installSessionStart: hookType === 'sessionstart',
-    installPreCompact: hookType === 'precompact',
-    mode: 'selected'
-  });
+  // If both hooks would be disabled, remove all
+  if (!installSessionStart && !installPreCompact) {
+    await claudeSettingsManager.removeAllVibeLogSettings();
+    logger.info('All hooks removed');
+  } else {
+    // Reinstall with updated configuration
+    await claudeSettingsManager.installAutoSyncHooks({
+      installSessionStart,
+      installPreCompact,
+      mode: currentMode
+    });
+    logger.info(`Hook configuration updated`);
+  }
 }
 
 /**
@@ -198,9 +213,21 @@ export async function updateHookConfig(
 ): Promise<void> {
   logger.info(`Updating ${hookType} configuration: ${JSON.stringify(config)}`);
   
-  // The unified manager handles this through reinstallation with new settings
-  // For now, we'll need to reinstall with the updated configuration
-  logger.warn('Hook config updates not yet fully implemented in unified manager');
+  // Get current status and reinstall with updated configuration
+  const status = await claudeSettingsManager.getFeatureStatus();
+  const currentMode = status.autoSync.mode || 'selected';
+  
+  // Note: Timeout configuration would require enhancement in the manager
+  // For now, we reinstall with existing settings
+  await claudeSettingsManager.installAutoSyncHooks({
+    installSessionStart: status.autoSync.sessionStartInstalled,
+    installPreCompact: status.autoSync.preCompactInstalled,
+    mode: currentMode
+  });
+  
+  if (config.timeout) {
+    logger.info(`Note: Timeout configuration requires manual editing in settings.json`);
+  }
 }
 
 /**
@@ -226,27 +253,4 @@ export async function getHookMode() {
   return getHookModeFromReader();
 }
 
-/**
- * Build hook command string
- * @deprecated Use claudeSettingsManager instead
- */
-export function buildHookCommand(
-  cliPath: string, 
-  hookTrigger: 'sessionstart' | 'precompact',
-  mode?: 'all' | 'selected'
-): string {
-  if (mode === 'all') {
-    return `${cliPath} send --silent --background --hook-trigger=${hookTrigger} --hook-version=${HOOKS_VERSION} --all`;
-  }
-  return `${cliPath} send --silent --background --hook-trigger=${hookTrigger} --hook-version=${HOOKS_VERSION} --claude-project-dir="$CLAUDE_PROJECT_DIR"`;
-}
 
-/**
- * Check if a command is a vibe-log command
- */
-export function isVibeLogCommand(command: string | undefined): boolean {
-  if (!command) return false;
-  return command.includes('vibe-log') || 
-         command.includes('vibelog-cli') || 
-         command.includes('@vibe-log');
-}
