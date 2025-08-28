@@ -199,7 +199,7 @@ Need help? Here are some ways to get support:
 
 ## License
 
-MIT © Vibelog - see the [LICENSE](LICENSE) file for details.
+MIT © Vibe-Log - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
