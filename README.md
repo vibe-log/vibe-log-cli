@@ -35,6 +35,7 @@
 vibe-log is a comprehensive CLI tool that analyzes your coding sessions to extract productivity metrics, emotional insights, and generates engaging Build in Public content. It integrates seamlessly with Claude Code and other AI coding assistants to help you understand your development patterns and share your journey.<p></p>
 ✨ Key Features
 
+💬 **NEW: Real-time Status Line** - Get instant prompt quality feedback in Claude Code with personality coaches (Gordon Ramsay, Vibe-log, or Custom)<br>
 📊 Productivity Analytics - Track goals, code acceptance rates, and session efficiency<br>
 📝 Tailored Prompt Engineering Feedback - Improve your AI interaction efficiency<br>
 📈 AI Metrics Tracking - Monitor how effectively you're using AI coding assistants<br>
@@ -47,6 +48,38 @@ vibe-log is a comprehensive CLI tool that analyzes your coding sessions to extra
    ```bash
    npx vibe-log-cli
    ```
+
+## 💬 Status Line - Real-time Prompt Coaching in Claude Code
+
+Transform your Claude Code experience with real-time prompt quality feedback! The Status Line feature analyzes your prompts as you type and provides instant coaching to help you write better, more effective prompts.
+
+### How It Works
+Every time you submit a prompt in Claude Code, vibe-log:
+1. **Analyzes** your prompt quality in real-time using Claude AI
+2. **Scores** your prompt from 0-100 based on clarity, context, and specificity
+3. **Provides** personalized suggestions through your chosen coach personality
+4. **Displays** feedback directly in your Claude Code status bar
+
+### Choose Your Coach Personality
+- 🧑‍🍳 **Gordon Ramsay** - Tough love with kitchen metaphors ("This prompt is RAW!")
+- 💜 **Vibe-log** - Encouraging and supportive developer coach
+- ✨ **Custom** - Define your own coaching style and personality
+
+### Example Feedback
+```
+🟢 85/100 | ✨ Gordon says: Beautiful context chef! Just needs a pinch of expected output format
+🟡 65/100 | 💜 Vibe-log: Good start! Add some context about your current setup
+🔴 40/100 | 🧑‍🍳 Gordon: This prompt is UNDERCOOKED! Where's the bloody context?!
+```
+
+### Quick Installation
+1. Run `npx vibe-log-cli`
+2. Select **"Status Line"** from the main menu
+3. Choose your coach personality
+4. Start getting real-time feedback in Claude Code!
+
+The Status Line works silently in the background, helping you improve with every prompt you write.
+
 ## Supported Coding Engines 
 
 Currently supported:
@@ -58,9 +91,43 @@ Future:
 
 🌍 Cross-Platform - Runs on macOS, Windows, Linux, and any environment with Node.js
 
-## How does it work 
+## How does it work
 
-[![](https://mermaid.ink/img/pako:eNp1VNFqG0cU_ZXLQEoDluzVKo4lHEFQSFOyxsFOKc3KD6PdK-3Gq5llZlbORlJIoE-FUpr2oQ8pfmzpFxT6N_6B-hN6Z8ZrS66zIKTZe--559x7RguWyBRZn00KeZZkXBmIjkYC3KOr8VTxMoNjNFUJ8Yh9hcbkYgq1rBQMC16lCEMCoAytcyngCTccjpCn9YidNDj2OTaE_WV8ef7Hzxfvf7w8__iPLbRYZ7nJ9sdqe7CGd3IfWq0BoRaYmPgqoI1UqIFYGg1GuprL818-wLvtduJStkslX1OFXmt9757rTqXrkP4LtKetHZaRwAUv6re4ydyn2uIDNJlMF8coUpjnfLWe5mM2bfm4MnLGTZ4s4ZmUp5pU__V7M67MvnH9OKW1dC2Sk8_gHHBR8WIJ_jt2WodUr3GTOEgFdygH390xf6HyOU9qwvj1I-yPB4clCjimLSbYxCDiNar97fHAgR7hTM7tuO16v6CGiULj-z1HLDVIUdRQcmNQic22nu963yZKgxuJ5tD0tXkkK09wcaUuk2fNgq82Ao-_tkysXxrpqxuka6MOC1ml1qgXv3349--frs4HJOGWHYdB_E1ZSJ7eKPA8OmQNNUcF9MkneUJrlGKztOMzw5g4OXo639Q_DH1G167sB_gWx3QvdDaWXKUnd47iWkAkE5ocCXA3xJ_uoB8FMV2oGuRkUuQC3aS-u3UnvaCoE3uUhqnLrbSbZDVu8SmKW66JvMAotPS_h2cvDyJQWEpl7ibvdwePHg2Wh8LSWfq534q32mTpQ0946aWtYbhF2bZHqKvCxBef_rQ-jZArAWcZuZX-c7wZx6jNtU1fKp6cQj4j_89xZrW4109zkf7fnH4SN13YFpuqPGV9oyrcYjNUM26PbGErRsxkBDliffqZcnU6YiOxopqSi1dSzpoyJatpxvoTXmg6VWXKDT7JOS30JoUGhmooK2FYP-gEDoP1F-wN67fC3fbDXqfTDXrdB70Hvb3eFqspaydsh7u94GHQ3QtsLFhtsbeubdDe2d0Jd3q9MAx2w72w21n9B8bX4e4)
+```mermaid
+flowchart TB
+    subgraph Input ["✳️ In Claude Code"]
+        User([👤 You type a prompt]) 
+        User --> Submit[Press Enter]
+        Submit --> Hook[🪝 Hook triggers]
+    end
+
+    Hook --> CLI[Vibe-log CLI<br/>receives prompt]
+    
+    CLI --> Check{Is new<br/>chat?}
+    
+    Check -->|Yes| Direct[💭 Analyze<br/>standalone]
+    Check -->|No| Context[📝 Include<br/>conversation]
+    
+    Direct --> SDK
+    Context --> SDK
+    
+    subgraph Analysis ["🧠 Analysis with Personality"]
+        Personality[🎭 Coach Personality<br/>🧑‍🍳 Gordon | 💜 Vibe-log | ✨ Custom]
+        Personality -.-> SDK[Claude SDK<br/>analyzes quality]
+        SDK --> Score[📊 Score &<br/>suggestion]
+    end
+    
+    Score --> Save[💾 Save to<br/>~/.vibe-log]
+    
+    Save --> Status[Status bar<br/>reads result]
+    
+    Status --> Show[🟢 85/100<br/>✨ Gordon says:<br/>Add context chef!]
+    
+    Show --> Improve([📈 Better prompts<br/>Better results])
+
+    style Input fill:#f9f,stroke:#333,stroke-width:2px
+    style Analysis fill:#bbf,stroke:#333,stroke-width:2px
+```
 
 ## 🔒 Privacy & Security
 
