@@ -35,7 +35,7 @@
 vibe-log is a comprehensive CLI tool that analyzes your coding sessions to extract productivity metrics and improvements along with, emotional insights, and generates engaging Build in Public content. It integrates seamlessly with Claude Code and other AI coding assistants to help you understand your development patterns and share your journey.<p></p>
 ✨ Key Features
 
-💬 **NEW: Status Line** - Have your local claude code provide you with prompt quality feedback right in Claude Code with personality coaches (🧑‍🍳Gordon, Vibe-log, or Custom)<br>
+💬 **NEW: Status Line** - Let your local Claude Code provide you with prompt quality feedback right in Claude Code with personality coaches (🧑‍🍳Gordon, Vibe-log, or Custom)<br>
 📊 Productivity Analytics - Track goals, code acceptance rates, and session efficiency<br>
 📝 Tailored Prompt Engineering Feedback - Improve your AI interaction efficiency<br>
 📈 AI Metrics Tracking - Monitor how effectively you're using AI coding assistants<br>
@@ -203,4 +203,8 @@ MIT © Vibelog - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
-Built with love by the Vibe-Log team and our amazing contributors.
+Built with love by the Vibe-Log team [@mickmicksh](https://github.com/mickmicksh), [@dannyshmueli](https://github.com/dannyshmueli)
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=vibe-log/vibe-log-cli&type=Date)](https://www.star-history.com/#vibe-log/vibe-log-cli&Date)
