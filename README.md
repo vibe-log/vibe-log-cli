@@ -32,7 +32,7 @@
 
 <dib align=left> <h2>🎯 What is Vibe-Log?</h2>
 <p></p>
-vibe-log is a comprehensive CLI tool that analyzes your coding sessions to extract productivity metrics, emotional insights, and generates engaging Build in Public content. It integrates seamlessly with Claude Code and other AI coding assistants to help you understand your development patterns and share your journey.<p></p>
+vibe-log is a comprehensive CLI tool that analyzes your coding sessions to extract productivity metrics and improvements along with, emotional insights, and generates engaging Build in Public content. It integrates seamlessly with Claude Code and other AI coding assistants to help you understand your development patterns and share your journey.<p></p>
 ✨ Key Features
 
 💬 **NEW: Real-time Status Line** - Get instant prompt quality feedback in Claude Code with personality coaches (Gordon Ramsay, Vibe-log, or Custom)<br>
@@ -49,36 +49,31 @@ vibe-log is a comprehensive CLI tool that analyzes your coding sessions to extra
    npx vibe-log-cli
    ```
 
-## 💬 Status Line - Real-time Prompt Coaching in Claude Code
+## 💬 Status Line - Real-time Prompt Coaching in Claude Code Using Your Claude Code
 
 Transform your Claude Code experience with real-time prompt quality feedback! The Status Line feature analyzes your prompts as you type and provides instant coaching to help you write better, more effective prompts.
+<img width="972" height="170" alt="image" src="https://github.com/user-attachments/assets/eb6a26ca-193f-4df5-87e8-ef7acfa85169" />
 
-### How It Works
+
+### How Status Line Analyzes Prompts Locally 
 Every time you submit a prompt in Claude Code, vibe-log:
-1. **Analyzes** your prompt quality in real-time using Claude AI
+1. **Analyzes** your prompt quality in using your Claude Code 
 2. **Scores** your prompt from 0-100 based on clarity, context, and specificity
 3. **Provides** personalized suggestions through your chosen coach personality
 4. **Displays** feedback directly in your Claude Code status bar
 
-### Choose Your Coach Personality
-- 🧑‍🍳 **Gordon Ramsay** - Tough love with kitchen metaphors ("This prompt is RAW!")
-- 💜 **Vibe-log** - Encouraging and supportive developer coach
-- ✨ **Custom** - Define your own coaching style and personality
+[![](https://mermaid.ink/img/pako:eNptVN1OE0EUfpXjXBhJoLS0pXRjMNiiNhBDRE2w5WK6O7QbdmfWmdlC-TFeGhM0wC2kxphgjFxx45UPwwvII3hmZgstMFczZ873nZ_vzOwSXwSMeGQjElt-l0oNy69aHHCptN2RNOlCgyephmaLXJ5c_PvzFc9Qi2gaMKghtkXWnb9ZbxSTj5pXg8MfsCZS0P2EAX3cltPziRRxotcnYGpqHlbTdhzq5opkSsEi10yCFtZN2RvIvG-IHcKCXwixiSF-ndpoK9bTXVuGLl6DlmGnw6TKGBgPWvxWVQucRn0VKlPY1eDsGywLn0bg-G5ueyEdrRZW60tjFZtsbFq15UbzbdhmU5HomINNRjKfhT2m7haEHg7WZf7mbkMBZ1uAAugn-yNO5tK47b0UexgfO7WtsfbjUxTBj0xSiWS9UKTKhvMF72HVVIeCr99Hs8bUHtRDTMvQHJ27OndYlp-TQFMe0EhwNkJxs7tu4ApGEggPdd_18Ms5ZrWRKtMp6o85jLXMrOdCBoJjDmeHlx8PrgYHF5nJpvBapJ0uRKLHbsFMg03iJzBstfVf5L5IJe2EvHMLUEuVFnHz8uRntrX-OJsSlO5Ho_x2SO7Wm3XdzW19qZkNA24tFXUNHCoM71Nb8Aiva_cQf2Mf7d9U7vYtHhzEF9KUfPwZnjPOJNUMlLHZ6A9RDhx0NSL4fbNeD1US0Uymo9-wqqlOFSyHnMEzxoI29TfHJLJRXXzasx3_a3fDZ_phOtfLBBhFGQ8LsvzNLEybyuwx0EABvvk0GnvazsviumILgw2-w1x5upDPW5jRzs0GKNpXnjUuBAHEJkc_k8fvso0Hd1tgGC11I0aBesx8Tsef4CnT5tNxmrm3k5lcemp9gkySjgwD4mmZskkSMxlTcyS7hrlFdJfF-Pl5uA2oxPa1-D5iEsrfCREPYdJMMvE2aKTwlCYB6lcPKcoSX1sl5stkTaRcE69UyFctC_F2yTbxKqXcXGGmXCwWiuXZUmGmMkn6xCuW87lCvlytVCuVUrVSminuT5IdGzefm0MTrspsoVDMFyuz-_8BpxX0gg)
 
-### Example Feedback
-```
-🟢 85/100 | ✨ Gordon says: Beautiful context chef! Just needs a pinch of expected output format
-🟡 65/100 | 💜 Vibe-log: Good start! Add some context about your current setup
-🔴 40/100 | 🧑‍🍳 Gordon: This prompt is UNDERCOOKED! Where's the bloody context?!
-```
+### Choose Your Coach Personality
+- 🧑‍🍳 **Gordon ** - Tough love with kitchen metaphors ("This prompt is RAW!")
+- 💜 **Vibe-Log** - Encouraging and supportive developer coach
+- ✨ **Custom** - Define your own coaching style and personality
 
 ### Quick Installation
 1. Run `npx vibe-log-cli`
-2. Select **"Status Line"** from the main menu
+2. Select ** 💡 Configure Real-time prompt coach status line **
 3. Choose your coach personality
 4. Start getting real-time feedback in Claude Code!
-
-The Status Line works silently in the background, helping you improve with every prompt you write.
 
 ## Supported Coding Engines 
 
@@ -91,43 +86,9 @@ Future:
 
 🌍 Cross-Platform - Runs on macOS, Windows, Linux, and any environment with Node.js
 
-## How does it work
+## How Vibe-Log Analyzes AI Coding Sessions
 
-```mermaid
-flowchart TB
-    subgraph Input ["✳️ In Claude Code"]
-        User([👤 You type a prompt]) 
-        User --> Submit[Press Enter]
-        Submit --> Hook[🪝 Hook triggers]
-    end
-
-    Hook --> CLI[Vibe-log CLI<br/>receives prompt]
-    
-    CLI --> Check{Is new<br/>chat?}
-    
-    Check -->|Yes| Direct[💭 Analyze<br/>standalone]
-    Check -->|No| Context[📝 Include<br/>conversation]
-    
-    Direct --> SDK
-    Context --> SDK
-    
-    subgraph Analysis ["🧠 Analysis with Personality"]
-        Personality[🎭 Coach Personality<br/>🧑‍🍳 Gordon | 💜 Vibe-log | ✨ Custom]
-        Personality -.-> SDK[Claude SDK<br/>analyzes quality]
-        SDK --> Score[📊 Score &<br/>suggestion]
-    end
-    
-    Score --> Save[💾 Save to<br/>~/.vibe-log]
-    
-    Save --> Status[Status bar<br/>reads result]
-    
-    Status --> Show[🟢 85/100<br/>✨ Gordon says:<br/>Add context chef!]
-    
-    Show --> Improve([📈 Better prompts<br/>Better results])
-
-    style Input fill:#f9f,stroke:#333,stroke-width:2px
-    style Analysis fill:#bbf,stroke:#333,stroke-width:2px
-```
+[![](https://mermaid.ink/img/pako:eNp1VNFqG0cU_ZXLQEoDluzVKo4lHEFQSFOyxsFOKc3KD6PdK-3Gq5llZlbORlJIoE-FUpr2oQ8pfmzpFxT6N_6B-hN6Z8ZrS66zIKTZe--559x7RguWyBRZn00KeZZkXBmIjkYC3KOr8VTxMoNjNFUJ8Yh9hcbkYgq1rBQMC16lCEMCoAytcyngCTccjpCn9YidNDj2OTaE_WV8ef7Hzxfvf7w8__iPLbRYZ7nJ9sdqe7CGd3IfWq0BoRaYmPgqoI1UqIFYGg1GuprL818-wLvtduJStkslX1OFXmt9757rTqXrkP4LtKetHZaRwAUv6re4ydyn2uIDNJlMF8coUpjnfLWe5mM2bfm4MnLGTZ4s4ZmUp5pU__V7M67MvnH9OKW1dC2Sk8_gHHBR8WIJ_jt2WodUr3GTOEgFdygH390xf6HyOU9qwvj1I-yPB4clCjimLSbYxCDiNar97fHAgR7hTM7tuO16v6CGiULj-z1HLDVIUdRQcmNQic22nu963yZKgxuJ5tD0tXkkK09wcaUuk2fNgq82Ao-_tkysXxrpqxuka6MOC1ml1qgXv3349--frs4HJOGWHYdB_E1ZSJ7eKPA8OmQNNUcF9MkneUJrlGKztOMzw5g4OXo639Q_DH1G167sB_gWx3QvdDaWXKUnd47iWkAkE5ocCXA3xJ_uoB8FMV2oGuRkUuQC3aS-u3UnvaCoE3uUhqnLrbSbZDVu8SmKW66JvMAotPS_h2cvDyJQWEpl7ibvdwePHg2Wh8LSWfq534q32mTpQ0946aWtYbhF2bZHqKvCxBef_rQ-jZArAWcZuZX-c7wZx6jNtU1fKp6cQj4j_89xZrW4109zkf7fnH4SN13YFpuqPGV9oyrcYjNUM26PbGErRsxkBDliffqZcnU6YiOxopqSi1dSzpoyJatpxvoTXmg6VWXKDT7JOS30JoUGhmooK2FYP-gEDoP1F-wN67fC3fbDXqfTDXrdB70Hvb3eFqspaydsh7u94GHQ3QtsLFhtsbeubdDe2d0Jd3q9MAx2w72w21n9B8bX4e4)
 
 ## 🔒 Privacy & Security
 
