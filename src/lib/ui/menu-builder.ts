@@ -79,7 +79,7 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
     
     items.push({
       id: 'status-line',
-      label: `💡 Configure Real-time prompt coach status line`,
+      label: `💡 Configure prompt coach status line`,
       description: 'AI feedback & personality in Claude Code',
       action: 'status-line'
     });
@@ -122,7 +122,7 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
     
     items.push({
       id: 'status-line',
-      label: `💡 Configure Real-time prompt coach status line`,
+      label: `💡 Configure prompt coach status line`,
       description: 'AI feedback & personality in Claude Code',
       action: 'status-line'
     });

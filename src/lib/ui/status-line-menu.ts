@@ -69,10 +69,10 @@ import { interactivePersonalityTester } from './personality-tester';
  * Display educational header about status line
  */
 async function displayEducationalHeader(config: StatusLineConfig): Promise<void> {
-  console.log(colors.accent('\n💡 Real-time Prompt Coach Status Line\n'));
+  console.log(colors.accent('\n💡 Prompt Coaching Status Line\n'));
   
   // Educational content
-  console.log(colors.subdued('Real-time prompt quality feedback directly in Claude Code.\n'));
+  console.log(colors.subdued('Prompt quality feedback directly in Claude Code.\n'));
   
   console.log(colors.info('What is the Status Line?'));
   console.log(colors.subdued('  • Analyzes each prompt using Claude Code (Haiku model)'));
@@ -82,7 +82,7 @@ async function displayEducationalHeader(config: StatusLineConfig): Promise<void>
   console.log(colors.info('How it works:'));
   console.log(colors.subdued('  1. UserPromptSubmit hook analyzes your prompts'));
   console.log(colors.subdued('  2. Status line displays the analysis results'));
-  console.log(colors.subdued('  3. Updates in real-time as you type\n'));
+  console.log(colors.subdued('  3. Anaylsis starts when you submit your prompts and is not blocking '));
   
   // Current status display
   console.log(box.horizontal.repeat(60));
@@ -176,7 +176,7 @@ async function performInstallation(): Promise<void> {
   
   console.log('This will configure:');
   console.log('');
-  console.log(`  ○ UserPromptSubmit hook for real-time analysis`);
+  console.log(`  ○ UserPromptSubmit hook for prompt analysis`);
   console.log(`  ○ Status line display in Claude Code`);
   console.log('');
   console.log(colors.subdued('Installation location:'));
