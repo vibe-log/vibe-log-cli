@@ -5,6 +5,14 @@ All notable changes to the vibe-log-cli project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.21] - 2025-08-28
+
+### Added
+- **Status Line in First-Time Menu**: Added "Configure Real-time prompt coach status line" option to the first-time welcome menu for improved feature discoverability during onboarding
+
+### Improved
+- **User Onboarding**: New users can now immediately discover and configure the AI feedback personality feature during initial setup
+
 ## [0.3.20] - 2025-08-24
 
 ### Added
