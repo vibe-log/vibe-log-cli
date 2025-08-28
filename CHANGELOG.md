@@ -5,6 +5,38 @@ All notable changes to the vibe-log-cli project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2025-08-28
+
+### Added
+- **Status Line in First-Time Menu**: Added "Configure Real-time prompt coach status line" option to the first-time welcome menu for improved feature discoverability during onboarding
+
+### Improved
+- **Documentation**: Updated README with latest features and improvements
+
+## [0.4.0] - 2025-08-28
+
+### Added
+- **Real-time Status Line**: Revolutionary prompt quality analyzer that provides instant feedback in Claude Code status bar
+- **AI Personality System**: Customizable AI personas (Gordon Ramsay, Bob Ross, etc.) for engaging prompt feedback
+- **Context-Aware Analysis**: Multi-turn conversation context tracking for better prompt quality assessment
+- **Interactive Personality Testing**: Test and preview different AI personalities before installation
+- **Unified Hooks Manager**: Prevent duplicate installations and conflicts between features
+- **Planning Mode Detection**: Automatically detect when Claude Code is in planning mode
+- **Session-Specific Storage**: Prevent conflicts when multiple Claude sessions are active
+
+### Improved
+- **Status Line UI**: Enhanced visual feedback with progress bars and actionable tips
+- **Dynamic CLI Paths**: Use configurable paths instead of hardcoded values
+- **Prompt Analysis**: Context-aware quality assessment with semantic understanding
+- **Installation Flow**: Streamlined status line installation with better menu integration
+
+### Fixed
+- **Recursion Prevention**: Robust guards to prevent infinite loops in SDK integration
+- **File Lock Issues**: Replaced file-based locks with prompt-based recursion guards
+- **Promotional Flickering**: Eliminated status line tip flickering
+- **Duplicate Messages**: Removed redundant installation messages
+- **Creativity Preservation**: Restored Claude's creative responses in personality system
+
 ## [0.3.21] - 2025-08-28
 
 ### Added

@@ -39,12 +39,15 @@ This guide explains how to set up automated npm releases via GitHub Actions.
 
 ### Automated Release (Recommended)
 
-1. Update version in package.json:
+1. **Update CHANGELOG.md** with release notes:
+   - Add a new section with the version number and date
+   - List changes under `### Added`, `### Fixed`, `### Improved`, etc.
+   - Follow the format of existing entries
+
+2. Update version in package.json:
    ```bash
    npm version patch  # or minor/major
    ```
-
-2. Update CHANGELOG.md with release notes
 
 3. Commit and push:
    ```bash
@@ -64,7 +67,8 @@ This guide explains how to set up automated npm releases via GitHub Actions.
    - Run tests
    - Generate checksums
    - Publish to npm with provenance
-   - Create GitHub release
+   - Extract release notes from CHANGELOG.md
+   - Create GitHub release with proper notes
 
 ### Manual Trigger (Alternative)
 
@@ -82,7 +86,8 @@ After release:
 1. Check the [Actions tab](https://github.com/vibe-log/vibe-log-cli/actions) for workflow status
 2. Verify on npm: https://www.npmjs.com/package/vibe-log-cli
 3. Look for the "Provenance" badge on the npm page
-4. Test installation:
+4. **Verify GitHub Release**: Check https://github.com/vibe-log/vibe-log-cli/releases
+5. Test installation:
    ```bash
    npx vibe-log-cli@latest --version
    ```
@@ -105,6 +110,16 @@ After release:
 - Check that all tests pass locally: `npm test`
 - Verify TypeScript compilation: `npm run type-check`
 - Ensure clean build: `npm run build`
+
+### GitHub Release Not Created
+
+- **CHANGELOG.md not updated**: Ensure version entry exists in CHANGELOG.md
+- **Tag format mismatch**: Tags must be in format `v0.3.18` (with 'v' prefix)
+- **Workflow permissions**: Check GitHub Actions has write permissions
+- **Manual creation**: Use GitHub CLI to create releases manually:
+  ```bash
+  gh release create v0.4.1 --notes-file CHANGELOG.md --title "Release v0.4.1"
+  ```
 
 ## Security Notes
 

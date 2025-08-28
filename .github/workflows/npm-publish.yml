@@ -134,34 +134,47 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           
+      - name: Extract version from tag or input
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/v}
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+          
+      - name: Extract release notes from CHANGELOG
+        id: extract_notes
+        run: |
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          echo "Extracting notes for version $VERSION..."
+          
+          # Extract the section for this version from CHANGELOG.md
+          NOTES=$(awk "/^## \[$VERSION\]/{flag=1; next} /^## \[/{flag=0} flag" CHANGELOG.md)
+          
+          if [ -z "$NOTES" ]; then
+            echo "No release notes found for version $VERSION in CHANGELOG.md"
+            NOTES="See [CHANGELOG.md](https://github.com/vibe-log/vibe-log-cli/blob/main/CHANGELOG.md) for details."
+          fi
+          
+          # Save to file to handle multiline content
+          echo "$NOTES" > release_notes.txt
+          echo "Release notes extracted successfully"
+          
       - name: Create GitHub Release
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          body: |
-            ## Release ${{ github.ref }}
-            
-            ### Checksums
-            ```
-            $(cat dist/checksums.sha256)
-            ```
-            
-            ### Installation
-            ```bash
-            npx vibe-log-cli@latest
-            ```
-            
-            ### Verification
-            You can verify the published package by:
-            1. Viewing the source code at: https://github.com/vibe-log/vibe-log-cli
-            2. Checking npm provenance: https://www.npmjs.com/package/vibe-log-cli
-            3. Verifying checksums of the build artifacts
-            
-            See [CHANGELOG.md](https://github.com/vibe-log/vibe-log-cli/blob/main/CHANGELOG.md) for details.
+          tag_name: v${{ steps.get_version.outputs.VERSION }}
+          name: Release v${{ steps.get_version.outputs.VERSION }}
+          body_path: release_notes.txt
+          files: |
+            dist/checksums.sha256
+          append_body: true
           draft: false
           prerelease: false
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
