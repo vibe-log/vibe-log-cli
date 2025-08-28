@@ -19,13 +19,13 @@ export async function showFirstTimeWelcome(): Promise<WelcomeChoice> {
   // Menu choices formatted exactly as in cli-flows.md
   const choices = [
     {
-      name: `${colors.primary('Local mode (Claude Code with sub-agents)')}
-    ${colors.muted('└─ 100% offline, using your claude code')}
-    ${colors.muted('└─ Uses ~10k-50k tokens per analysis')}
-    ${colors.muted('└─ 4-10 minute generation')}
-    ${colors.muted('└─ Local HTML reports')}`,
-      value: 'local' as const,
-      short: 'Local mode'
+      name: `💬 ${colors.accent('Enable Prompt Coaching Bar')} ${colors.success('(Recommended)')}
+    ${colors.success('└─ 📊 Scores your prompts 0-100 for quality')}
+    ${colors.success('└─ 💡 Get personalized tips after each prompt')}
+    ${colors.success('└─ 🎭 Choose your coach personality')}
+    ${colors.muted('└─ ⚡ Uses your Claude Code locally')}`,
+      value: 'statusline' as const,
+      short: 'Status line'
     },
     {
       name: `${colors.accent('Cloud mode (Automatic)')} ${colors.success('- FREE FOREVER')}
@@ -38,10 +38,13 @@ export async function showFirstTimeWelcome(): Promise<WelcomeChoice> {
       short: 'Cloud mode'
     },
     {
-      name: `💡 ${colors.primary('Configure Real-time prompt coach status line')}
-    ${colors.muted('└─ AI feedback & personality in Claude Code')}`,
-      value: 'statusline' as const,
-      short: 'Status line'
+      name: `${colors.primary('Local mode (Claude Code with sub-agents)')}
+    ${colors.muted('└─ 100% offline, using your claude code')}
+    ${colors.muted('└─ Uses ~10k-50k tokens per analysis')}
+    ${colors.muted('└─ 4-10 minute generation')}
+    ${colors.muted('└─ Local HTML reports')}`,
+      value: 'local' as const,
+      short: 'Local mode'
     },
     {
       name: `${colors.primary('Help')}
