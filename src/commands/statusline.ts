@@ -31,7 +31,7 @@ function getScoreEmoji(score: number): string {
 function formatCompact(analysis: PromptAnalysis): string {
   const score = analysis.score;
   let suggestion = analysis.suggestion;
-  let actionableSteps = analysis.actionableSteps;
+  const actionableSteps = analysis.actionableSteps;
   
   // Handle recursion detection case
   if (suggestion.includes('Recursion prevented')) {
