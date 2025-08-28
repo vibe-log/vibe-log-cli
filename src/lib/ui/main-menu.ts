@@ -89,6 +89,14 @@ export async function showMainMenu(
         break;
       }
       
+      case 'statusline': {
+        const { showStatusLineMenu } = await import('./status-line-menu');
+        await showStatusLineMenu();
+        // Show welcome again after status line configuration
+        await showMainMenu(state, packageUpdateInfo);
+        return;
+      }
+      
       case 'help':
         showHelp();
         console.log('Press Enter to continue...');

@@ -1,7 +1,7 @@
 import inquirer from 'inquirer';
 import { colors } from './styles';
 
-export type WelcomeChoice = 'local' | 'cloud' | 'help' | 'exit';
+export type WelcomeChoice = 'local' | 'cloud' | 'statusline' | 'help' | 'exit';
 
 /**
  * Display the first-time welcome screen with setup options
@@ -36,6 +36,12 @@ export async function showFirstTimeWelcome(): Promise<WelcomeChoice> {
     ${colors.warning('└─ ℹ️  Shares anonymized metrics')}`,
       value: 'cloud' as const,
       short: 'Cloud mode'
+    },
+    {
+      name: `💡 ${colors.primary('Configure Real-time prompt coach status line')}
+    ${colors.muted('└─ AI feedback & personality in Claude Code')}`,
+      value: 'statusline' as const,
+      short: 'Status line'
     },
     {
       name: `${colors.primary('Help')}
