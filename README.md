@@ -35,7 +35,7 @@
 vibe-log is a comprehensive CLI tool that analyzes your coding sessions to extract productivity metrics and improvements along with, emotional insights, and generates engaging Build in Public content. It integrates seamlessly with Claude Code and other AI coding assistants to help you understand your development patterns and share your journey.<p></p>
 ✨ Key Features
 
-💬 **NEW: Real-time Status Line** - Get instant prompt quality feedback in Claude Code with personality coaches (Gordon Ramsay, Vibe-log, or Custom)<br>
+💬 **NEW: Status Line** - Have your local claude code provide you with prompt quality feedback right in Claude Code with personality coaches (🧑‍🍳Gordon, Vibe-log, or Custom)<br>
 📊 Productivity Analytics - Track goals, code acceptance rates, and session efficiency<br>
 📝 Tailored Prompt Engineering Feedback - Improve your AI interaction efficiency<br>
 📈 AI Metrics Tracking - Monitor how effectively you're using AI coding assistants<br>
@@ -49,9 +49,9 @@ vibe-log is a comprehensive CLI tool that analyzes your coding sessions to extra
    npx vibe-log-cli
    ```
 
-## 💬 Status Line - Real-time Prompt Coaching in Claude Code Using Your Claude Code
+## 💬 Status Line - Prompt Coaching in Claude Code Using Your Claude Code
 
-Transform your Claude Code experience with real-time prompt quality feedback! The Status Line feature analyzes your prompts as you type and provides instant coaching to help you write better, more effective prompts.
+Transform your Claude Code experience with prompt quality feedback! The Status Line feature analyzes your prompts and provides coaching to help you write better, more effective prompts.
 <img width="972" height="170" alt="image" src="https://github.com/user-attachments/assets/eb6a26ca-193f-4df5-87e8-ef7acfa85169" />
 
 
@@ -73,7 +73,7 @@ Every time you submit a prompt in Claude Code, vibe-log:
 1. Run `npx vibe-log-cli`
 2. Select ** 💡 Configure Real-time prompt coach status line **
 3. Choose your coach personality
-4. Start getting real-time feedback in Claude Code!
+4. Start getting feedback on your prompts in Claude Code!
 
 ## Supported Coding Engines 
 
