@@ -1,137 +1,165 @@
 # Release Setup Guide
 
-This guide explains how to set up automated npm releases via GitHub Actions.
+This guide explains how to release new versions of vibe-log-cli using GitHub Actions.
 
-## Prerequisites
+## 🚀 Quick Release Instructions (Using GitHub Actions)
 
-1. **npm Account**: You need an npm account with publish access to `vibe-log-cli`
-2. **GitHub Repository**: Push access to the GitHub repository
-3. **npm Token**: An automation token from npm
+### Step 1: Prepare Release
+```bash
+# 1. Update CHANGELOG.md with release notes
+# Add new section at the top (after line 7) with format:
+## [0.4.X] - 2025-08-29
 
-## Step 1: Generate npm Token
+### Fixed
+- Brief description of fixes
 
+### Improved  
+- Brief description of improvements
+
+### Added
+- Brief description of new features
+```
+
+### Step 2: Create Release Commit
+```bash
+# 2. Bump version (choose patch/minor/major)
+npm version patch  # Bug fixes: 0.4.3 -> 0.4.4
+# npm version minor  # New features: 0.4.3 -> 0.5.0
+# npm version major  # Breaking changes: 0.4.3 -> 1.0.0
+
+# 3. Commit the changes
+git add .
+git commit -m "chore: release v$(node -p "require('./package.json').version")"
+```
+
+### Step 3: Push and Tag
+```bash
+# 4. Push to main branch
+git push origin main
+
+# 5. Push the version tag (created by npm version)
+git push origin --tags
+```
+
+### Step 4: GitHub Actions Takes Over
+The GitHub Action will automatically:
+- ✅ Build and test the package
+- ✅ Publish to npm with provenance
+- ✅ Create GitHub release with notes from CHANGELOG.md
+- ✅ Generate checksums
+
+### Step 5: Verify Release
+```bash
+# Check npm (wait ~1 minute)
+npm view vibe-log-cli version
+
+# Check GitHub releases
+open https://github.com/vibe-log/vibe-log-cli/releases
+
+# Test installation
+npx vibe-log-cli@latest --version
+```
+
+---
+
+## 🔧 Initial Setup (One-Time Only)
+
+### Prerequisites
+1. **npm Account**: Must have publish access to `vibe-log-cli`
+2. **GitHub Access**: Must have push access to the repository
+3. **npm Token**: Required for GitHub Actions
+
+### Generate npm Token
 1. Log in to [npmjs.com](https://www.npmjs.com)
-2. Click your profile picture → **Access Tokens**
-3. Click **Generate New Token** → **Classic Token**
-4. Select type: **Automation** (important for CI/CD)
+2. Click profile → **Access Tokens**
+3. **Generate New Token** → **Classic Token**
+4. Select type: **Automation** (IMPORTANT!)
 5. Copy the token (starts with `npm_`)
 
-## Step 2: Add Token to GitHub Secrets
+### Add Token to GitHub
+1. Go to repository **Settings** → **Secrets and variables** → **Actions**
+2. Click **New repository secret**
+3. Name: `NPM_TOKEN`
+4. Paste your npm token
+5. Click **Add secret**
 
-1. Go to the GitHub repository
-2. Navigate to **Settings** → **Secrets and variables** → **Actions**
-3. Click **New repository secret**
-4. Name: `NPM_TOKEN`
-5. Value: Paste your npm token
-6. Click **Add secret**
+---
 
-## Step 3: Create npm Production Environment (Optional but Recommended)
+## 📝 Manual Release (If GitHub Actions Fails)
 
-1. In GitHub repository, go to **Settings** → **Environments**
-2. Click **New environment**
-3. Name: `npm-production`
-4. Add protection rules:
-   - Required reviewers (optional)
-   - Restrict to protected branches only
-5. Add the `NPM_TOKEN` secret to this environment for extra security
+Only use this if GitHub Actions is broken:
 
-## Step 4: Release Process
+```bash
+# 1. Update CHANGELOG.md
+# 2. Bump version
+npm version patch
 
-### Automated Release (Recommended)
+# 3. Build and test
+npm run build
+npm run test
 
-1. **Update CHANGELOG.md** with release notes:
-   - Add a new section with the version number and date
-   - List changes under `### Added`, `### Fixed`, `### Improved`, etc.
-   - Follow the format of existing entries
+# 4. Publish to npm
+npm publish
 
-2. Update version in package.json:
-   ```bash
-   npm version patch  # or minor/major
-   ```
+# 5. Push changes
+git push origin main --tags
 
-3. Commit and push:
-   ```bash
-   git add .
-   git commit -m "chore: release v0.3.18"
-   git push origin main
-   ```
+# 6. Create GitHub release manually
+gh release create v$(node -p "require('./package.json').version") \
+  --title "Release v$(node -p "require('./package.json').version")" \
+  --notes "See CHANGELOG.md for details"
+```
 
-4. Create and push tag:
-   ```bash
-   git tag v0.3.18
-   git push origin v0.3.18
-   ```
+---
 
-5. GitHub Actions will automatically:
-   - Build the package
-   - Run tests
-   - Generate checksums
-   - Publish to npm with provenance
-   - Extract release notes from CHANGELOG.md
-   - Create GitHub release with proper notes
+## 🐛 Troubleshooting
 
-### Manual Trigger (Alternative)
+### GitHub Actions Not Running
+- Check: Did you push the tag? `git push origin --tags`
+- Check: Is the workflow enabled? Go to Actions tab
+- Check: Any errors in [Actions logs](https://github.com/vibe-log/vibe-log-cli/actions)
 
-You can also trigger the release workflow manually:
-
-1. Go to **Actions** → **NPM Publish**
-2. Click **Run workflow**
-3. Enter the version (e.g., `0.3.18`)
-4. Click **Run workflow**
-
-## Verification
-
-After release:
-
-1. Check the [Actions tab](https://github.com/vibe-log/vibe-log-cli/actions) for workflow status
-2. Verify on npm: https://www.npmjs.com/package/vibe-log-cli
-3. Look for the "Provenance" badge on the npm page
-4. **Verify GitHub Release**: Check https://github.com/vibe-log/vibe-log-cli/releases
-5. Test installation:
-   ```bash
-   npx vibe-log-cli@latest --version
-   ```
-
-## Troubleshooting
-
-### Token Issues
-
-- **Error: 401 Unauthorized**: Token is invalid or expired
-- **Error: 403 Forbidden**: Token lacks publish permissions
-- **Solution**: Generate a new **Automation** token (not Publish token)
-
-### Version Mismatch
-
-- **Error**: Package version doesn't match tag
-- **Solution**: Ensure package.json version matches the git tag (without 'v' prefix)
-
-### Build Failures
-
-- Check that all tests pass locally: `npm test`
-- Verify TypeScript compilation: `npm run type-check`
-- Ensure clean build: `npm run build`
+### npm Publish Failed
+- **401 Error**: Token expired - generate new one
+- **403 Error**: No publish permission - check npm account
+- **E409 Error**: Version already exists - bump version again
 
 ### GitHub Release Not Created
+- Ensure CHANGELOG.md has entry for the version
+- Tag must start with 'v' (e.g., `v0.4.3`)
+- Check GitHub Actions has write permissions
 
-- **CHANGELOG.md not updated**: Ensure version entry exists in CHANGELOG.md
-- **Tag format mismatch**: Tags must be in format `v0.3.18` (with 'v' prefix)
-- **Workflow permissions**: Check GitHub Actions has write permissions
-- **Manual creation**: Use GitHub CLI to create releases manually:
-  ```bash
-  gh release create v0.4.1 --notes-file CHANGELOG.md --title "Release v0.4.1"
-  ```
+### Version Mismatch
+- package.json version must match git tag (without 'v')
+- Example: package.json has `0.4.3`, tag is `v0.4.3`
 
-## Security Notes
+---
 
-- Never commit the npm token to the repository
-- Use GitHub Secrets for all sensitive data
+## 📋 Release Checklist
+
+Before releasing, ensure:
+- [ ] CHANGELOG.md updated with release notes
+- [ ] All changes committed
+- [ ] Tests pass locally: `npm test`
+- [ ] Build works: `npm run build`
+- [ ] You're on main branch: `git branch`
+- [ ] No uncommitted changes: `git status`
+
+---
+
+## 🔒 Security Notes
+
+- **Never** commit npm tokens to the repository
+- Use GitHub Secrets for all tokens
 - Enable 2FA on your npm account
-- Regularly rotate tokens (every 90 days recommended)
-- Use environment protection rules for production releases
+- Rotate tokens every 90 days
+- Token type must be **Automation** (not Publish)
 
-## Support
+---
 
-For issues with the release process:
-- Check [GitHub Actions logs](https://github.com/vibe-log/vibe-log-cli/actions)
-- Open an issue in the repository
-- Contact the maintainers
+## 📞 Support
+
+For release issues:
+1. Check [GitHub Actions logs](https://github.com/vibe-log/vibe-log-cli/actions)
+2. Open an issue in the repository
+3. Contact maintainers via Discord/Slack
