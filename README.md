@@ -63,7 +63,13 @@ flowchart TD
 
 The Status Line feature uses your local Claude Code to analyze prompt quality so you can improve your productivity from AI coding.
 
-### How It Works
+### Why Use Status Line?
+
+- **🚀 Improve Faster**: Get feedback that helps you write better prompts, write in Claude Code
+- **🎯 Catch Issues Early**: Spot vague or incomplete prompts before Claude struggles with them  
+- **📈 Build Better Habits**: Learn what makes prompts effective through consistent coaching
+
+### How Status Line Prompt Analyzer Work
 1. Intercepts prompts submitted in Claude Code
 2. Analyzes prompt quality locally using claude code
 3. Provides feedback through configurable coach personalities

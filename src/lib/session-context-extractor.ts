@@ -14,8 +14,8 @@ import { logger } from '../utils/logger';
 export const DEFAULT_CONVERSATION_TURNS_TO_EXTRACT_AS_CONTEXT = 3;
 
 /**
- * Extract conversation context (last 2-3 message pairs) from a transcript file
- * Returns formatted conversation history for better context understanding
+ * Extract conversation context including first message and recent turns
+ * Returns formatted conversation history with original mission and current context
  */
 export async function extractConversationContext(
   transcriptPath: string,
@@ -31,9 +31,49 @@ export async function extractConversationContext(
     
     // Parse JSONL content
     const lines = content.trim().split('\n');
-    const messages: Array<{ role: string; content: string }> = [];
+    let firstUserMessage: { role: string; content: string } | null = null;
+    const recentMessages: Array<{ role: string; content: string }> = [];
     
-    // Read lines in reverse to collect recent messages
+    // First pass: Find the very first user message (original mission)
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      
+      try {
+        const data = JSON.parse(line);
+        
+        // Check if this is the first user message
+        if (data.message && data.message.role === 'user' && !data.isMeta) {
+          // Extract text content from the message
+          let messageContent: string = '';
+          const content = data.message.content;
+          
+          if (typeof content === 'string') {
+            messageContent = content;
+          } else if (Array.isArray(content)) {
+            messageContent = content
+              .filter((item: any) => item.type === 'text')
+              .map((item: any) => item.text)
+              .join('\n');
+          }
+          
+          // Skip command-related messages
+          if (messageContent && 
+              !messageContent.includes('<command-name>') && 
+              !messageContent.includes('Caveat: The messages below were generated')) {
+            firstUserMessage = {
+              role: 'user',
+              content: messageContent.substring(0, 500) // Limit to 500 chars
+            };
+            break;
+          }
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+    
+    // Second pass: Read lines in reverse to collect recent messages
     for (let i = lines.length - 1; i >= 0; i--) {
       const line = lines[i].trim();
       if (!line) continue;
@@ -64,15 +104,15 @@ export async function extractConversationContext(
           if (messageContent && 
               !messageContent.includes('<command-name>') && 
               !messageContent.includes('Caveat: The messages below were generated')) {
-            messages.unshift({
+            recentMessages.unshift({
               role: data.message.role,
-              content: messageContent.substring(0, 500) // Limit message length
+              content: messageContent.substring(0, 400) // Slightly smaller for recent to save tokens
             });
             
             // Stop when we have enough conversation turns
             // Count pairs - we want roughly turnsToExtract exchanges
-            const assistantCount = messages.filter(m => m.role === 'assistant').length;
-            const userCount = messages.filter(m => m.role === 'user').length;
+            const assistantCount = recentMessages.filter(m => m.role === 'assistant').length;
+            const userCount = recentMessages.filter(m => m.role === 'user').length;
             const minCount = Math.min(assistantCount, userCount);
             
             if (minCount >= turnsToExtract) {
@@ -86,22 +126,46 @@ export async function extractConversationContext(
       }
     }
     
-    // Format the conversation context
-    if (messages.length === 0) {
+    // Format the conversation context with both original mission and recent context
+    if (!firstUserMessage && recentMessages.length === 0) {
       return null;
     }
     
-    // Build conversation context string
+    // Build conversation context string with clear sections
     const contextParts: string[] = [];
-    for (const msg of messages) {
-      const roleLabel = msg.role === 'assistant' ? 'Previous Assistant' : 'Previous User';
-      contextParts.push(`${roleLabel}: ${msg.content}`);
+    
+    // Add the original mission if we found it
+    if (firstUserMessage) {
+      contextParts.push(`ORIGINAL MISSION: ${firstUserMessage.content}`);
+    }
+    
+    // Add recent conversation context if available
+    if (recentMessages.length > 0) {
+      contextParts.push('RECENT CONTEXT:');
+      
+      // Check if the first user message is duplicated in recent messages
+      const firstMessageIsDuplicated = firstUserMessage && 
+                                       recentMessages.length > 0 && 
+                                       recentMessages.some(msg => 
+                                         msg.role === 'user' && 
+                                         msg.content === firstUserMessage.content);
+      
+      for (const msg of recentMessages) {
+        // Skip the first user message if it's the same as the original mission
+        if (firstMessageIsDuplicated && firstUserMessage && msg.role === 'user' && msg.content === firstUserMessage.content) {
+          continue;
+        }
+        
+        const roleLabel = msg.role === 'assistant' ? 'Previous Assistant' : 'Previous User';
+        contextParts.push(`${roleLabel}: ${msg.content}`);
+      }
     }
     
     const conversationContext = contextParts.join('\n\n');
     
     logger.debug('Extracted conversation context', {
-      messageCount: messages.length,
+      hasOriginalMission: !!firstUserMessage,
+      recentMessageCount: recentMessages.length,
       contextLength: conversationContext.length,
       preview: conversationContext.substring(0, 200)
     });

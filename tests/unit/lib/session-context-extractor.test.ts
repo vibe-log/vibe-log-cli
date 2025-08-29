@@ -47,6 +47,11 @@ describe('Session Context Extractor', () => {
 
       const result = await extractConversationContext('/tmp/test.jsonl', 3);
       
+      // Should include the original mission (first user message)
+      expect(result).toContain('ORIGINAL MISSION: Hello Claude');
+      
+      // Should include recent context
+      expect(result).toContain('RECENT CONTEXT:');
       expect(result).toContain('Previous User: What database should I use?');
       expect(result).toContain('Previous Assistant: What are your requirements? PostgreSQL or MySQL?');
       expect(result).toContain('Previous User: I need ACID compliance');
@@ -71,14 +76,16 @@ describe('Session Context Extractor', () => {
 
       const result = await extractConversationContext('/tmp/test.jsonl', 2);
       
+      // Should include the original mission (first user message)
+      expect(result).toContain('ORIGINAL MISSION: Message 1');
+      
       // Should include last 2 turns (messages 3-4 and replies 3-4)
       expect(result).toContain('Message 3');
       expect(result).toContain('Reply 3');
       expect(result).toContain('Message 4');
       expect(result).toContain('Reply 4');
       
-      // Should NOT include older messages
-      expect(result).not.toContain('Message 1');
+      // Should NOT include Message 2 in recent context (but Message 1 is in ORIGINAL MISSION)
       expect(result).not.toContain('Message 2');
     });
 
@@ -97,8 +104,10 @@ describe('Session Context Extractor', () => {
 
       const result = await extractConversationContext('/tmp/test.jsonl', 3);
       
-      // Should include real messages
-      expect(result).toContain('Real message 1');
+      // Should include original mission
+      expect(result).toContain('ORIGINAL MISSION: Real message 1');
+      
+      // Should include recent real messages
       expect(result).toContain('Real reply 1');
       expect(result).toContain('Real message 2');
       

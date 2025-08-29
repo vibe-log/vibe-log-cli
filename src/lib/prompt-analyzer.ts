@@ -5,6 +5,7 @@ import os from 'os';
 import { getStatusLinePersonality } from './personality-manager';
 import { getToken } from './config';
 import { LoadingState, getLoadingMessage } from '../types/loading-state';
+import { generatePromotionalTip } from './promotional-tips';
 
 /**
  * Analysis result for a prompt
@@ -72,36 +73,6 @@ export class PromptAnalyzer {
     await fs.mkdir(this.analysisDir, { recursive: true });
   }
 
-  /**
-   * Generate promotional tip (10% chance)
-   * Returns empty string 90% of the time
-   */
-  private async generatePromotionalTip(): Promise<string> {
-    // Only show tip 10% of the time
-    if (Math.random() > 0.1) {
-      return '';
-    }
-    
-    // Check if user is authenticated (cloud mode)
-    const token = await getToken();
-    
-    if (token) {
-      // Cloud mode: Show clickable hyperlink to analytics dashboard
-      // Terminal hyperlink format: OSC 8 escape sequence
-      const analyticsUrl = 'https://app.vibe-log.dev/dashboard/analytics?tab=improve&time=week';
-      const linkText = 'click here to see your improvements';
-      // Using \u001b format and adding color for better visibility
-      const yellow = '\u001b[93m';
-      const reset = '\u001b[0m';
-      const linkStart = `\u001b]8;;${analyticsUrl}\u001b\\`;
-      const linkEnd = `\u001b]8;;\u001b\\`;
-      const hyperlink = `${linkStart}${yellow}${linkText}${reset}${linkEnd}`;
-      return `\n💡 See detailed prompt analysis here ${hyperlink}`;
-    } else {
-      // Local mode: Show npx command suggestion
-      return '\n💡 run: \`npx vibe-log-cli\` → Generate Local Report to see your productivity over time';
-    }
-  }
 
   /**
    * Generate the system prompt for analysis
@@ -216,9 +187,10 @@ Emoji selection:
     await this.ensureAnalysisDir();
 
     // Build the analysis prompt with CLEAR instructions
-    let analysisPrompt = `Analyze this Claude Code user prompt for quality and provide improvement suggestions.
+    let analysisPrompt = `You are a strategic product advisor analyzing a developer's prompt WHILE Claude is already processing their request.
+Your role is to provide high-level strategic guidance, not implementation details.
 
-User's prompt:
+User's current prompt:
 ---
 ${promptText}
 ---
@@ -227,34 +199,67 @@ ${promptText}
     // Add conversation context if available
     if (context) {
       analysisPrompt += `
-Conversation context (previous messages):
+Conversation context:
 ---
 ${context.substring(0, 1500)}${context.length > 1500 ? '...' : ''}
 ---
 `;
       logger.debug('Including conversation context in analysis', {
         contextLength: context.length,
+        hasOriginalMission: context.includes('ORIGINAL MISSION'),
         isMultiMessage: context.includes('Previous User') || context.includes('Previous Assistant')
       });
     }
 
-    // Add explicit JSON format instructions
+    // Add explicit JSON format instructions with product manager focus
     analysisPrompt += `
-You must respond with ONLY a JSON object in this exact format, no other text:
+Analyze the prompt and provide strategic product-level guidance.
+
+You must respond with ONLY a JSON object in this exact format:
 {
   "quality": "poor" | "fair" | "good" | "excellent",
-  "missing": ["array of 1-3 missing elements"],
-  "suggestion": "Specific 15-20 word suggestion for improving THIS prompt",
-  "actionableSteps": "Concrete steps to fix it with examples (20-30 words)",
+  "missing": ["1-2 strategic considerations they might be overlooking"],
+  "suggestion": "Brief diagnosis of their approach (15-20 words)",
+  "actionableSteps": "Strategic next steps to think about - NOT code to write (30-50 words)",
   "score": 0-100,
-  "contextualEmoji": "📏" | "📝" | "🎯" | "💭" | "✨" | "✅" | "💡"
+  "contextualEmoji": "🎯" | "🚀" | "⚡" | "🔄" | "📊" | "🎨" | "🔍" | "✅"
 }
 
-Scoring: poor(0-40), fair(41-60), good(61-80), excellent(81-100)
-Evaluate based on: clarity, context, specificity, success criteria, examples if needed.
-Direct answers to questions should score high (80-100).
+CRITICAL for actionableSteps field:
+- This is your PRIMARY VALUE - make it count!
+- Focus on STRATEGIC thinking, not tactical implementation
+- Consider their ORIGINAL MISSION (if available) and current progress
+- Suggest what to THINK ABOUT next, not what to CODE
+- Include considerations like: edge cases, user experience, scaling, security
+- Help them see the forest while they're in the trees
 
-Respond with JSON only, no explanation or other text.`;
+Good actionableSteps examples:
+- "Consider: How will errors appear to users? | Recovery strategies? | Offline behavior?"
+- "Think about: Permission boundaries | Rate limiting needs | Mobile experience differences"
+- "Next considerations: Onboarding flow | Analytics events | Team documentation needs"
+
+Bad actionableSteps (too prescriptive/technical):
+- "Add JWT tokens to your auth flow"
+- "Implement try-catch blocks"
+- "Create a /api/login endpoint"
+
+Scoring: 
+- poor(0-40): Missing critical context or unclear goal
+- fair(41-60): Basic request but lacks depth
+- good(61-80): Clear request with good context
+- excellent(81-100): Comprehensive with clear success criteria
+
+For the contextualEmoji:
+- 🎯 = Need clearer goals/objectives
+- 🚀 = Ready to ship, think about deployment
+- ⚡ = Consider performance/optimization
+- 🔄 = Think about the iteration/feedback loop
+- 📊 = Consider metrics/monitoring
+- 🎨 = UX/design considerations needed
+- 🔍 = Edge cases to explore
+- ✅ = Well-structured, complete thinking
+
+Respond with JSON only, no explanation.`;
     
     // Add invisible HTML comment guard to prevent recursion
     // This guard is detected if the SDK tries to analyze this prompt
@@ -371,7 +376,9 @@ Respond with JSON only, no explanation or other text.`;
 
       // Generate promotional tip for this analysis (10% chance)
       if (analysisResult) {
-        analysisResult.promotionalTip = await this.generatePromotionalTip();
+        // Check authentication status for promotional tip
+        const token = await getToken();
+        analysisResult.promotionalTip = generatePromotionalTip(!!token);
         await this.saveAnalysis(analysisResult, sessionId);
       }
 

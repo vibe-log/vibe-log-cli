@@ -6,7 +6,6 @@ import { PromptAnalysis } from '../lib/prompt-analyzer';
 import { logger } from '../utils/logger';
 import { transformSuggestion, getStatusLinePersonality, getPersonalityDisplayName } from '../lib/personality-manager';
 import { isLoadingState, isStaleLoadingState, LoadingState, getLoadingMessage } from '../types/loading-state';
-import { getToken } from '../lib/config';
 
 /**
  * Output format types for the statusline
@@ -226,10 +225,6 @@ async function readStdinWithTimeout(timeoutMs: number = 50): Promise<string | nu
  * Format default message for new sessions or when no analysis exists
  */
 function formatDefault(format: OutputFormat): string {
-  // Check if user is authenticated for customized message
-  const token = getToken();
-  const isAuthenticated = !!token;
-  
   // Get current personality for personalized message
   const personality = getStatusLinePersonality();
   
@@ -239,36 +234,20 @@ function formatDefault(format: OutputFormat): string {
   // Create unified message for all personalities
   const baseMessage = `💭 ${personalityName} is ready to analyze and improve your prompts`;
   
-  // Generate promotional tip (10% chance)
-  const showTip = Math.random() < 0.1;
-  let tip = '';
-  if (showTip) {
-    if (isAuthenticated) {
-      // Cloud mode: show link to analytics
-      const analyticsUrl = 'https://app.vibe-log.dev/dashboard/analytics?tab=improve&time=week';
-      const yellow = '\u001b[93m';
-      const reset = '\u001b[0m';
-      const linkStart = `\u001b]8;;${analyticsUrl}\u001b\\`;
-      const linkEnd = `\u001b]8;;\u001b\\`;
-      tip = ` | ${linkStart}${yellow}See improvements${reset}${linkEnd}`;
-    } else {
-      // Local mode: suggest npx command
-      tip = ' | 💡 npx vibe-log-cli → Local Report';
-    }
-  }
+  // No promotional tip for empty state - keep it clean and focused
     
   switch (format) {
     case 'json':
       return JSON.stringify({ status: 'ready', message: baseMessage, personality: personality.personality });
     case 'detailed':
-      return `Status: Ready | ${baseMessage}${tip}`;
+      return `Status: Ready | ${baseMessage}`;
     case 'emoji':
-      return `Ready${tip}`;
+      return `Ready`;
     case 'minimal':
       return 'Ready';
     case 'compact':
     default:
-      return `${baseMessage}${tip}`;
+      return baseMessage;
   }
 }
 
