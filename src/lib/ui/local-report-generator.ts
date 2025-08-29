@@ -54,6 +54,13 @@ function showLocalReportExplanation(): void {
   console.log(colors.muted('No data is sent to vibe-log servers in local mode.'));
   console.log();
   
+  // Section 4: First-time user guidance
+  console.log(colors.primary(format.bold('👋 First Time? Start Small!')));
+  console.log(colors.accent('  📅 Try "Last 24 hours" - faster analysis (2-4 minutes)'));
+  console.log(colors.accent('  📁 Select just 1 project - easier to review results'));
+  console.log(colors.muted('  You can always generate larger reports once you like what you see!'));
+  console.log();
+  
   // Bottom border
   console.log(colors.muted(box.horizontal.repeat(62)));
   console.log();
@@ -64,9 +71,9 @@ function showLocalReportExplanation(): void {
  */
 async function selectTimeframe(): Promise<{ timeframe: string; days: number }> {
   const timeframeOptions: TimeframeOption[] = [
-    { name: 'Last 24 hours', value: '24h', days: 1 },
-    { name: 'Last 7 days', value: '7d', days: 7 },
-    { name: 'Last 30 days', value: '30d', days: 30 },
+    { name: 'Last 24 hours (Recommended for first time) - ~2-4 minutes', value: '24h', days: 1 },
+    { name: 'Last 7 days - ~5-8 minutes', value: '7d', days: 7 },
+    { name: 'Last 30 days - ~8-15 minutes', value: '30d', days: 30 },
     { name: 'Custom range', value: 'custom' }
   ];
   
@@ -160,6 +167,16 @@ export async function generateLocalReportInteractive(): Promise<void> {
   console.log(colors.muted('Discovering Claude Code projects...'));
   console.log();
   
+  // Add processing time guidance
+  if (days === 1) {
+    console.log(colors.info('💡 Tip: For 24-hour reports, selecting 1-2 projects gives the best experience'));
+  } else if (days <= 7) {
+    console.log(colors.info('💡 Tip: Multiple projects are fine, but expect longer processing time'));
+  } else {
+    console.log(colors.warning('💡 Tip: 30-day reports with many projects can take 10-15+ minutes'));
+  }
+  console.log();
+  
   const allProjects = await discoverProjects();
   
   if (allProjects.length === 0) {
@@ -209,7 +226,22 @@ export async function generateLocalReportInteractive(): Promise<void> {
   });
   console.log();
   console.log(colors.warning('📍 Report will be saved in your current directory'));
-  console.log(colors.muted('   Generation time: ~5-12 minutes'));
+  
+  // Show dynamic time estimate based on selections
+  let estimatedTime: string;
+  if (days === 1 && selectedProjects.length === 1) {
+    estimatedTime = '~2-4 minutes';
+  } else if (days === 1 && selectedProjects.length <= 3) {
+    estimatedTime = '~3-6 minutes';
+  } else if (days <= 7 && selectedProjects.length <= 3) {
+    estimatedTime = '~5-8 minutes';
+  } else if (days <= 30 && selectedProjects.length <= 3) {
+    estimatedTime = '~8-12 minutes';
+  } else {
+    estimatedTime = '~10-20 minutes';
+  }
+  
+  console.log(colors.muted(`   Estimated generation time: ${estimatedTime}`));
   console.log();
   
   // Build the orchestrated prompt
