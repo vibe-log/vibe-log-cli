@@ -13,7 +13,7 @@ import { formatRelativeTime, parseProjectName } from './project-display';
  * Instead of passing full session data, we pass identifiers to re-read later
  */
 export interface SelectedSessionInfo {
-  projectPath: string;  // Claude folder path (e.g., ~/.claude/projects/-Users-danny-vibe-log)
+  projectPath: string;  // Claude folder path (e.g., ~/.claude/projects/-home-user-vibe-log)
   sessionFile: string;  // JSONL filename
   displayName: string;  // Project name for UI display
   duration: number;     // Duration in seconds for UI display

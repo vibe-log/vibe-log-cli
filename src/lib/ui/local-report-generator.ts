@@ -335,7 +335,7 @@ export async function generateLocalReportInteractive(): Promise<void> {
       for (const project of selectedProjects) {
         // Extract Claude folder name from the project ID
         // On Windows: project.id is like C:\Users\97254\.claude\projects\C--vibelog-vibe-log-cli
-        // On Mac/Linux: project.id is like ~/.claude/projects/-Users-danny-dev-personal-vibe-log
+        // On Mac/Linux: project.id is like ~/.claude/projects/-home-user-projects-vibe-log
         
         let sourceDir: string;
         let claudeFolderName: string;

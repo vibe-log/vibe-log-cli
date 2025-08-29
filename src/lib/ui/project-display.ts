@@ -10,7 +10,7 @@ interface Project {
 
 /**
  * Extract project name from a file path
- * e.g., "vibe-log" from path "/Users/danny/dev-personal/vibe-log"
+ * e.g., "vibe-log" from path "/home/user/projects/vibe-log"
  */
 export function parseProjectName(path: string): string {
   if (!path) return '';

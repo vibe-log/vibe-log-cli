@@ -36,7 +36,7 @@ export interface SessionData extends SessionMetadata {
   planningModeInfo?: PlanningModeInfo;  // Planning mode tracking
   // Source file information for re-reading if needed
   sourceFile?: {
-    claudeProjectPath: string;  // e.g., ~/.claude/projects/-Users-danny-vibe-log
+    claudeProjectPath: string;  // e.g., ~/.claude/projects/-home-user-vibe-log
     sessionFile: string;         // e.g., session-123.jsonl
   };
 }

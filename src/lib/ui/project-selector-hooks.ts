@@ -11,11 +11,11 @@ import { getHookMode, getTrackedProjects } from '../claude-settings-reader';
  * Selected project information for hooks
  */
 export interface SelectedProject {
-  path: string;      // Claude folder path (e.g., -Users-danny-dev-personal-vibe-log)
+  path: string;      // Claude folder path (e.g., -home-user-projects-vibe-log)
   name: string;      // Display name extracted from cwd
   lastActive: Date;  // Last activity time
   hasHooks?: boolean; // Whether this project currently has hooks enabled
-  actualPath?: string; // Actual filesystem path (e.g., /Users/danny/dev-personal/vibe-log)
+  actualPath?: string; // Actual filesystem path (e.g., /home/user/projects/vibe-log)
 }
 
 /**

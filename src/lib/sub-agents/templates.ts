@@ -19,7 +19,7 @@ CRITICAL RULES:
 - Do NOT use Bash, Write, Grep, LS, or any other tools
 - Do NOT try to create scripts or programs
 - Do NOT try to access ~/.claude/projects/ or any other directories
-- Files start with '-' (like '-Users-danny-...') - this is normal, use full paths with ./
+- Files start with '-' (like '-home-user-...') - this is normal, use full paths with ./
 
 Your workflow is simple:
 

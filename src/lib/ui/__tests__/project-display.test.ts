@@ -31,14 +31,14 @@ describe('Project Display Module', () => {
 
   describe('parseProjectName()', () => {
     it('should extract project name from path', () => {
-      expect(parseProjectName('/Users/danny/dev-personal/vibe-log')).toBe('vibe-log');
+      expect(parseProjectName('/home/user/dev/vibe-log')).toBe('vibe-log');
       expect(parseProjectName('/home/user/projects/my-app')).toBe('my-app');
       expect(parseProjectName('C:\\Users\\project\\test-app')).toBe('test-app');
     });
 
     it('should handle paths with trailing slashes', () => {
-      expect(parseProjectName('/Users/danny/project/')).toBe('');
-      expect(parseProjectName('/Users/danny/project')).toBe('project');
+      expect(parseProjectName('/home/user/project/')).toBe('');
+      expect(parseProjectName('/home/user/project')).toBe('project');
     });
 
     it('should handle single directory paths', () => {
@@ -48,7 +48,7 @@ describe('Project Display Module', () => {
 
     it('should extract last segment from path', () => {
       // Extract the project name from the last path segment
-      expect(parseProjectName('/Users/danny/vibe/log')).toBe('log');
+      expect(parseProjectName('/home/user/vibe/log')).toBe('log');
       expect(parseProjectName('/path/to/project')).toBe('project');
     });
 
@@ -57,7 +57,7 @@ describe('Project Display Module', () => {
     });
 
     it('should handle Windows-style paths', () => {
-      expect(parseProjectName('C:\\Users\\Danny\\Projects\\my-app')).toBe('my-app');
+      expect(parseProjectName('C:\\Users\\User\\Projects\\my-app')).toBe('my-app');
       expect(parseProjectName('D:\\projects\\test')).toBe('test');
     });
 
@@ -262,21 +262,21 @@ describe('Project Display Module', () => {
         sessions: 45,
         lastActivity: new Date('2024-01-15T11:30:00Z'),
         isActive: true,
-        path: '/Users/danny/vibe-log',
+        path: '/home/user/vibe-log',
       },
       {
         name: 'test-project',
         sessions: 12,
         lastActivity: new Date('2024-01-14T10:00:00Z'),
         isActive: false,
-        path: '/Users/danny/test-project',
+        path: '/home/user/test-project',
       },
       {
         name: 'very-long-project-name-that-should-be-truncated',
         sessions: 100,
         lastActivity: new Date('2024-01-10T10:00:00Z'),
         isActive: false,
-        path: '/Users/danny/very-long-project',
+        path: '/home/user/very-long-project',
       },
     ];
 
@@ -459,7 +459,7 @@ describe('Project Display Module', () => {
       sessions: 42,
       lastActivity: new Date('2024-01-15T10:00:00Z'),
       isActive: true,
-      path: '/Users/danny/awesome-project',
+      path: '/home/user/awesome-project',
     };
 
     it('should create a detailed project card', () => {

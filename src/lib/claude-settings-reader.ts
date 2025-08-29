@@ -217,7 +217,7 @@ export async function getTrackedProjects(): Promise<string[]> {
   for (const project of projects) {
     const localSettings = await readProjectLocalSettings(project.actualPath);
     if (hasVibeLogHooks(localSettings)) {
-      // Return the Claude folder name (e.g., "-Users-danny-dev-personal-vibe-log")
+      // Return the Claude folder name (e.g., "-home-user-projects-vibe-log")
       trackedProjects.push(project.claudePath.split('/').pop() || project.claudePath);
     }
   }
