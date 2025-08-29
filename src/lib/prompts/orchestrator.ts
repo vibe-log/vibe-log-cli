@@ -25,9 +25,12 @@ CRITICAL RULES:
 - Your role: Read manifest → Launch batch analyzers → Collect results → Launch report generator → Capture and output HTML
 
 BATCHING REQUIREMENTS:
-- Each agent handles 5-10 sessions (not one per agent)
+- NEVER launch more than 9 agents total
+- For 17 sessions: Use 2-3 agents MAX (each handling 6-9 sessions)
 - Launch ALL agents in ONE message with multiple Task calls
 - Do NOT launch agents one by one - they must be parallel
+- WRONG: 17 sessions = 17 agents ❌
+- RIGHT: 17 sessions = 2-3 agents ✓
 
 REPORT HANDLING:
 - Report generator will OUTPUT HTML between === REPORT START === and === REPORT END ===
@@ -67,10 +70,12 @@ Output: "Found X sessions across Y projects, launching parallel analyzers..."
 ## Phase 2 - Parallel Batch Analysis (20 seconds)
 Group sessions into batches and launch parallel analyzers (MAX 9 agents):
 
-BATCHING STRATEGY:
-- If ≤9 sessions: 1 agent per session
-- If 10-45 sessions: Each agent handles 5 sessions
-- If >45 sessions: Split evenly across 9 agents (6-10 sessions each)
+BATCHING STRATEGY (MAX 9 AGENTS TOTAL):
+- If 1-9 sessions: 1 agent handles ALL sessions
+- If 10-18 sessions: 2 agents, each handles 5-9 sessions
+- If 19-27 sessions: 3 agents, each handles 6-9 sessions
+- If 28-45 sessions: 5 agents, each handles 6-9 sessions
+- If >45 sessions: 9 agents, split evenly (5-10 sessions each)
 
 For each batch of sessions, launch:
 Task(subagent_type="vibe-log-track-analyzer", 
@@ -141,7 +146,10 @@ IMPORTANT:
 - Launch ALL batch analyzers in ONE message with multiple Task calls (max 9)
 - Each agent processes their entire batch of sessions
 - All agents work in parallel - DO NOT wait between launches
-- Example: 57 sessions = 9 agents, each handling 6-7 sessions
+- Examples:
+  * 17 sessions = 2 agents, each handling 8-9 sessions
+  * 25 sessions = 3 agents, each handling 8-9 sessions  
+  * 57 sessions = 9 agents, each handling 6-7 sessions
 
 ## Phase 3 - Report Generation (10 seconds)
 After collecting ALL session analysis results, launch the report generator:
