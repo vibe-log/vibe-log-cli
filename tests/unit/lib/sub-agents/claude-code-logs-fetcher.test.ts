@@ -53,8 +53,7 @@ describe.skip('vibe-log-claude-code-logs-fetcher sub-agent', () => {
       const template = SUB_AGENT_TEMPLATES[subAgentName];
       
       // Check for specific examples
-      expect(template).toContain('-Users-danny-dev-personal-vibe-log');
-      expect(template).toContain('/Users/danny/dev-personal/vibe-log');
+      // Note: These tests check for generic examples in the template
       expect(template).toContain('compound project names');
       expect(template).toContain('vibe-log, vibelog-cli');
       expect(template).toContain('canvas-genie');
@@ -140,13 +139,16 @@ describe.skip('vibe-log-claude-code-logs-fetcher sub-agent', () => {
   });
   
   describe('Template Content Validation', () => {
-    it('should handle directory name decoding examples correctly', () => {
+    it.skip('should handle directory name decoding examples correctly', () => {
+      // NOTE: This test is skipped because the vibe-log-claude-code-logs-fetcher
+      // sub-agent doesn't exist in the current templates.
+      // Keeping for reference if the sub-agent is added in the future.
       const template = SUB_AGENT_TEMPLATES[subAgentName];
       
       // Validate the examples match our actual parsing logic
       const examples = [
-        { encoded: '-Users-danny-dev-personal-vibe-log', project: 'vibe-log' },
-        { encoded: '-Users-danny-dev-personal-canvas-genie', project: 'canvas-genie' },
+        { encoded: '-Users-testuser-dev-personal-vibe-log', project: 'vibe-log' },
+        { encoded: '-Users-testuser-dev-personal-canvas-genie', project: 'canvas-genie' },
       ];
       
       examples.forEach(({ encoded, project }) => {
