@@ -71,12 +71,7 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
   
   // For LOCAL_ONLY state
   if (context.state === 'LOCAL_ONLY') {
-    items.push({
-      id: 'switch-cloud',
-      label: `${icons.sparkles} Switch to cloud mode`,
-      action: 'switch-cloud'
-    });
-    
+    // Real-time assistant first
     items.push({
       id: 'status-line',
       label: `💡 Configure prompt coach status line`,
@@ -84,6 +79,10 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
       action: 'status-line'
     });
     
+    // Separator between real-time and analysis tools
+    items.push({ separator: true } as MenuItem);
+    
+    // Analysis tools
     items.push({
       id: 'report',
       label: `${icons.chart} Generate local report (using Claude sub-agents)`,
@@ -95,18 +94,53 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
       label: getAgentManageLabel(context.agentCount, context.totalAgents),
       action: 'install-agents'
     });
+    
+    // Separator before cloud option
+    items.push({ separator: true } as MenuItem);
+    
+    items.push({
+      id: 'switch-cloud',
+      label: `${icons.sparkles} Switch to cloud mode`,
+      action: 'switch-cloud'
+    });
   }
   
   // For CLOUD states
   if (context.state === 'CLOUD_AUTO' || context.state === 'CLOUD_MANUAL' || context.state === 'CLOUD_ONLY') {
-    // Cloud actions at the top
+    // Local features first - Real-time assistant
+    items.push({
+      id: 'status-line',
+      label: `💡 Configure prompt coach status line`,
+      description: 'AI feedback & personality in Claude Code',
+      action: 'status-line'
+    });
+    
+    // Separator between real-time and analysis tools
+    items.push({ separator: true } as MenuItem);
+    
+    // Local analysis tools
+    items.push({
+      id: 'report',
+      label: `${icons.chart} Generate local report (using Claude sub-agents)`,
+      action: 'report'
+    });
+    
+    items.push({
+      id: 'install-agents',
+      label: getAgentManageLabel(context.agentCount, context.totalAgents),
+      action: 'install-agents'
+    });
+    
+    // Separator between local and cloud features
+    items.push({ separator: true } as MenuItem);
+    
+    // Cloud sync features
     items.push({
       id: 'dashboard',
-      label: `${icons.sparkles} Open vibe-log web dashboard`,
+      label: `${icons.sparkles} Open Vibe-Log web dashboard`,
       action: 'dashboard'
     });
 
-    // Always show manual sync option for all cloud states
     items.push({
       id: 'manual-sync',
       label: `📤 Manual sync (upload) coding sessions to cloud`,
@@ -120,32 +154,9 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
       action: 'manage-hooks'
     });
     
-    items.push({
-      id: 'status-line',
-      label: `💡 Configure prompt coach status line`,
-      description: 'AI feedback & personality in Claude Code',
-      action: 'status-line'
-    });
-
-    // Separator between cloud and local actions
+    // Separator before logout
     items.push({ separator: true } as MenuItem);
     
-    // Local actions
-    items.push({
-      id: 'report',
-      label: `${icons.chart} Generate local report (using Claude sub-agents)`,
-      action: 'report'
-    });
-    
-    // Note: Local static analysis only available in offline mode
-    // Always show agent installation option in cloud mode
-    items.push({
-      id: 'install-agents',
-      label: getAgentManageLabel(context.agentCount, context.totalAgents),
-      action: 'install-agents'
-    });
-    
-    items.push({ separator: true } as MenuItem);
     items.push({
       id: 'logout',
       label: `${icons.unlock} Logout`,
