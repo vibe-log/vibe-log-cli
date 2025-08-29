@@ -5,9 +5,9 @@ import { SubAgentName } from './constants';
  * These are installed to ~/.claude/agents/ for local analysis with Claude Code
  */
 export const SUB_AGENT_TEMPLATES: Record<SubAgentName, string> = {
-  'vibe-log-track-analyzer.md': `---
-name: vibe-log-track-analyzer
-description: Use this agent when you need to analyze pre-fetched vibe-log session data from the .vibe-log-temp/ directory. This agent quickly extracts specific metrics like productivity patterns, tool usage, or accomplishments from session files.\n\nExamples:\n<example>\nContext: Orchestrator needs productivity metrics from sessions.\nuser: "Analyze productivity metrics from .vibe-log-temp/ sessions"\nassistant: "I'll analyze the session files to extract productivity metrics."\n<commentary>\nThe agent reads pre-fetched session files and extracts requested metrics.\n</commentary>\n</example>
+  'vibe-log-session-analyzer.md': `---
+name: vibe-log-session-analyzer
+description: Use this agent when you need to analyze Claude Code session data from the .vibe-log-temp/ directory. This agent quickly extracts specific metrics like productivity patterns, tool usage, or accomplishments from pre-fetched session files.\n\nExamples:\n<example>\nContext: Orchestrator needs productivity metrics from sessions.\nuser: "Analyze productivity metrics from .vibe-log-temp/ sessions"\nassistant: "I'll analyze the session files to extract productivity metrics."\n<commentary>\nThe agent reads pre-fetched session files and extracts requested metrics.\n</commentary>\n</example>
 tools: Read, TodoWrite
 model: inherit
 ---

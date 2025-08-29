@@ -78,7 +78,7 @@ BATCHING STRATEGY (MAX 9 AGENTS TOTAL):
 - If >45 sessions: 9 agents, split evenly (5-10 sessions each)
 
 For each batch of sessions, launch:
-Task(subagent_type="vibe-log-track-analyzer", 
+Task(subagent_type="vibe-log-session-analyzer", 
      description="Analyze batch of [X] sessions",
      prompt="You are analyzing a BATCH of Claude Code session files.
 

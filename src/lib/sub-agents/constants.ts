@@ -4,7 +4,7 @@
  * Streamlined to 2 essential agents for fast, focused reports
  */
 export const VIBE_LOG_SUB_AGENTS = [
-  'vibe-log-track-analyzer.md',
+  'vibe-log-session-analyzer.md',
   'vibe-log-report-generator.md'
 ] as const;
 

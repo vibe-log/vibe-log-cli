@@ -31,27 +31,21 @@ function showSubAgentExplanation(): void {
   console.log(colors.accent(box.horizontal.repeat(2) + ' How vibe-log Uses Sub-Agents ' + box.horizontal.repeat(29)));
   console.log();
   
-  console.log(colors.highlight('vibe-log uses a streamlined set of 3 sub-agents to quickly'));
+  console.log(colors.highlight('vibe-log uses 2 sub-agents to quickly'));
   console.log(colors.highlight('generate concise productivity reports from your coding sessions:'));
   console.log();
   
-  // Phase 1 - Data Collection
-  console.log(colors.primary(format.bold('Phase 1 - Data Collection:')));
-  console.log(`  ${colors.success(icons.package)} ${colors.accent(format.bold('@vibe-log-claude-code-logs-fetcher'))}`);
-  console.log(`    ${colors.dim(icons.arrow)} Fetches your Claude Code sessions`);
+  // Phase 1 - Analysis
+  console.log(colors.primary(format.bold('Phase 1 - In Parallel Session Analysis:')));
+  console.log(`  ${icons.bullet} ${colors.accent(format.bold('@vibe-log-session-analyzer'))}`);
+  console.log(`    ${colors.dim(icons.arrow)} Analyzes your Claude Code sessions`);
+  console.log(`    ${colors.dim(icons.arrow)} Extracts productivity patterns and metrics`);
   console.log();
   
-  // Phase 2 - Analysis
-  console.log(colors.primary(format.bold('Phase 2 - Analysis:')));
-  console.log(`  ${icons.bullet} ${colors.accent(format.bold('@vibe-log-track-analyzer'))}`);
-  console.log(`    ${colors.dim(icons.arrow)} Analyzes productivity patterns and metrics`);
-  console.log();
-  
-  // Phase 3 - Report Generation
-  console.log(colors.primary(format.bold('Phase 3 - Report Generation:')));
+  // Phase 2 - Report Generation
+  console.log(colors.primary(format.bold('Phase 2 - Report Generation:')));
   console.log(`  ${icons.bullet} ${colors.accent(format.bold('@vibe-log-report-generator'))}`);
   console.log(`    ${colors.dim(icons.arrow)} Creates concise HTML report`);
-  console.log(`    ${colors.dim(icons.arrow)} Saves to current directory with date`);
   console.log();
   
   // Bottom border
@@ -246,7 +240,7 @@ async function handleRemoveAll(): Promise<void> {
   const { confirm } = await inquirer.prompt([{
     type: 'confirm',
     name: 'confirm',
-    message: colors.warning('Are you sure you want to remove ALL 3 vibe-log sub-agents?'),
+    message: colors.warning('Are you sure you want to remove ALL 2 vibe-log sub-agents?'),
     default: false
   }]);
   
@@ -316,7 +310,7 @@ export async function installSubAgentsInteractive(): Promise<void> {
           // If this is a fresh install (not reinstall) and all agents installed successfully
           // Also check that we actually installed agents (not just skipped because they were already there)
           if (!isReinstall && result.installed.length > 0 && result.failed.length === 0 && 
-              (result.installed.length + result.skipped.length) === 3) {
+              (result.installed.length + result.skipped.length) === 2) {
             const shouldGenerateReport = await promptForLocalReport();
             if (shouldGenerateReport) {
               // Import and run the local report generator
