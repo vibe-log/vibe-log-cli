@@ -75,6 +75,9 @@ temp/
 .vibelog/
 .claude/
 
+# Generated report files
+vibe-log-report-*.html
+
 # Business sensitive files
 MONETIZATION_STRATEGIES.md
 BUSINESS_PLAN.md
