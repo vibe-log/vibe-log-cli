@@ -2,7 +2,7 @@ import { logger } from '../utils/logger';
 import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
-import { getPersonalitySystemPrompt, getStatusLinePersonality } from './personality-manager';
+import { getStatusLinePersonality } from './personality-manager';
 import { getToken } from './config';
 import { LoadingState, getLoadingMessage } from '../types/loading-state';
 
@@ -37,6 +37,7 @@ export interface AnalysisOptions {
 // Cache the SDK import to avoid re-importing on every analysis
 let cachedSDK: { query: any } | null = null;
 
+// Removed session-based recursion tracker - now using loading state detection
 
 /**
  * Get the Claude SDK, caching it after first import
@@ -104,8 +105,9 @@ export class PromptAnalyzer {
 
   /**
    * Generate the system prompt for analysis
+   * Note: Currently not used - removed from SDK options to debug hanging issue
    */
-  private getSystemPrompt(hasContext: boolean = false): string {
+  /* private getSystemPrompt(hasContext: boolean = false): string {
     const contextAwareness = hasContext ? `
 IMPORTANT Context Rules:
 - You are given conversation context with multiple previous messages (labeled as "Previous User" and "Previous Assistant")
@@ -164,7 +166,7 @@ Emoji selection:
 - ✨ if excellent (score 81-89)
 - ✅ if perfect (score 90+)
 - 💡 for general improvements`;
-  }
+  } */
 
   /**
    * Analyze a prompt and return quality feedback using Claude SDK
@@ -174,8 +176,7 @@ Emoji selection:
     options: AnalysisOptions = {}
   ): Promise<PromptAnalysis> {
     const { 
-      sessionId, 
-      timeout = 10000, // 10 seconds default
+      sessionId,
       verbose = false,
       conversationContext,
       previousAssistantMessage // For backward compatibility
@@ -184,32 +185,25 @@ Emoji selection:
     // Use conversationContext if available, fallback to previousAssistantMessage for compatibility
     const context = conversationContext || previousAssistantMessage;
 
-    // Check for recursion guard in the prompt itself
-    // This prevents infinite loops when SDK triggers UserPromptSubmit hook
-    const guardMatch = promptText.match(/<!--VIBE_LOG_GUARD:(\d+)-->/); 
-    if (guardMatch) {
-      const depth = parseInt(guardMatch[1]);
-      if (depth > 0) {
-        logger.debug(`Recursion guard detected (depth: ${depth}) - skipping analysis`);
-        // Return minimal skip response without saving
-        return {
-          quality: 'fair',
-          missing: [],
-          suggestion: 'Analysis in progress...',
-          score: 50,
-          contextualEmoji: '⏭️',
-          timestamp: new Date().toISOString(),
-          sessionId,
-          originalPrompt: '[Recursive call - skipped]',
-          promotionalTip: ''
-        };
-      }
+    // RECURSION PREVENTION: Check for HTML comment guard FIRST
+    // This guard is invisible to Claude but prevents infinite recursion
+    if (promptText.includes('<!--VIBE_LOG_GUARD:')) {
+      logger.debug('Detected vibe-log guard - preventing infinite recursion');
+      await this.logToDebugFile(`HTML GUARD DETECTED: Preventing recursion for ${sessionId}`);
+      return this.getSkipResponse(sessionId, 'vibe-log-guard-detected');
     }
+    
+    // Note: We removed the loading state check here because it was preventing
+    // the original analysis from running. The signature check above is sufficient.
 
-    logger.debug(`Starting prompt analysis - length: ${promptText.length} chars`);
+    // Debug log to file for hook troubleshooting
+    await this.logToDebugFile(`Starting analysis for session ${sessionId}, prompt length: ${promptText.length}`);
 
-    // Write loading state immediately for instant feedback
-    await this.writeLoadingState(sessionId);
+    try {
+      logger.debug(`Starting prompt analysis - length: ${promptText.length} chars`);
+
+      // Write loading state immediately for instant feedback
+      await this.writeLoadingState(sessionId);
     
     // Add a small delay to ensure loading state is visible
     // This helps with very fast analyses that complete in <100ms
@@ -221,9 +215,10 @@ Emoji selection:
     // Ensure the analysis directory exists (already done in writeLoadingState but kept for clarity)
     await this.ensureAnalysisDir();
 
-    // Build the analysis prompt
-    let analysisPrompt = `Analyze this Claude Code user prompt:
+    // Build the analysis prompt with CLEAR instructions
+    let analysisPrompt = `Analyze this Claude Code user prompt for quality and provide improvement suggestions.
 
+User's prompt:
 ---
 ${promptText}
 ---
@@ -243,10 +238,26 @@ ${context.substring(0, 1500)}${context.length > 1500 ? '...' : ''}
       });
     }
 
-    analysisPrompt += '\nRespond with JSON only.';
+    // Add explicit JSON format instructions
+    analysisPrompt += `
+You must respond with ONLY a JSON object in this exact format, no other text:
+{
+  "quality": "poor" | "fair" | "good" | "excellent",
+  "missing": ["array of 1-3 missing elements"],
+  "suggestion": "Specific 15-20 word suggestion for improving THIS prompt",
+  "actionableSteps": "Concrete steps to fix it with examples (20-30 words)",
+  "score": 0-100,
+  "contextualEmoji": "📏" | "📝" | "🎯" | "💭" | "✨" | "✅" | "💡"
+}
+
+Scoring: poor(0-40), fair(41-60), good(61-80), excellent(81-100)
+Evaluate based on: clarity, context, specificity, success criteria, examples if needed.
+Direct answers to questions should score high (80-100).
+
+Respond with JSON only, no explanation or other text.`;
     
-    // Add recursion guard to prevent infinite loops
-    // This guard is invisible to Claude but detectable by our code
+    // Add invisible HTML comment guard to prevent recursion
+    // This guard is detected if the SDK tries to analyze this prompt
     analysisPrompt += '\n<!--VIBE_LOG_GUARD:1-->';
 
     let analysisResult: PromptAnalysis | null = null;
@@ -254,38 +265,43 @@ ${context.substring(0, 1500)}${context.length > 1500 ? '...' : ''}
 
     try {
       // Get Claude SDK (cached after first import)
+      logger.debug('Getting Claude SDK...');
+      await this.logToDebugFile(`Getting Claude SDK for session ${sessionId}...`);
       const { query } = await getClaudeSDK();
+      logger.debug('SDK loaded successfully');
+      await this.logToDebugFile(`SDK loaded successfully for session ${sessionId}`);
       
       // Use model from options or default to haiku
-      const selectedModel = options.model || 'haiku';
+      // In hook mode (when sessionId exists), prioritize speed over accuracy
+      const selectedModel = options.model || (sessionId ? 'haiku' : 'haiku');
       logger.debug(`Using Claude SDK with ${selectedModel} model for analysis`);
       
-      // Set up abort controller for cleaner timeout handling
-      const abortController = new AbortController();
-      const timeoutId = setTimeout(() => {
-        logger.debug('Analysis timeout - aborting SDK call');
-        abortController.abort();
-      }, timeout);
-
-      try {
-        // Create the SDK query with optimized settings
+      // No timeout - let the SDK complete naturally
+      logger.debug('Starting SDK query with prompt length:', analysisPrompt.length);
+      
+      // Simplified options - optimize for speed in hook mode
+      const queryOptions = {
+        maxTurns: 1,                    // Single turn only
+        model: selectedModel,           // Use selected model (haiku by default)
+        disallowedTools: ['*']          // No tools needed for JSON response
+      };
+      
+      logger.debug('Query options:', queryOptions);
+      await this.logToDebugFile(`Starting SDK query for session ${sessionId} with model ${selectedModel}`);
+        
         for await (const message of query({
           prompt: analysisPrompt,
-          options: {
-            maxTurns: 1,                    // Single turn only
-            model: selectedModel,           // Use selected model (haiku by default)
-            fallbackModel: 'sonnet',        // Fallback if primary model is overloaded
-            disallowedTools: ['*'],         // No tools needed for JSON response
-            customSystemPrompt: this.getSystemPrompt(!!context), // Context-aware system prompt
-            maxThinkingTokens: 1000,        // Limit thinking for speed
-            abortController                 // Clean cancellation support
-          }
+          options: queryOptions
         })) {
-          // Simplified message handling - only care about assistant text
+          // Log every message type we receive
+          logger.debug(`Received message type: ${message.type}`, message.type === 'result' ? message : '');
+          
           if (message.type === 'assistant' && message.message?.content) {
             const textContent = message.message.content.find((c: any) => c.type === 'text');
             if (textContent?.text) {
               rawResponse = textContent.text;
+              logger.debug('Got raw response from SDK:', rawResponse.substring(0, 200));
+              await this.logToDebugFile(`Raw SDK response: ${rawResponse.substring(0, 500)}`);
             }
           } else if (message.type === 'result' && verbose) {
             logger.debug('Analysis metrics:', {
@@ -295,10 +311,8 @@ ${context.substring(0, 1500)}${context.length > 1500 ? '...' : ''}
             });
           }
         }
-      } finally {
-        // Clean up timeout
-        clearTimeout(timeoutId);
-      }
+
+      await this.logToDebugFile(`SDK query completed for session ${sessionId}, got response: ${rawResponse ? 'YES' : 'NO'}`);
 
       // Parse the response
       if (rawResponse) {
@@ -308,14 +322,21 @@ ${context.substring(0, 1500)}${context.length > 1500 ? '...' : ''}
           if (jsonMatch) {
             const parsed = JSON.parse(jsonMatch[0]);
             
-            // Validate and normalize the response
+            // Validate and normalize the response - NO FALLBACKS!
+            // If SDK doesn't return proper data, we should fail and fix it
+            if (!parsed.quality || !parsed.suggestion || typeof parsed.score !== 'number') {
+              logger.error('SDK response missing required fields:', parsed);
+              await this.logToDebugFile(`INCOMPLETE SDK RESPONSE: ${JSON.stringify(parsed)}`);
+              throw new Error(`SDK response missing required fields: quality=${parsed.quality}, suggestion=${parsed.suggestion}, score=${parsed.score}`);
+            }
+            
             analysisResult = {
-              quality: parsed.quality || 'fair',
+              quality: parsed.quality,
               missing: Array.isArray(parsed.missing) ? parsed.missing : [],
-              suggestion: parsed.suggestion || 'Add more context to your prompt',
+              suggestion: parsed.suggestion,
               actionableSteps: parsed.actionableSteps || undefined,  // Include if present
-              score: typeof parsed.score === 'number' ? parsed.score : 50,
-              contextualEmoji: parsed.contextualEmoji || '💡',
+              score: parsed.score,
+              contextualEmoji: parsed.contextualEmoji || '💡',  // Only emoji can have fallback
               timestamp: new Date().toISOString(),
               sessionId,
               originalPrompt: promptText  // Add the original prompt for debugging
@@ -348,13 +369,22 @@ ${context.substring(0, 1500)}${context.length > 1500 ? '...' : ''}
       throw error;
     }
 
-    // Generate promotional tip for this analysis (10% chance)
-    if (analysisResult) {
-      analysisResult.promotionalTip = await this.generatePromotionalTip();
-      await this.saveAnalysis(analysisResult, sessionId);
-    }
+      // Generate promotional tip for this analysis (10% chance)
+      if (analysisResult) {
+        analysisResult.promotionalTip = await this.generatePromotionalTip();
+        await this.saveAnalysis(analysisResult, sessionId);
+      }
 
-    return analysisResult!;
+      return analysisResult!;
+    } catch (error) {
+      // Log errors to debug file
+      await this.logToDebugFile(`ERROR in analysis for ${sessionId}: ${error}`);
+      throw error;
+    } finally {
+      // Cleanup handled by file state updates
+      logger.debug(`Analysis completed for session ${sessionId}`);
+      await this.logToDebugFile(`Analysis finished for session ${sessionId}`);
+    }
   }
 
   /**
@@ -467,5 +497,44 @@ ${context.substring(0, 1500)}${context.length > 1500 ? '...' : ''}
     } catch (error) {
       logger.error('Error cleaning up old analyses:', error);
     }
+  }
+
+  // Note: Removed checkExistingLoadingState method as it was causing issues
+  // The signature-based recursion prevention is sufficient
+
+  // Note: Removed containsVibeLogSignature method - no longer needed
+  // We now use HTML comment guard which is cleaner and more reliable
+
+  /**
+   * Log to debug file for troubleshooting hook issues
+   */
+  private async logToDebugFile(message: string): Promise<void> {
+    try {
+      const debugPath = path.join(this.analysisDir, 'hook-debug.log');
+      const timestamp = new Date().toISOString();
+      await fs.appendFile(debugPath, `[${timestamp}] ${message}\n`, 'utf8');
+    } catch (error) {
+      // Ignore logging errors
+    }
+  }
+
+  /**
+   * Return a skip response when recursion is detected
+   * This prevents infinite loops while providing valid output
+   */
+  private getSkipResponse(sessionId?: string, reason: string = 'recursion'): PromptAnalysis {
+    logger.debug(`Returning skip response for session ${sessionId}`, { reason });
+    
+    return {
+      quality: 'good',
+      missing: [],
+      suggestion: 'Analysis in progress...',
+      score: 70,
+      contextualEmoji: '⏳',
+      timestamp: new Date().toISOString(),
+      sessionId,
+      originalPrompt: `[Skipped: ${reason}]`,
+      promotionalTip: ''
+    };
   }
 }

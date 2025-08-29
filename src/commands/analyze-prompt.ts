@@ -5,6 +5,8 @@ import { colors } from '../lib/ui/styles';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { extractConversationContext, DEFAULT_CONVERSATION_TURNS_TO_EXTRACT_AS_CONTEXT } from '../lib/session-context-extractor';
+import { getStatusLinePersonality } from '../lib/personality-manager';
+import { getLoadingMessage } from '../types/loading-state';
 
 /**
  * Read stdin with a timeout
@@ -52,9 +54,11 @@ export function createAnalyzePromptCommand(): Command {
     .option('--verbose', 'Show detailed output', false)
     .option('--silent', 'Silent mode for hook execution', false)
     .option('--stdin', 'Read input from stdin (auto-detected for hooks)', false)
+    .option('--background-mode', 'Background processing mode (internal use)', false)
+    .option('--context <text>', 'Conversation context for analysis')
     .action(async (options) => {
-      let { sessionId, prompt } = options;
-      const { timeout, verbose, silent } = options;
+      let { sessionId, prompt, context: providedContext } = options;
+      const { timeout, verbose, silent, backgroundMode } = options;
       let transcriptPath: string | undefined;
 
       // Enable debug logging if verbose mode
@@ -62,15 +66,15 @@ export function createAnalyzePromptCommand(): Command {
         process.env.DEBUG_PERSONALITY = 'true';
       }
 
-      // In silent mode, suppress all console output
-      if (silent) {
+      // In silent or background mode, suppress all console output
+      if (silent || backgroundMode) {
         console.log = () => {};
         console.error = () => {};
       }
 
       try {
-        // Check if we should read from stdin
-        if (!prompt || options.stdin) {
+        // Skip stdin check in background mode (prompt already provided)
+        if (!backgroundMode && (!prompt || options.stdin)) {
           const stdinData = await readStdin();
           
           if (stdinData) {
@@ -114,9 +118,9 @@ export function createAnalyzePromptCommand(): Command {
           process.exit(1);
         }
 
-        // Extract conversation context from transcript if available
-        let conversationContext: string | undefined;
-        if (transcriptPath) {
+        // Extract conversation context from transcript if available, or use provided context
+        let conversationContext: string | undefined = providedContext;
+        if (!conversationContext && transcriptPath) {
           try {
             // Extract last conversation turns for better context
             conversationContext = await extractConversationContext(transcriptPath, DEFAULT_CONVERSATION_TURNS_TO_EXTRACT_AS_CONTEXT) || undefined;
@@ -129,6 +133,11 @@ export function createAnalyzePromptCommand(): Command {
           } catch (error) {
             logger.debug('Could not extract context from transcript:', error);
           }
+        } else if (conversationContext) {
+          logger.debug('Using provided conversation context', {
+            length: conversationContext.length,
+            preview: conversationContext.substring(0, 100)
+          });
         }
 
         logger.debug('Starting prompt analysis', {
@@ -148,6 +157,60 @@ export function createAnalyzePromptCommand(): Command {
           console.log(colors.muted('Analyzing prompt quality...'));
         }
 
+        // In silent mode (hook), spawn background process and exit immediately
+        if (silent && sessionId) {
+          logger.debug('Hook mode detected - spawning background analysis');
+          
+          // Import spawn for background processing
+          const { spawn } = await import('child_process');
+          
+          // Write a loading state immediately for instant feedback
+          const pendingPath = path.join(process.env.HOME || '', '.vibe-log', 'analyzed-prompts', `${sessionId}.json`);
+          const personality = getStatusLinePersonality();
+          const customName = personality.personality === 'custom' ? personality.customPersonality?.name : undefined;
+          const pendingState = {
+            status: 'loading',  // Must be 'loading' for statusline to recognize it
+            timestamp: new Date().toISOString(),
+            sessionId,
+            personality: personality.personality,
+            message: getLoadingMessage(personality.personality, customName)
+          };
+          
+          await fs.writeFile(pendingPath, JSON.stringify(pendingState, null, 2)).catch(() => {});
+          logger.debug('Written loading state, spawning background process');
+          
+          // Prepare arguments for background process
+          // Use process.argv[1] which is the script being executed
+          const scriptPath = process.argv[1];
+          const backgroundArgs = [
+            scriptPath,
+            'analyze-prompt',
+            '--prompt', prompt,
+            '--session-id', sessionId,
+            '--timeout', timeout,
+            '--background-mode'  // Special flag to indicate background processing
+          ];
+          
+          // Add conversation context if available
+          if (conversationContext) {
+            backgroundArgs.push('--context', conversationContext);
+          }
+          
+          // Spawn detached background process
+          const child = spawn('node', backgroundArgs, {
+            detached: true,
+            stdio: 'ignore',
+            env: { ...process.env, VIBE_LOG_BACKGROUND: 'true' }
+          });
+          
+          // Unref to allow parent to exit
+          child.unref();
+          
+          logger.debug('Background analysis spawned, exiting hook');
+          process.exit(0);  // Exit immediately to avoid timeout
+        }
+
+        // Normal mode or background mode - perform full analysis
         const analysis = await analyzer.analyze(prompt, {
           sessionId,
           timeout: parseInt(timeout),
@@ -196,6 +259,32 @@ export function createAnalyzePromptCommand(): Command {
 
       } catch (error) {
         logger.error('Error analyzing prompt:', error);
+        
+        // Write error state to the session file so statusline doesn't hang on loading
+        if (sessionId) {
+          const errorAnalysis = {
+            quality: 'fair' as const,
+            missing: ['error occurred'],
+            suggestion: 'Analysis temporarily unavailable - please try again',
+            score: 50,
+            contextualEmoji: '⚠️',
+            timestamp: new Date().toISOString(),
+            sessionId,
+            originalPrompt: prompt?.substring(0, 100) || '',
+            promotionalTip: ''
+          };
+          
+          const logDir = path.join(process.env.HOME || '', '.vibe-log', 'analyzed-prompts');
+          const sessionPath = path.join(logDir, `${sessionId}.json`);
+          
+          try {
+            await fs.mkdir(logDir, { recursive: true });
+            await fs.writeFile(sessionPath, JSON.stringify(errorAnalysis, null, 2), 'utf8');
+            logger.debug('Wrote error state to session file');
+          } catch (writeError) {
+            logger.error('Failed to write error state:', writeError);
+          }
+        }
         
         if (!silent) {
           console.error(colors.error('Failed to analyze prompt'));
