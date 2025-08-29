@@ -16,31 +16,37 @@ export function buildOrchestratedPrompt(context: PromptContext): OrchestratedPro
   const timeframeDesc = days === 1 ? 'the last 24 hours' : `the last ${days} days`;
 
   // Separate system prompt for behavioral instructions
-  const systemPrompt = `You are a vibe-log ORCHESTRATOR. Your ONLY job is to coordinate sub-agents.
+  const systemPrompt = `You are a vibe-log ORCHESTRATOR coordinating batch analysis.
 
 CRITICAL RULES:
 - DO NOT analyze session files yourself - delegate ALL analysis to sub-agents
 - DO NOT use Grep, Read (except manifest), or other analysis tools on session files
-- DO NOT spend more than 30 seconds total - most time should be waiting for agents
-- Your role: Read manifest → Launch agents → Collect results → Generate report
+- Batch sessions to limit parallel agents (MAX 9 agents total)
+- Your role: Read manifest → Launch batch analyzers → Collect results → Launch report generator → Capture and output HTML
 
-FILE ACCESS RESTRICTIONS (CRITICAL FOR PERFORMANCE):
-- ALL agents must ONLY access files in .vibe-log-temp/ directory
-- Agents must NOT use LS, Glob, or Read on parent directories
-- Agents must NOT access project source code or any files outside .vibe-log-temp/
-- Everything needed is already pre-fetched to .vibe-log-temp/ for optimal performance
-- Accessing other directories wastes time and degrades performance
+BATCHING REQUIREMENTS:
+- Each agent handles 5-10 sessions (not one per agent)
+- Launch ALL agents in ONE message with multiple Task calls
+- Do NOT launch agents one by one - they must be parallel
 
-PERMISSIONS:
-- Session files are pre-copied to .vibe-log-temp/ directory
-- Read ONLY the manifest.json to understand what's available
-- Launch parallel sub-agents to do ALL the actual analysis work
+REPORT HANDLING:
+- Report generator will OUTPUT HTML between === REPORT START === and === REPORT END ===
+- You MUST capture this HTML and OUTPUT it again yourself (do NOT use Write tool)
+- Just OUTPUT the HTML exactly as you received it from the report generator
+- The system will handle saving it to a file
+
+EXECUTION FLOW:
+1. Read manifest.json to discover session files
+2. Group sessions into batches (max 9 batches)
+3. Launch ALL batch analyzers in parallel (one message, multiple Task calls)
+4. Collect all analysis results
+5. Launch report generator with aggregated data
+6. When report generator outputs HTML, OUTPUT it again yourself (between the same markers)
 
 COMMUNICATION:
-- Announce each phase clearly
-- Show which agents are being launched
-- Display progress as agents work
-- Keep user informed but be an orchestrator, not an analyst`;
+- Announce batching strategy clearly
+- Show how many agents are being launched
+- Keep updates concise`;
 
   // Main prompt focused on the task
   const prompt = `Analyze my Claude Code sessions from ${timeframeDesc} using vibe-log sub-agents.
@@ -48,116 +54,179 @@ COMMUNICATION:
 Projects to analyze:
 ${projectList}
 
-Execute this FAST orchestration workflow (target: <1 minute total):
+Execute this streamlined workflow using per-session analysis:
 
-## Phase 1 - Quick Discovery (5 seconds max)
-Read ONLY .vibe-log-temp/manifest.json to see:
-- Total number of sessions available
+## Phase 1 - Discovery (3 seconds)
+Read .vibe-log-temp/manifest.json to understand:
+- Total sessions available
+- Session files and their sizes
 - Projects involved
-- DO NOT read or analyze any session files yourself
 
-Output: "Found X sessions across Y projects, launching parallel analysis..."
+Output: "Found X sessions across Y projects, launching parallel analyzers..."
 
-## Phase 2 - Parallel Agent Deployment (15 seconds max)
-Launch 3-5 parallel agents with Task tool, each with specific focus:
+## Phase 2 - Parallel Batch Analysis (20 seconds)
+Group sessions into batches and launch parallel analyzers (MAX 9 agents):
 
-Agent 1 - Productivity Metrics:
-Task(subagent_type="vibe-log-track-analyzer", prompt="CRITICAL: Only access .vibe-log-temp/ directory. Do NOT use LS, Glob, or Read on any parent directories or project files.
-1. Read .vibe-log-temp/manifest.json to see available sessions (check isLarge flag)
-2. For files marked isLarge=true: Read with limit:10 to sample
-3. For normal files: Read fully if needed (but prefer sampling)
-4. Calculate: total coding hours, sessions per project, average session duration
-5. Return structured metrics. Skip files that fail to read.")
+BATCHING STRATEGY:
+- If ≤9 sessions: 1 agent per session
+- If 10-45 sessions: Each agent handles 5 sessions
+- If >45 sessions: Split evenly across 9 agents (6-10 sessions each)
 
-Agent 2 - Activity & Prompt Analysis:  
-Task(subagent_type="vibe-log-track-analyzer", prompt="CRITICAL: Only access .vibe-log-temp/ directory. Do NOT access project files or parent directories.
-1. Read .vibe-log-temp/manifest.json first (note isLarge flags)
-2. Sample each file: limit:30 for large files, full read for small
-3. Analyze user prompts and session context to categorize activities:
-   - Development (new features, implementation)
-   - Debugging (fixing errors, troubleshooting)  
-   - Refactoring (code cleanup, restructuring)
-   - Code Review (reviewing, analyzing existing code)
-   - Learning (tutorials, understanding concepts)
-   - Research (exploring options, documentation)
-   - Planning (architecture, design decisions)
-   - Testing (writing tests, validation)
-4. For each session, determine primary activity type based on user requests and file operations
-5. Count sessions by activity type for pie chart data: {development: X, debugging: Y, refactoring: Z, ...}
-6. Analyze user prompt patterns and identify improvement opportunities:
-   - Vague vs specific requests
-   - Missing context or requirements
-   - Unclear instructions vs clear step-by-step
-   - Lack of examples or expected outcomes
-   - Poor error descriptions vs detailed diagnostics
-7. Return: 
-   - Activity breakdown counts for pie chart
-   - Table of top 5 prompt engineering insights with specific recommendations based on actual user patterns vs Claude Code best practices
-8. Skip files that fail after 2 attempts.")
+For each batch of sessions, launch:
+Task(subagent_type="vibe-log-track-analyzer", 
+     description="Analyze batch of [X] sessions",
+     prompt="You are analyzing a BATCH of Claude Code session files.
 
-Agent 3 - Key Accomplishments:
-Task(subagent_type="vibe-log-track-analyzer", prompt="CRITICAL: Only work with files in .vibe-log-temp/ directory. Do NOT explore the filesystem.
-1. Start with .vibe-log-temp/manifest.json (check file sizes)
-2. Sample recent sessions: Read first 30 lines of each file
-3. Look for: commits, features, bug fixes in the sampled content
-4. Extract 3-5 concrete accomplishments from what you find
-5. Return list. If file fails to read, skip it.")
-${days > 1 ? `
-Agent 4 - Pattern Analysis:
-Task(subagent_type="vibe-log-track-analyzer", prompt="CRITICAL: Restrict all file access to .vibe-log-temp/ directory only.
-1. Read .vibe-log-temp/manifest.json (note file sizes)
-2. Sample timestamps from first 5 lines of each session file
-3. Find: peak productivity times, session frequency patterns
-4. Return pattern insights based on timestamps found
-5. Skip any files that fail to read.")` : ''}
+FILES TO ANALYZE: 
+[List the specific .vibe-log-temp/filename for each session in this batch]
+[Include isLarge flag for each file]
 
-IMPORTANT: 
-- Launch ALL agents in a SINGLE message with multiple Task tool calls
-- Each agent works independently on ALL sessions
-- DO NOT wait for one to complete before launching the next
-- DO NOT analyze files yourself - agents do this
+INSTRUCTIONS:
+1. Process EACH file in your batch sequentially
+2. For each file:
+   - If isLarge=true: Sample with limit:50 
+   - If isLarge=false: Read the full file
+3. Extract from EACH session:
 
-PERFORMANCE NOTE: Agents are restricted to .vibe-log-temp/ directory because:
-- All necessary data is pre-fetched there for optimal performance
-- Exploring the filesystem wastes time and slows execution
-- Accessing project files is unnecessary - session data contains everything needed
-- This restriction ensures fastest possible analysis (target: <60 seconds total)
+SESSION METADATA:
+- Timestamp/date of session
+- Duration (if available)
+- Project name
+- Number of interactions
 
-## Phase 3 - Comprehensive Report Generation
-Generate a beautiful HTML report combining all agent insights:
+ACTIVITY ANALYSIS:
+- Primary activity type:
+  * Development (new features/implementation)
+  * Debugging (fixing errors/troubleshooting)
+  * Refactoring (code cleanup/restructuring)
+  * Code Review (analyzing existing code)
+  * Learning (tutorials/understanding)
+  * Research (exploring options/documentation)
+  * Planning (architecture/design)
+  * Testing (writing tests/validation)
 
-1. Collect results from ALL parallel agents
-2. Generate comprehensive HTML report:
-   • First output: "=== REPORT START ==="
-   • Create a styled HTML dashboard with:
-     - Executive summary
-     - Productivity metrics (hours coded, sessions, averages)
-     - Activity breakdown visualization (horizontal bar chart using Agent 2's data)
-     - Prompt engineering insights table (from Agent 2's analysis)
-     - Key accomplishments list
-     - Activity patterns and insights
-     - Project-by-project breakdown
- 
-   • For the activity breakdown, convert Agent 2's counts to percentages and create horizontal bar chart:
-     - Calculate percentage for each activity type from total sessions
-     - Create HTML structure with activity labels and progress bars
-     - Use CSS styling for colorful horizontal bars with rounded corners
-     - Show percentages on each bar
-     - Use distinct colors: Development (green), Debugging (orange), Refactoring (blue), etc.
-     - Make bars responsive with flexbox layout
+ACCOMPLISHMENTS:
+- Specific features implemented
+- Bugs fixed
+- Code improvements made
+- Problems solved
+- Key decisions made
 
-   • Finally output: "=== REPORT END ==="
-   
-IMPORTANT: Do NOT use the Write tool. OUTPUT the HTML directly between the markers.
+PROMPT QUALITY:
+- Were prompts clear and specific?
+- Did user provide good context?
+- Any vague or unclear requests?
+- Suggestions for improvement
+
+RETURN FORMAT (JSON array for your batch):
+[
+  {
+    'session_file': 'filename1',
+    'timestamp': 'ISO date',
+    'duration_minutes': number,
+    'project': 'project name',
+    'activity_type': 'primary activity',
+    'accomplishments': ['list', 'of', 'achievements'],
+    'prompt_quality': 'poor/fair/good/excellent',
+    'prompt_insights': 'specific observations',
+    'notable_patterns': 'any interesting patterns'
+  },
+  // ... one object for each session in your batch
+]
+
+CRITICAL: Process ALL files in your batch. Return an array with one object per session.")
+
+IMPORTANT:
+- Group sessions into batches based on the strategy above
+- Launch ALL batch analyzers in ONE message with multiple Task calls (max 9)
+- Each agent processes their entire batch of sessions
+- All agents work in parallel - DO NOT wait between launches
+- Example: 57 sessions = 9 agents, each handling 6-7 sessions
+
+## Phase 3 - Report Generation (10 seconds)
+After collecting ALL session analysis results, launch the report generator:
+
+Task(subagent_type="vibe-log-report-generator",
+     description="Generate HTML report from session analyses",
+     prompt="Generate a comprehensive HTML report from the session analysis data.
+
+INPUT: You will receive arrays of session analysis results from the batch analyzers.
+
+YOUR TASK:
+1. Flatten and aggregate all session data
+2. Calculate overall metrics and statistics
+3. OUTPUT a complete HTML report between the markers
+
+CRITICAL: You MUST output the HTML between these exact markers:
+=== REPORT START ===
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Vibe-log Report</title>
+  <style>/* Include beautiful CSS styling */</style>
+</head>
+<body>
+  <!-- Executive Summary -->
+  <section>
+    <h2>Executive Summary</h2>
+    <ul>
+      <li>Total coding time: X hours across Y sessions</li>
+      <li>Most productive project: [project]</li>
+      <li>Primary activity: [most common activity type]</li>
+      <li>Prompt quality trend: [assessment]</li>
+    </ul>
+  </section>
+
+  <!-- Activity Breakdown Chart -->
+  <section>
+    <h2>Activity Distribution</h2>
+    <!-- Create horizontal bar chart from activity type counts -->
+    <!-- Use colors: Development (green), Debugging (orange), Refactoring (blue), etc. -->
+  </section>
+
+  <!-- Key Accomplishments -->
+  <section>
+    <h2>Key Accomplishments</h2>
+    <!-- List top 5-7 accomplishments from all sessions -->
+  </section>
+
+  <!-- Prompt Engineering Insights -->
+  <section>
+    <h2>Prompt Quality Analysis</h2>
+    <!-- Table with prompt patterns and recommendations -->
+  </section>
+
+  <!-- Project Summary -->
+  <section>
+    <h2>Project Breakdown</h2>
+    <!-- Summary for each project -->
+  </section>
+</body>
+</html>
+=== REPORT END ===
+
+CRITICAL INSTRUCTIONS:
+- OUTPUT the complete HTML between the markers above
+- Do NOT use Write tool - just OUTPUT the text as plain text
+- Include ALL sections with real data
+- Make the HTML self-contained with inline CSS
+- Return the HTML to the orchestrator who will output it")
+
+IMPORTANT: The report generator OUTPUTS HTML to you. You then OUTPUT it again. Do NOT try to save it.
 
 ## Critical Performance Rules
-- Phase 1: Read manifest ONLY (5 seconds)
-- Phase 2: Launch agents in PARALLEL (10 seconds)
-- Phase 3: Collect & report (20 seconds)
-- Total orchestrator active time: <35 seconds
-- Total end-to-end time: <60 seconds (agents work in parallel)
+- Phase 1: Read manifest (3 seconds)
+- Phase 2: Launch batch analyzers (MAX 9 agents, 5 seconds to launch, 20-30 seconds to run)
+- Phase 3: Launch report generator (5 seconds)
+- Total time: ~35-45 seconds regardless of session count
 
-Remember: You are an ORCHESTRATOR, not an analyst. Let the agents do the work!`;
+KEY POINTS:
+- Batch sessions to limit parallel agents (max 9)
+- All batch analyzers launch IN ONE MESSAGE with multiple Task calls
+- Each agent handles 5-10 sessions (not just one)
+- Report generator OUTPUTS HTML between markers
+- Orchestrator OUTPUTS the same HTML again (do NOT use Write tool)
+- The system automatically saves the HTML to a file`;
 
   // Build a shorter, more user-friendly command for display
   const displayCommand = `claude "Analyze my Claude Code sessions from ${timeframeDesc} using vibe-log sub-agents..."`;
