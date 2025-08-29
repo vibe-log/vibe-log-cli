@@ -306,9 +306,11 @@ export async function executeClaudePrompt(
       }
 
       // Debug logging to understand report capture status
-      console.log(colors.dim(`[DEBUG] Checking for captured report...`));
-      console.log(colors.dim(`[DEBUG] hasReport: ${reportGenerator.hasReport()}`));
-      console.log(colors.dim(`[DEBUG] isCapturing: ${reportGenerator.isCapturing()}`));
+      if (process.env.VIBELOG_DEBUG) {
+        console.log(colors.dim(`[DEBUG] Checking for captured report...`));
+        console.log(colors.dim(`[DEBUG] hasReport: ${reportGenerator.hasReport()}`));
+        console.log(colors.dim(`[DEBUG] isCapturing: ${reportGenerator.isCapturing()}`));
+      }
       
       // Save the report if we have one
       if (reportGenerator.hasReport()) {
@@ -319,7 +321,9 @@ export async function executeClaudePrompt(
         console.log();
         
         if (result.success) {
-          console.log(colors.dim(`[DEBUG] Report saved successfully`));
+          if (process.env.VIBELOG_DEBUG) {
+            console.log(colors.dim(`[DEBUG] Report saved successfully`));
+          }
           reportGenerator.displayCompletionMessage();
         } else {
           console.log(colors.warning(`${icons.warning} Report generation failed: ${result.error}`));
@@ -359,9 +363,13 @@ export async function executeClaudePrompt(
   await executeClaude(prompt, claudeOptions);
   
   // Wait for the report display to complete
-  console.log(colors.dim('[DEBUG] Waiting for report display to complete...'));
+  if (process.env.VIBELOG_DEBUG) {
+    console.log(colors.dim('[DEBUG] Waiting for report display to complete...'));
+  }
   await reportDisplayComplete;
-  console.log(colors.dim('[DEBUG] Report display complete'));
+  if (process.env.VIBELOG_DEBUG) {
+    console.log(colors.dim('[DEBUG] Report display complete'));
+  }
   
   // Now handle the "Press Enter to continue" prompt synchronously
   // This happens AFTER the report is displayed but BEFORE returning to the menu
@@ -375,73 +383,99 @@ export async function executeClaudePrompt(
     // We showed a report, so wait for user input
     console.log();
     console.log(colors.muted('Press Enter to continue...'));
-    console.log(colors.dim('[DEBUG] Setting up raw stdin handler...'));
-    
-    // Check stdin state before we start
-    console.log(colors.dim(`[DEBUG] stdin.isTTY: ${process.stdin.isTTY}`));
-    console.log(colors.dim(`[DEBUG] stdin.readable: ${process.stdin.readable}`));
-    console.log(colors.dim(`[DEBUG] stdin.readableFlowing: ${process.stdin.readableFlowing}`));
-    console.log(colors.dim(`[DEBUG] stdin.isPaused: ${process.stdin.isPaused()}`));
+    if (process.env.VIBELOG_DEBUG) {
+      console.log(colors.dim('[DEBUG] Setting up raw stdin handler...'));
+      
+      // Check stdin state before we start
+      console.log(colors.dim(`[DEBUG] stdin.isTTY: ${process.stdin.isTTY}`));
+      console.log(colors.dim(`[DEBUG] stdin.readable: ${process.stdin.readable}`));
+      console.log(colors.dim(`[DEBUG] stdin.readableFlowing: ${process.stdin.readableFlowing}`));
+      console.log(colors.dim(`[DEBUG] stdin.isPaused: ${process.stdin.isPaused()}`));
+    }
     
     // Clear any pending data first
     if (process.stdin.readable && !process.stdin.isPaused()) {
-      console.log(colors.dim('[DEBUG] Draining any pending stdin data...'));
+      if (process.env.VIBELOG_DEBUG) {
+        console.log(colors.dim('[DEBUG] Draining any pending stdin data...'));
+      }
       let chunk;
       while ((chunk = process.stdin.read()) !== null) {
-        console.log(colors.dim(`[DEBUG] Drained: ${chunk.toString('hex')}`));
+        if (process.env.VIBELOG_DEBUG) {
+          console.log(colors.dim(`[DEBUG] Drained: ${chunk.toString('hex')}`));
+        }
       }
     }
     
     // Wait for ENTER key specifically
     await new Promise<void>(resolve => {
       try {
-        console.log(colors.dim('[DEBUG] Enabling raw mode...'));
+        if (process.env.VIBELOG_DEBUG) {
+          console.log(colors.dim('[DEBUG] Enabling raw mode...'));
+        }
         process.stdin.setRawMode(true);
-        console.log(colors.dim('[DEBUG] Resuming stdin...'));
+        if (process.env.VIBELOG_DEBUG) {
+          console.log(colors.dim('[DEBUG] Resuming stdin...'));
+        }
         process.stdin.resume();
-        console.log(colors.dim('[DEBUG] Waiting for Enter key...'));
+        if (process.env.VIBELOG_DEBUG) {
+          console.log(colors.dim('[DEBUG] Waiting for Enter key...'));
+        }
         
         const handleKeyPress = (data: Buffer | any) => {
           // Simple console.log without colors to avoid formatting issues
-          console.log('[DEBUG] Raw data received, type:', typeof data);
-          console.log('[DEBUG] Data length:', data.length);
+          if (process.env.VIBELOG_DEBUG) {
+            console.log('[DEBUG] Raw data received, type:', typeof data);
+            console.log('[DEBUG] Data length:', data.length);
+          }
           
           if (data.length > 0) {
             // Try multiple ways to get the byte value
             const str = data.toString();
             const charCode = str.charCodeAt(0);
             
-            console.log('[DEBUG] String:', JSON.stringify(str));
-            console.log('[DEBUG] CharCode at 0:', charCode);
-            console.log('[DEBUG] Is Buffer?', Buffer.isBuffer(data));
+            if (process.env.VIBELOG_DEBUG) {
+              console.log('[DEBUG] String:', JSON.stringify(str));
+              console.log('[DEBUG] CharCode at 0:', charCode);
+              console.log('[DEBUG] Is Buffer?', Buffer.isBuffer(data));
+            }
             
             // Check if it's Enter key using string comparison or charCode
             // "\r" is carriage return (Enter on most systems)
             // "\n" is line feed (Enter on some systems)
             if (str === '\r' || str === '\n' || charCode === 13 || charCode === 10) {
-              console.log('[DEBUG] Enter key detected!');
+              if (process.env.VIBELOG_DEBUG) {
+                console.log('[DEBUG] Enter key detected!');
+              }
               process.stdin.setRawMode(false);
               process.stdin.pause();
               process.stdin.removeListener('data', handleKeyPress);
               resolve();
             } else if (charCode === 3) {
-              console.log('[DEBUG] Ctrl+C detected, exiting...');
+              if (process.env.VIBELOG_DEBUG) {
+                console.log('[DEBUG] Ctrl+C detected, exiting...');
+              }
               process.stdin.setRawMode(false);
               process.stdin.pause();
               process.stdin.removeListener('data', handleKeyPress);
               process.exit(0);
             } else {
-              console.log('[DEBUG] Key ignored, waiting for Enter. CharCode was:', charCode);
+              if (process.env.VIBELOG_DEBUG) {
+                console.log('[DEBUG] Key ignored, waiting for Enter. CharCode was:', charCode);
+              }
             }
           } else {
-            console.log('[DEBUG] Empty data received');
+            if (process.env.VIBELOG_DEBUG) {
+              console.log('[DEBUG] Empty data received');
+            }
           }
         };
         
         process.stdin.on('data', handleKeyPress);
       } catch (err) {
-        console.log(colors.error(`[DEBUG] Error setting up stdin: ${err}`));
-        console.log(colors.error(`[DEBUG] Stack: ${err instanceof Error ? err.stack : 'N/A'}`));
+        if (process.env.VIBELOG_DEBUG) {
+          console.log(colors.error(`[DEBUG] Error setting up stdin: ${err}`));
+          console.log(colors.error(`[DEBUG] Stack: ${err instanceof Error ? err.stack : 'N/A'}`));
+        }
         // Resolve anyway to prevent hanging
         resolve();
       }
@@ -450,7 +484,9 @@ export async function executeClaudePrompt(
   
   // Now call the original onComplete callback if provided
   if (options?.onComplete) {
-    console.log(colors.dim('[DEBUG] Calling original onComplete callback...'));
+    if (process.env.VIBELOG_DEBUG) {
+      console.log(colors.dim('[DEBUG] Calling original onComplete callback...'));
+    }
     options.onComplete(exitCode);
   }
 }
