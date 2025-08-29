@@ -51,7 +51,7 @@ function formatCompact(analysis: PromptAnalysis): string {
   const personalityName = getPersonalityDisplayName(personality.personality);
   
   // Format the enhanced output with personality name before suggestion
-  let output = `${scoreEmoji} ${score}/100 | ${contextEmoji} ${personalityName} says: ${suggestion}`;
+  let output = `${scoreEmoji} ${score}/100 | ${contextEmoji} ${personalityName}: ${suggestion}`;
   
   // Add actionable steps on second line if present
   if (actionableSteps && actionableSteps.trim()) {

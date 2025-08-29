@@ -5,6 +5,26 @@ All notable changes to the vibe-log-cli project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.3] - 2025-08-29
+
+### Fixed
+- **Status Line Analysis Timeout**: Fixed critical issue where prompt analysis would timeout in Claude Code
+  - Implemented background processing - hook now exits in 0.3s (was timing out at 5s)
+  - Added HTML comment guard (`<!--VIBE_LOG_GUARD:1-->`) for clean recursion prevention
+  - Removed hardcoded fallback suggestions - SDK now returns real, contextual feedback
+  - Fixed SDK prompt format to ensure proper JSON response
+
+### Improved
+- **Analysis Quality**: Status line now provides specific, actionable suggestions based on actual prompt content
+- **Loading State**: Extended staleness timeout from 15s to 5 minutes for better async handling
+- **Debug Logging**: Enhanced SDK response logging for easier troubleshooting
+- **Status Line Display**: Now shows personality name (Gordon/Vibe-log/Custom) before suggestions for clarity
+
+### Technical Details
+- Background process spawns with `detached: true` and `child.unref()` for non-blocking execution
+- Analysis completes in ~6 seconds and saves to correct session file
+- Creates exactly 2 session files per prompt (user's + SDK's internal) without recursion
+
 ## [0.4.2] - 2025-08-29
 
 ### Changed
