@@ -29,7 +29,7 @@ export interface ClaudeExecutorOptions {
   systemPrompt?: string;
   cwd?: string;
   claudePath?: string;
-  model?: string; // For future use with different models
+  model?: string; // Model to use (defaults to 'sonnet')
   timeout?: number; // Timeout in milliseconds
   onStreamEvent?: (event: ClaudeStreamEvent) => void;
   onStart?: () => void;
@@ -103,6 +103,7 @@ export async function executeClaude(
     systemPrompt, 
     cwd = process.cwd(), 
     claudePath = 'claude',
+    model = 'sonnet',
     timeout,
     onStreamEvent,
     onStart, 
@@ -141,6 +142,9 @@ export async function executeClaude(
       // Build the Claude command with arguments
       const claudeArgs = ['-p'];
       
+      // Add model selection
+      claudeArgs.push('--model', model);
+      
       // Add system prompt if provided
       if (systemPrompt) {
         claudeArgs.push('--append-system-prompt', `"${systemPrompt}"`);
@@ -167,6 +171,9 @@ export async function executeClaude(
     } else {
       // Mac/Linux: Use the existing approach with prompt as argument
       args = ['-p'];
+      
+      // Add model selection
+      args.push('--model', model);
       
       // Add system prompt if provided
       if (systemPrompt) {
