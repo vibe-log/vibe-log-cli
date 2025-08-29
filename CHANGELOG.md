@@ -5,6 +5,28 @@ All notable changes to the vibe-log-cli project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2] - 2025-08-29
+
+### Changed
+- **Renamed Sub-Agent**: `vibe-log-track-analyzer` is now `vibe-log-session-analyzer` for better clarity
+- **Breaking Change**: Users need to reinstall sub-agents after this update
+
+### Fixed
+- **Report Generation Performance**: Optimized execution time back to 2-4 minutes
+  - Removed unnecessary tools from report generator (Task, Bash, Grep, etc.)
+  - Fixed batching strategy to properly limit parallel agents (MAX 9)
+  - 17 sessions now correctly uses 2-3 agents instead of 17
+- **Headless Mode Compatibility**: Restored === REPORT START/END === markers for reliable operation
+- **Sub-Agent Installer UI**: 
+  - Shows correct count of 2 sub-agents (not 3)
+  - Removed references to deprecated logs-fetcher agent
+  - Updated workflow description to reflect simplified 2-phase process
+
+### Improved
+- **Orchestrator Batching**: Enhanced batching logic with clear examples (17 sessions = 2 agents, 25 = 3 agents)
+- **Report Output Method**: Reports now OUTPUT between markers instead of using Write tool
+- **UI Clarity**: Added "In Parallel" to Phase 1 description in sub-agent installer
+
 ## [0.4.1] - 2025-08-28
 
 ### Added
