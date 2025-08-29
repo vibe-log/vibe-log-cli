@@ -5,6 +5,7 @@ import { getAllConfig, getToken as getConfigToken, getLastSyncSummary, getDashbo
 import { logger } from '../utils/logger';
 import { VIBE_LOG_SUB_AGENTS } from './sub-agents/constants';
 import { getHookMode, getTrackedProjects as getHookTrackedProjects } from './claude-settings-reader';
+import { getStatusLineStatus, StatusLineStatus } from './status-line-manager';
 
 export type SetupState = 
   | 'FIRST_TIME'           // No configuration exists
@@ -23,6 +24,8 @@ export interface StateDetails {
   agentCount: number;
   totalAgents: number;
   hasHooks: boolean;
+  hasStatusLine: boolean;
+  statusLineStatus: StatusLineStatus;
   cloudUrl?: string;
   lastSync?: Date;
   lastSyncProject?: string;
@@ -44,6 +47,8 @@ export async function detectSetupState(): Promise<StateDetails> {
     agentCount: 0,
     totalAgents: VIBE_LOG_SUB_AGENTS.length,
     hasHooks: false,
+    hasStatusLine: false,
+    statusLineStatus: 'not-installed',
     trackingMode: 'none',
     trackedProjectCount: 0,
     errors
@@ -114,6 +119,17 @@ export async function detectSetupState(): Promise<StateDetails> {
       details.hasHooks = false;
       details.trackingMode = 'none';
       details.trackedProjectCount = 0;
+    }
+
+    // Check for status-line installation
+    try {
+      const statusLineStatus = await getStatusLineStatus();
+      details.statusLineStatus = statusLineStatus;
+      details.hasStatusLine = statusLineStatus === 'installed';
+    } catch (error) {
+      logger.debug('Error checking status-line installation:', error);
+      details.statusLineStatus = 'not-installed';
+      details.hasStatusLine = false;
     }
 
     // Check for Claude Code projects

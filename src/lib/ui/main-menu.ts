@@ -126,10 +126,8 @@ export async function showMainMenu(
   }
   
   // Regular main menu for non-FIRST_TIME states
-  // TEMPORARILY DISABLED: Debugging report generation completion
-  // console.clear();
-  
-  // Show the logo after clearing console
+  console.clear();
+    // Show the logo after clearing console
   const { showLogo } = await import('../ui');
   await showLogo(version);
   
@@ -159,6 +157,7 @@ export async function showMainMenu(
     installStatus,
     subAgentsInstalled: state.agentCount,
     totalSubAgents: state.totalAgents,
+    statusLineStatus: state.statusLineStatus,
     configPath: '~/.claude/config'
   };
   

@@ -15,6 +15,7 @@ interface LocalEngine {
   installStatus: 'installed' | 'partial' | 'not-installed';
   subAgentsInstalled: number;
   totalSubAgents: number;
+  statusLineStatus: 'installed' | 'partial' | 'not-installed';
   configPath?: string;
 }
 
@@ -180,67 +181,74 @@ export function createCloudStatusSection(status: CloudStatus): string {
   });
 }
 
-/**
- * Create a mini progress bar for sub-agents
- */
-function createMiniProgressBar(current: number, total: number, width: number = 10): string {
-  const ratio = Math.min(current / total, 1);
-  const filled = Math.floor(ratio * width);
-  const bar = '▰'.repeat(filled) + '▱'.repeat(width - filled);
-  
-  if (ratio === 1) return colors.success(bar);
-  if (ratio >= 0.5) return colors.primary(bar);
-  return colors.warning(bar);
-}
 
 /**
- * Create local engine section
+ * Create local engine section with clearer descriptions
  */
 export function createLocalEngineSection(engine: LocalEngine): string {
   const content: string[] = [];
   
+  // Report generators (sub-agents) status
+  const reportIcon = engine.installStatus === 'installed' ? icons.check : 
+                     engine.installStatus === 'partial' ? icons.warning : icons.cross;
+  const reportColor = engine.installStatus === 'installed' ? colors.success : 
+                      engine.installStatus === 'partial' ? colors.warning : colors.error;
+  
+  let reportStatus = '';
   if (engine.installStatus === 'installed') {
-    // Fully installed - show success status
-    content.push(
-      `✨ ${colors.muted('Status:')} ${colors.success('Installed')}`
-    );
-    const progress = createMiniProgressBar(
-      engine.subAgentsInstalled, 
-      engine.totalSubAgents,
-      10
-    );
-    content.push(
-      `${icons.package} ${colors.muted('Sub-agents:')} ${colors.highlight(`${engine.subAgentsInstalled}/${engine.totalSubAgents}`)} ${progress}`
-    );
+    reportStatus = `Ready (${engine.subAgentsInstalled}/${engine.totalSubAgents} installed)`;
   } else if (engine.installStatus === 'partial') {
-    // Partial installation - compact display
-    const missingCount = engine.totalSubAgents - engine.subAgentsInstalled;
-    content.push(
-      `${icons.warning} ${colors.warning(`Missing ${missingCount} agents`)} ${colors.muted(`(${engine.subAgentsInstalled}/${engine.totalSubAgents} installed)`)}`
-    );
-    const progress = createMiniProgressBar(
-      engine.subAgentsInstalled, 
-      engine.totalSubAgents,
-      10
-    );
-    content.push(
-      `${icons.package} ${progress}`
-    );
-    content.push('');
-    content.push(colors.info(`  Select ${colors.highlight('Install local sub-agents')} to complete setup`));
+    reportStatus = `Incomplete (${engine.subAgentsInstalled}/${engine.totalSubAgents})`;
   } else {
-    // Not installed
-    content.push(
-      `${icons.error} ${colors.muted('Status:')} ${colors.error('Not installed')}`
-    );
-    content.push('');
-    content.push(colors.warning(`  Select ${colors.highlight('Install local sub-agents')} to create local vibe log reports`));
+    reportStatus = 'Not installed';
   }
   
-  return createSection('Local via Claude sub-agents', content, {
-    icon: '⬇️',
+  content.push(
+    `📊 ${colors.muted('Report generators sub-agents:')} ${reportIcon} ${reportColor(reportStatus)}`
+  );
+  
+  // Add explanation if not fully installed
+  if (engine.installStatus !== 'installed') {
+    content.push(
+      colors.subdued(`                      → Generates local productivity reports`)
+    );
+  }
+  
+  // Prompt coach (status-line) status
+  const coachIcon = engine.statusLineStatus === 'installed' ? icons.check :
+                    engine.statusLineStatus === 'partial' ? icons.warning : icons.cross;
+  const coachColor = engine.statusLineStatus === 'installed' ? colors.success :
+                     engine.statusLineStatus === 'partial' ? colors.warning : colors.error;
+  
+  let coachStatus = '';
+  if (engine.statusLineStatus === 'installed') {
+    coachStatus = 'Active';
+  } else if (engine.statusLineStatus === 'partial') {
+    coachStatus = 'Partially installed';
+  } else {
+    coachStatus = 'Not installed';
+  }
+  
+  content.push(
+    `💡 ${colors.muted('Prompt coach status line:')} ${coachIcon} ${coachColor(coachStatus)}`
+  );
+  
+  // Add explanation if not installed
+  if (engine.statusLineStatus !== 'installed') {
+    content.push(
+      colors.subdued(`                      → Shows prompt analysis suggestions and improvments`)
+    );
+  }
+  
+  // Determine overall status color based on installation state
+  const sectionColor = (engine.installStatus === 'installed' && engine.statusLineStatus === 'installed') 
+    ? colors.primary 
+    : colors.warning;
+  
+  return createSection('Local Analysis Tools', content, {
+    icon: '🤖',
     style: 'single',
-    color: engine.installStatus === 'installed' ? colors.primary : colors.warning,
+    color: sectionColor,
   });
 }
 

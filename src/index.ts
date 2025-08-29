@@ -222,6 +222,8 @@ program.action(async () => {
       agentCount: 0,
       totalAgents: 8,
       hasHooks: false,
+      hasStatusLine: false,
+      statusLineStatus: 'not-installed' as const,
       trackingMode: 'none' as const,
       trackedProjectCount: 0,
       errors: [error instanceof Error ? error.message : 'Unknown error']
