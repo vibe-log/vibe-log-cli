@@ -37,7 +37,7 @@ vibe-log-cli is an open-source command-line tool that analyzes your Claude Code 
 ## Architecture
 
 ### 1. 💬 Status Line (Local)
-Prompt coaching directly in Claude Code. Your prompts are analyzed locally by the smartest AI Coding (Claude Code) and feedback appears in your Claude Code Status line.
+Strategic product advisor in Claude Code. Your prompts are analyzed locally to provide actionable guidance that pushes you to ship faster. Feedback appears in your Claude Code status line with concrete next steps.
 
 ### 2. 📊 Local Report Generation (Local) 
 Generate comprehensive productivity reports using Claude Code's sub-agents to analyze your sessions in parallel. No data leaves your machine.
@@ -59,31 +59,36 @@ flowchart TD
     style Output fill:#d4edda
 ```
 
-## Status Line - Local Prompt Analysis
+## Status Line - Strategic Product Advisor
 
-The Status Line feature uses your local Claude Code to analyze prompt quality so you can improve your productivity from AI coding.
+The Status Line feature uses your local Claude Code to provide strategic guidance that pushes you to ship faster. It remembers your original goal and gives concrete, actionable steps to achieve it.
 
 ### Why Use Status Line?
 
-- **🚀 Improve Faster**: Get feedback that helps you write better prompts, write in Claude Code
-- **🎯 Catch Issues Early**: Spot vague or incomplete prompts before Claude struggles with them  
-- **📈 Build Better Habits**: Learn what makes prompts effective through consistent coaching
+- **🚀 Ship Faster**: Get pushed to deliver TODAY with concrete deadlines and MVPs
+- **🎯 Stay Focused**: Remembers your original mission and keeps you on track
+- **⚡ Concrete Actions**: Specific next steps like "Handle 5s timeouts | 429 rate limits | Ship by FRIDAY!"
+- **📈 Strategic Thinking**: Consider edge cases, user experience, and scaling at the right time
 
-### How Status Line Prompt Analyzer Work
-1. Intercepts prompts submitted in Claude Code
-2. Analyzes prompt quality locally using claude code
-3. Provides feedback through configurable coach personalities
-4. Displays results in Claude Code status line
+### How Status Line Works
+1. Captures your original mission (first message) to track your goal
+2. Intercepts prompts submitted in Claude Code
+3. Analyzes your progress and provides strategic guidance
+4. Pushes you to ship with concrete deadlines and actions
+5. Displays actionable feedback in Claude Code status line
 
 In high-level:
 ```mermaid
 flowchart LR
-    Prompt[User Prompt] --> Intercept[vibe-log intercepts]
-    Intercept --> Analyze[Local Claude analyzes]
-    Analyze --> Score[Score and recomendation]
-    Score --> Coach[Coach personality feedback]
-    Coach --> Display[Status line display]
+    Mission[Original Mission] --> Track[vibe-log tracks goal]
+    Prompt[Current Prompt] --> Intercept[vibe-log intercepts]
+    Track --> Analyze[Local Claude analyzes progress]
+    Intercept --> Analyze
+    Analyze --> Strategy[Strategic guidance]
+    Strategy --> Push[Push to ship with deadlines]
+    Push --> Display[Actionable steps in status line]
     
+    style Mission fill:#ffd700
     style Prompt fill:#e1f5fe
     style Display fill:#d4edda
 ```
@@ -124,9 +129,15 @@ flowchart LR
   ```
 
 ### Coach Personalities
-- **Gordon** - Direct feedback style
-- **Vibe-Log** - Supportive feedback style  
-- **Custom** - User-defined personality
+- **Gordon** - Sharp, pushy, business-focused. Creates urgency: "Ship by FRIDAY or you're fired!"
+- **Vibe-Log** - Supportive but pushy senior dev. Helps you ship: "MVP checklist: Auth works ✓ | Ship it!"
+- **Custom** - User-defined personality with strategic focus
+
+### Example Output
+```
+🟡 65/100 | 🎯 Gordon: Stop overthinking and ship something!
+✅ TRY THIS: Handle these errors NOW: Network timeout (5s) | Auth token expiry (401 → refresh) | Rate limits (429 → backoff). Ship by FRIDAY or you're fired!
+```
 
 ### Setup
 1. Run `npx vibe-log-cli`
