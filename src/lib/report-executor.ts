@@ -276,6 +276,16 @@ export async function executeClaudePrompt(
     }
   };
 
+  // Store the exit code for later use
+  let exitCode = 0;
+  
+  // Promise that resolves when the report display is complete
+  let reportDisplayComplete: Promise<void>;
+  const reportDisplayCompleteResolve: { resolve?: () => void } = {};
+  reportDisplayComplete = new Promise<void>(resolve => {
+    reportDisplayCompleteResolve.resolve = resolve;
+  });
+  
   // Execute Claude with stream event handling
   const claudeOptions: ClaudeExecutorOptions = {
     systemPrompt: options?.systemPrompt,
@@ -285,6 +295,9 @@ export async function executeClaudePrompt(
     onStart: options?.onStart,
     onError: options?.onError,
     onComplete: async (code) => {
+      // Store the exit code
+      exitCode = code;
+      
       // Clean up spinner if it's still running
       if (spinnerInterval) {
         clearInterval(spinnerInterval);
@@ -292,6 +305,11 @@ export async function executeClaudePrompt(
         process.stdout.write('\r' + ' '.repeat(80) + '\r');
       }
 
+      // Debug logging to understand report capture status
+      console.log(colors.dim(`[DEBUG] Checking for captured report...`));
+      console.log(colors.dim(`[DEBUG] hasReport: ${reportGenerator.hasReport()}`));
+      console.log(colors.dim(`[DEBUG] isCapturing: ${reportGenerator.isCapturing()}`));
+      
       // Save the report if we have one
       if (reportGenerator.hasReport()) {
         const result = await reportGenerator.saveReport();
@@ -303,21 +321,6 @@ export async function executeClaudePrompt(
         if (result.success) {
           console.log(colors.dim(`[DEBUG] Report saved successfully`));
           reportGenerator.displayCompletionMessage();
-          
-          // Wait for user to acknowledge before returning to menu
-          console.log();
-          console.log(colors.muted('Press Enter to continue...'));
-          
-          // Wait for Enter key
-          await new Promise<void>(resolve => {
-            process.stdin.setRawMode(true);
-            process.stdin.resume();
-            process.stdin.once('data', () => {
-              process.stdin.setRawMode(false);
-              process.stdin.pause();
-              resolve();
-            });
-          });
         } else {
           console.log(colors.warning(`${icons.warning} Report generation failed: ${result.error}`));
         }
@@ -325,15 +328,129 @@ export async function executeClaudePrompt(
         console.log();
         console.log(colors.highlight('━'.repeat(60)));
         console.log();
-        console.log(colors.warning(`${icons.warning} Analysis complete but no report was generated`));
-        console.log(colors.muted(`Claude may not have output the report in the expected format`));
+        
+        // Check if an HTML file was created anyway (by the old 3-agent system)
+        const fs = await import('fs').then(m => m.promises);
+        const files = await fs.readdir(process.cwd());
+        const htmlFiles = files.filter(f => f.startsWith('vibe-log-report-') && f.endsWith('.html'));
+        
+        if (htmlFiles.length > 0) {
+          console.log(colors.success(`${icons.check} Report generation complete!`));
+          console.log(colors.info(`📁 Report saved as: ${htmlFiles[htmlFiles.length - 1]}`));
+          console.log(colors.muted(`📂 Location: ${process.cwd()}/${htmlFiles[htmlFiles.length - 1]}`));
+          console.log();
+          console.log(colors.highlight(`🌐 Open in browser:`));
+          console.log(colors.accent(`   file://${process.cwd()}/${htmlFiles[htmlFiles.length - 1]}`));
+        } else {
+          console.log(colors.warning(`${icons.warning} Analysis complete but no report was generated`));
+          console.log(colors.muted(`Claude may not have output the report in the expected format`));
+        }
       }
       
-      if (options?.onComplete) {
-        options.onComplete(code);
+      // Signal that report display is complete
+      if (reportDisplayCompleteResolve.resolve) {
+        reportDisplayCompleteResolve.resolve();
       }
+      
+      // Don't call the original onComplete here - we'll do it after waiting for user input
     }
   };
 
   await executeClaude(prompt, claudeOptions);
+  
+  // Wait for the report display to complete
+  console.log(colors.dim('[DEBUG] Waiting for report display to complete...'));
+  await reportDisplayComplete;
+  console.log(colors.dim('[DEBUG] Report display complete'));
+  
+  // Now handle the "Press Enter to continue" prompt synchronously
+  // This happens AFTER the report is displayed but BEFORE returning to the menu
+  
+  // Check if we showed a report
+  const fs = await import('fs').then(m => m.promises);
+  const files = await fs.readdir(process.cwd());
+  const htmlFiles = files.filter(f => f.startsWith('vibe-log-report-') && f.endsWith('.html'));
+  
+  if (reportGenerator.hasReport() || htmlFiles.length > 0) {
+    // We showed a report, so wait for user input
+    console.log();
+    console.log(colors.muted('Press Enter to continue...'));
+    console.log(colors.dim('[DEBUG] Setting up raw stdin handler...'));
+    
+    // Check stdin state before we start
+    console.log(colors.dim(`[DEBUG] stdin.isTTY: ${process.stdin.isTTY}`));
+    console.log(colors.dim(`[DEBUG] stdin.readable: ${process.stdin.readable}`));
+    console.log(colors.dim(`[DEBUG] stdin.readableFlowing: ${process.stdin.readableFlowing}`));
+    console.log(colors.dim(`[DEBUG] stdin.isPaused: ${process.stdin.isPaused()}`));
+    
+    // Clear any pending data first
+    if (process.stdin.readable && !process.stdin.isPaused()) {
+      console.log(colors.dim('[DEBUG] Draining any pending stdin data...'));
+      let chunk;
+      while ((chunk = process.stdin.read()) !== null) {
+        console.log(colors.dim(`[DEBUG] Drained: ${chunk.toString('hex')}`));
+      }
+    }
+    
+    // Wait for ENTER key specifically
+    await new Promise<void>(resolve => {
+      try {
+        console.log(colors.dim('[DEBUG] Enabling raw mode...'));
+        process.stdin.setRawMode(true);
+        console.log(colors.dim('[DEBUG] Resuming stdin...'));
+        process.stdin.resume();
+        console.log(colors.dim('[DEBUG] Waiting for Enter key...'));
+        
+        const handleKeyPress = (data: Buffer | any) => {
+          // Simple console.log without colors to avoid formatting issues
+          console.log('[DEBUG] Raw data received, type:', typeof data);
+          console.log('[DEBUG] Data length:', data.length);
+          
+          if (data.length > 0) {
+            // Try multiple ways to get the byte value
+            const str = data.toString();
+            const charCode = str.charCodeAt(0);
+            
+            console.log('[DEBUG] String:', JSON.stringify(str));
+            console.log('[DEBUG] CharCode at 0:', charCode);
+            console.log('[DEBUG] Is Buffer?', Buffer.isBuffer(data));
+            
+            // Check if it's Enter key using string comparison or charCode
+            // "\r" is carriage return (Enter on most systems)
+            // "\n" is line feed (Enter on some systems)
+            if (str === '\r' || str === '\n' || charCode === 13 || charCode === 10) {
+              console.log('[DEBUG] Enter key detected!');
+              process.stdin.setRawMode(false);
+              process.stdin.pause();
+              process.stdin.removeListener('data', handleKeyPress);
+              resolve();
+            } else if (charCode === 3) {
+              console.log('[DEBUG] Ctrl+C detected, exiting...');
+              process.stdin.setRawMode(false);
+              process.stdin.pause();
+              process.stdin.removeListener('data', handleKeyPress);
+              process.exit(0);
+            } else {
+              console.log('[DEBUG] Key ignored, waiting for Enter. CharCode was:', charCode);
+            }
+          } else {
+            console.log('[DEBUG] Empty data received');
+          }
+        };
+        
+        process.stdin.on('data', handleKeyPress);
+      } catch (err) {
+        console.log(colors.error(`[DEBUG] Error setting up stdin: ${err}`));
+        console.log(colors.error(`[DEBUG] Stack: ${err instanceof Error ? err.stack : 'N/A'}`));
+        // Resolve anyway to prevent hanging
+        resolve();
+      }
+    });
+  }
+  
+  // Now call the original onComplete callback if provided
+  if (options?.onComplete) {
+    console.log(colors.dim('[DEBUG] Calling original onComplete callback...'));
+    options.onComplete(exitCode);
+  }
 }
