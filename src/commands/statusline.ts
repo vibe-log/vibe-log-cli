@@ -134,9 +134,10 @@ function formatMinimal(analysis: PromptAnalysis): string {
  * Format loading state for display
  */
 function formatLoadingState(state: LoadingState, format: OutputFormat): string {
-  // Check if state is stale (older than 15 seconds)
-  if (isStaleLoadingState(state)) {
-    logger.debug('Loading state is stale, returning empty');
+  // Check if state is stale (older than 5 minutes - 300 seconds)
+  // We use a much longer timeout since analysis is async and results should persist
+  if (isStaleLoadingState(state, 300000)) {
+    logger.debug('Loading state is stale (>5 minutes old), returning empty');
     return '';
   }
 

@@ -134,8 +134,7 @@ export class ClaudeSettingsManager {
     settings.hooks.UserPromptSubmit.push({
       hooks: [{
         type: 'command',
-        command: analyzeCommand,
-        timeout: 5
+        command: analyzeCommand
       }]
     });
     
