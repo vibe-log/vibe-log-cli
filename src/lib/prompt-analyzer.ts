@@ -213,35 +213,36 @@ ${context.substring(0, 1500)}${context.length > 1500 ? '...' : ''}
 
     // Add explicit JSON format instructions with product manager focus
     analysisPrompt += `
-Analyze the prompt and provide strategic product-level guidance.
+Analyze the prompt and provide strategic product-level guidance that pushes them to ship faster.
 
 You must respond with ONLY a JSON object in this exact format:
 {
   "quality": "poor" | "fair" | "good" | "excellent",
   "missing": ["1-2 strategic considerations they might be overlooking"],
   "suggestion": "Brief diagnosis of their approach (15-20 words)",
-  "actionableSteps": "Strategic next steps to think about - NOT code to write (30-50 words)",
+  "actionableSteps": "Concrete strategic next steps with specifics - push them to SHIP (40-60 words)",
   "score": 0-100,
   "contextualEmoji": "🎯" | "🚀" | "⚡" | "🔄" | "📊" | "🎨" | "🔍" | "✅"
 }
 
 CRITICAL for actionableSteps field:
-- This is your PRIMARY VALUE - make it count!
-- Focus on STRATEGIC thinking, not tactical implementation
-- Consider their ORIGINAL MISSION (if available) and current progress
-- Suggest what to THINK ABOUT next, not what to CODE
-- Include considerations like: edge cases, user experience, scaling, security
-- Help them see the forest while they're in the trees
+- Be SPECIFIC and PUSHY - help them ship TODAY not someday
+- Give concrete examples they can implement NOW
+- Consider their ORIGINAL MISSION and push them toward completion
+- Include specific values, timeouts, error codes when relevant
+- Create urgency - what's the minimum viable version?
+- Balance shipping fast with not breaking things
 
-Good actionableSteps examples:
-- "Consider: How will errors appear to users? | Recovery strategies? | Offline behavior?"
-- "Think about: Permission boundaries | Rate limiting needs | Mobile experience differences"
-- "Next considerations: Onboarding flow | Analytics events | Team documentation needs"
+EXCELLENT actionableSteps examples (be this specific):
+- "Handle these errors NOW: Network timeout (5s) | Auth token expiry (401 → refresh) | Rate limits (429 → backoff) | Show user 'Try again' not stack traces!"
+- "Ship v1 TODAY: 1) Basic CRUD works 2) One wow feature 3) THEN worry about onboarding. Progressive disclosure comes AFTER people can install it!"
+- "Security basics before launch: Validate all inputs | Sanitize outputs | Add rate limiting (100/min) | Log failures | THEN ship it!"
+- "Make it work for ONE user first: Manual setup is OK | Config file is fine | Perfect UI comes later | Ship to 1 user THIS WEEK!"
 
-Bad actionableSteps (too prescriptive/technical):
-- "Add JWT tokens to your auth flow"
-- "Implement try-catch blocks"
-- "Create a /api/login endpoint"
+WEAK actionableSteps (avoid these):
+- "Consider error handling patterns" (too vague)
+- "Think about user experience" (not actionable)
+- "Plan for scale" (no specifics)
 
 Scoring: 
 - poor(0-40): Missing critical context or unclear goal
