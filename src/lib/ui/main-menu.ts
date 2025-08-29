@@ -204,7 +204,7 @@ export async function showMainMenu(
       name: 'action',
       message: 'What would you like to do?',
       choices,
-      pageSize: 12,  // Increased to show all items including Exit
+      pageSize: 13,  // Increased to show all items including Exit
       loop: false
     }
   ]);
