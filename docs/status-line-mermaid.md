@@ -1,3 +1,4 @@
+```mermaid
 flowchart LR
     subgraph Input ["✳️ In Claude Code"]
         User([👤 You type a<br/>prompt]) --> Submit[Press Enter to<br/>submit prompt]
@@ -29,3 +30,4 @@ flowchart LR
     end
 
     Show --> Improve([📈 Better prompts<br/>Better results])
+```

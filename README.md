@@ -4,7 +4,7 @@
 <img width="628" height="176" alt="image" src="https://github.com/user-attachments/assets/1e468c1f-8228-46ad-a441-1b0926edfbc9" />
 
 <p></p>
-<h3> Track your building journey with Vibe-Log - the CLI tool that helps developers improve, analyze productivity patterns,  maintain coding streaks, and build in public with AI-powered insights </h3>
+<h3>Open-source CLI for analyzing Claude Code sessions locally and generating productivity reports</h3>
 <p></p>
 
 <a href="https://vibe-log.dev">
@@ -30,50 +30,148 @@
 
 ![vibe-log-cli](https://github.com/user-attachments/assets/d72bebde-f90d-432f-92dd-6f7f0e4ec480)
 
-<dib align=left> <h2>🎯 What is Vibe-Log?</h2>
-<p></p>
-vibe-log is a comprehensive CLI tool that analyzes your coding sessions to extract productivity metrics and improvements along with, emotional insights, and generates engaging Build in Public content. It integrates seamlessly with Claude Code and other AI coding assistants to help you understand your development patterns and share your journey.<p></p>
-✨ Key Features
+## What is Vibe-Log?
 
-💬 **NEW: Status Line** - Let your local Claude Code provide you with prompt quality feedback right in Claude Code with personality coaches (🧑‍🍳Gordon, Vibe-log, or Custom)<br>
-📊 Productivity Analytics - Track goals, code acceptance rates, and session efficiency<br>
-📝 Tailored Prompt Engineering Feedback - Improve your AI interaction efficiency<br>
-📈 AI Metrics Tracking - Monitor how effectively you're using AI coding assistants<br>
-🔥 Vibe Coding Streaks - Keep your momentum alive! Track daily coding streaks with visual flame indicators and maintain consistency<br>
-🐦 Build in Public Automation - Draft authentic tweets based on your vibe-coding sessions<br>
+vibe-log-cli is an open-source command-line tool that analyzes your Claude Code sessions to extract productivity insights and generate reports. All analysis can run completely locally on your machine using Claude Code's capabilities.
 
-## Quick Start
+## Architecture
 
-**Get started with the interactive menu:**
-   ```bash
-   npx vibe-log-cli
-   ```
+### 1. 💬 Status Line (Local)
+Prompt coaching directly in Claude Code. Your prompts are analyzed locally by the smartest AI Coding (Claude Code) and feedback appears in your Claude Code Status line.
 
-## 💬 Status Line - Prompt Coaching in Claude Code Using Your Claude Code
+### 2. 📊 Local Report Generation (Local) 
+Generate comprehensive productivity reports using Claude Code's sub-agents to analyze your sessions in parallel. No data leaves your machine.
 
-Transform your Claude Code experience with prompt quality feedback! The Status Line feature analyzes your prompts and provides coaching to help you write better, more effective prompts.
-<img width="972" height="170" alt="image" src="https://github.com/user-attachments/assets/eb6a26ca-193f-4df5-87e8-ef7acfa85169" />
+### 3. ☁️ Cloud Sync (Optional)
+Optionally sync sanitized session data to the vibe-log dashboard for web-based analytics and team insights.
 
+## How Local Report Generation Works
 
-### How Status Line Analyzes Prompts Locally 
-Every time you submit a prompt in Claude Code, vibe-log:
-1. **Analyzes** your prompt quality in using your Claude Code 
-2. **Scores** your prompt from 0-100 based on clarity, context, and specificity
-3. **Provides** personalized suggestions through your chosen coach personality
-4. **Displays** feedback directly in your Claude Code status bar
+```mermaid
+flowchart TD
+    Start([📝 Claude Code Sessions]) --> Select[vibe-log-cli select time frame and projects]
+    Select --> Extract[Extracts & prepares session data]
+    Extract --> Launch[Launches Claude with instructions]
+    Launch --> Parallel{Parallel sub-agents<br/> session analysis}
+    Parallel --> Gather[Gathers results &<br/>Generates report]
+    Gather --> Output[📊 HTML Report in current folder]    
+    style Start fill:#e1f5fe
+    style Output fill:#d4edda
+```
 
-[![](https://mermaid.ink/img/pako:eNptVN1OE0EUfpXjXBhJoLS0pXRjMNiiNhBDRE2w5WK6O7QbdmfWmdlC-TFeGhM0wC2kxphgjFxx45UPwwvII3hmZgstMFczZ873nZ_vzOwSXwSMeGQjElt-l0oNy69aHHCptN2RNOlCgyephmaLXJ5c_PvzFc9Qi2gaMKghtkXWnb9ZbxSTj5pXg8MfsCZS0P2EAX3cltPziRRxotcnYGpqHlbTdhzq5opkSsEi10yCFtZN2RvIvG-IHcKCXwixiSF-ndpoK9bTXVuGLl6DlmGnw6TKGBgPWvxWVQucRn0VKlPY1eDsGywLn0bg-G5ueyEdrRZW60tjFZtsbFq15UbzbdhmU5HomINNRjKfhT2m7haEHg7WZf7mbkMBZ1uAAugn-yNO5tK47b0UexgfO7WtsfbjUxTBj0xSiWS9UKTKhvMF72HVVIeCr99Hs8bUHtRDTMvQHJ27OndYlp-TQFMe0EhwNkJxs7tu4ApGEggPdd_18Ms5ZrWRKtMp6o85jLXMrOdCBoJjDmeHlx8PrgYHF5nJpvBapJ0uRKLHbsFMg03iJzBstfVf5L5IJe2EvHMLUEuVFnHz8uRntrX-OJsSlO5Ho_x2SO7Wm3XdzW19qZkNA24tFXUNHCoM71Nb8Aiva_cQf2Mf7d9U7vYtHhzEF9KUfPwZnjPOJNUMlLHZ6A9RDhx0NSL4fbNeD1US0Uymo9-wqqlOFSyHnMEzxoI29TfHJLJRXXzasx3_a3fDZ_phOtfLBBhFGQ8LsvzNLEybyuwx0EABvvk0GnvazsviumILgw2-w1x5upDPW5jRzs0GKNpXnjUuBAHEJkc_k8fvso0Hd1tgGC11I0aBesx8Tsef4CnT5tNxmrm3k5lcemp9gkySjgwD4mmZskkSMxlTcyS7hrlFdJfF-Pl5uA2oxPa1-D5iEsrfCREPYdJMMvE2aKTwlCYB6lcPKcoSX1sl5stkTaRcE69UyFctC_F2yTbxKqXcXGGmXCwWiuXZUmGmMkn6xCuW87lCvlytVCuVUrVSminuT5IdGzefm0MTrspsoVDMFyuz-_8BpxX0gg)
+## Status Line - Local Prompt Analysis
 
-### Choose Your Coach Personality
-- 🧑‍🍳 **Gordon ** - Tough love with kitchen metaphors ("This prompt is RAW!")
-- 💜 **Vibe-Log** - Encouraging and supportive developer coach
-- ✨ **Custom** - Define your own coaching style and personality
+The Status Line feature uses your local Claude Code to analyze prompt quality so you can improve your productivity from AI coding.
 
-### Quick Installation
+### How It Works
+1. Intercepts prompts submitted in Claude Code
+2. Analyzes prompt quality locally using claude code
+3. Provides feedback through configurable coach personalities
+4. Displays results in Claude Code status line
+
+In high-level:
+```mermaid
+flowchart LR
+    Prompt[User Prompt] --> Intercept[vibe-log intercepts]
+    Intercept --> Analyze[Local Claude analyzes]
+    Analyze --> Score[Score and recomendation]
+    Score --> Coach[Coach personality feedback]
+    Coach --> Display[Status line display]
+    
+    style Prompt fill:#e1f5fe
+    style Display fill:#d4edda
+```
+
+In more details:
+```mermaid
+flowchart LR
+    subgraph Input ["✳️ In Claude Code"]
+        User([👤 You type a<br/>prompt]) --> Submit[Press Enter to<br/>submit prompt]
+        Submit --> Hook[🪝 UserPromptSubmit<br/>hook triggers]
+    end
+
+    subgraph Analysis ["🧠 Local Prompt Analysis via Claude Code SDK"]
+        Hook --> CLI[Vibe-log CLI<br/>receives prompt]
+        CLI --> Check{Is new chat?}
+        Check -->|No| Context[📝 Include previous<br/>conversation]
+        Check -->|Yes| Direct[💭 Analyze prompt<br/>standalone]
+        
+        subgraph Personality ["🎭 Infuse Coach Personality"]
+            Gordon[🧑‍🍳 Gordon<br/>Tough love]
+            Vibe[💜 Vibe-log<br/>Encouraging]
+            Custom[✨ Custom<br/>Your style]
+        end
+        
+        Context --> SDK[Claude SDK<br/>analyzes prompt quality]
+        Direct --> SDK
+        Personality -.-> SDK
+        SDK --> Score[📊 Generate score<br/>& suggestion]
+    end
+
+    subgraph Display ["💬 Status Line Feedback"]
+        Score --> Save[💾 Save to<br/>~/.vibe-log/analysis]
+        Save --> Status[Status bar<br/>reads result]
+        Status --> Show[🟢 85/100<br/>✨ Gordon says:<br/>Add more context chef!]
+    end
+
+    Show --> Improve([📈 Better prompts<br/>Better results])
+  ```
+
+### Coach Personalities
+- **Gordon** - Direct feedback style
+- **Vibe-Log** - Supportive feedback style  
+- **Custom** - User-defined personality
+
+### Setup
 1. Run `npx vibe-log-cli`
-2. Select ** 💡 Configure Real-time prompt coach status line **
-3. Choose your coach personality
-4. Start getting feedback on your prompts in Claude Code!
+2. Select "Configure prompt coach status line"
+3. Choose coach personality
+4. Prompts will be analyzed locally in Claude Code
+
+
+## ☁️ Cloud Sync (Optional)
+
+Optionally sync your sanitized session data to the vibe-log dashboard for advanced analytics and tracking over time.
+
+### Features
+- **🎁 Free Forever**: Up to 1,000 session analyses per month
+- **📈 Track Over Time**: Monitor your prompt quality and productivity trends
+- **🔄 Auto-sync**: Configure hooks for automatic background sync
+- **🔒 Privacy First**: All code removed before upload, only patterns synced
+- **📊 Web Dashboard**: Learn and improve your AI coding sessions.
+
+### How It Works
+
+```mermaid
+flowchart TD
+    subgraph Local ["🏠 Your Machine"]
+        Sessions[Claude Code Sessions] --> Select[Select sessions]
+        Select --> Privacy[🔒 Privacy Layer<br/>Removes code & secrets<br/>Keeps only patterns]
+    end
+    
+    subgraph Cloud ["☁️ Vibe-Log Cloud"]
+        Privacy --> Upload[Upload patterns]
+        Upload --> Verify[Server verification]
+        Verify --> Analysis[AI analysis]
+        Analysis --> Dashboard[📊 Web Dashboard]
+    end
+    
+    subgraph Features ["Dashboard Features"]
+        Dashboard --> Track[📈 Track prompt improvement over time]
+        Dashboard --> Metrics[⚡ Deeper productivity insights]  
+        Dashboard --> Streaks[🔥 Peak times/Low times]
+        Dashboard --> Prompt[💬 User Prompt Analysis]
+    end
+    
+    style Local fill:#e1f5fe
+    style Cloud fill:#f3e5f5
+    style Features fill:#d4edda
+```
+
+### Setup Auto-sync
+1. Run `npx vibe-log-cli`
+2. Authenticate with your Github account
+3. Enable auto-sync in cli menu
 
 ## Supported Coding Engines 
 
@@ -86,9 +184,6 @@ Future:
 
 🌍 Cross-Platform - Runs on macOS, Windows, Linux, and any environment with Node.js
 
-## How Vibe-Log Analyzes AI Coding Sessions
-
-[![](https://mermaid.ink/img/pako:eNp1VNFqG0cU_ZXLQEoDluzVKo4lHEFQSFOyxsFOKc3KD6PdK-3Gq5llZlbORlJIoE-FUpr2oQ8pfmzpFxT6N_6B-hN6Z8ZrS66zIKTZe--559x7RguWyBRZn00KeZZkXBmIjkYC3KOr8VTxMoNjNFUJ8Yh9hcbkYgq1rBQMC16lCEMCoAytcyngCTccjpCn9YidNDj2OTaE_WV8ef7Hzxfvf7w8__iPLbRYZ7nJ9sdqe7CGd3IfWq0BoRaYmPgqoI1UqIFYGg1GuprL818-wLvtduJStkslX1OFXmt9757rTqXrkP4LtKetHZaRwAUv6re4ydyn2uIDNJlMF8coUpjnfLWe5mM2bfm4MnLGTZ4s4ZmUp5pU__V7M67MvnH9OKW1dC2Sk8_gHHBR8WIJ_jt2WodUr3GTOEgFdygH390xf6HyOU9qwvj1I-yPB4clCjimLSbYxCDiNar97fHAgR7hTM7tuO16v6CGiULj-z1HLDVIUdRQcmNQic22nu963yZKgxuJ5tD0tXkkK09wcaUuk2fNgq82Ao-_tkysXxrpqxuka6MOC1ml1qgXv3349--frs4HJOGWHYdB_E1ZSJ7eKPA8OmQNNUcF9MkneUJrlGKztOMzw5g4OXo639Q_DH1G167sB_gWx3QvdDaWXKUnd47iWkAkE5ocCXA3xJ_uoB8FMV2oGuRkUuQC3aS-u3UnvaCoE3uUhqnLrbSbZDVu8SmKW66JvMAotPS_h2cvDyJQWEpl7ibvdwePHg2Wh8LSWfq534q32mTpQ0946aWtYbhF2bZHqKvCxBef_rQ-jZArAWcZuZX-c7wZx6jNtU1fKp6cQj4j_89xZrW4109zkf7fnH4SN13YFpuqPGV9oyrcYjNUM26PbGErRsxkBDliffqZcnU6YiOxopqSi1dSzpoyJatpxvoTXmg6VWXKDT7JOS30JoUGhmooK2FYP-gEDoP1F-wN67fC3fbDXqfTDXrdB70Hvb3eFqspaydsh7u94GHQ3QtsLFhtsbeubdDe2d0Jd3q9MAx2w72w21n9B8bX4e4)
 
 ## 🔒 Privacy & Security
 
@@ -122,15 +217,6 @@ head -100 package/dist/index.js  # Verify it's readable
 cd package/dist && sha256sum -c checksums.sha256
 ```
 
-### Security Features
-- **Secure Token Storage**: Authentication tokens are encrypted using AES-256-GCM with random keys
-- **Input Validation**: All user inputs are validated to prevent injection attacks
-- **CSRF Protection**: Browser authentication uses CSRF tokens to prevent cross-site attacks
-- **Rate Limiting**: Built-in rate limiting to prevent brute force attempts
-- **HTTPS Only**: All API communications are restricted to HTTPS
-- **Session Security**: Cryptographically secure session IDs (256-bit)
-- **Data Sanitization**: All data is sanitized before logging or transmission
-
 ### Privacy
 - **Context-Preserving Sanitization**: Messages are sanitized to remove sensitive data while preserving context
 - **What gets redacted/removed**:
@@ -156,6 +242,9 @@ Try the following:
 ### No Sessions Found
 - Make sure Claude Code is installed
 - Check that you've used Claude Code recently
+
+### Sessions Stuck in Analyzing
+- Please open a Github issue.
 
 
 ### Debug Mode
