@@ -126,8 +126,13 @@ export async function verifyHooks(): Promise<void> {
   
   // 5. Check for hook logs
   console.log(chalk.gray('\n5. Checking hook logs...'));
+  const homeDir = process.env.HOME || process.env.USERPROFILE;
+  if (!homeDir) {
+    console.log(chalk.yellow('⚠️  Unable to determine home directory'));
+    return;
+  }
   const logPath = path.join(
-    process.env.HOME || process.env.USERPROFILE || '',
+    homeDir,
     '.vibe-log',
     'hooks.log'
   );

@@ -45,7 +45,10 @@ export interface HookExecution {
  * Get the path to the hooks statistics file
  */
 function getStatsPath(): string {
-  const homedir = process.env.HOME || process.env.USERPROFILE || '';
+  const homedir = process.env.HOME || process.env.USERPROFILE;
+  if (!homedir) {
+    throw new Error('Unable to determine home directory for hooks statistics');
+  }
   return path.join(homedir, '.vibe-log', 'hooks-stats.json');
 }
 

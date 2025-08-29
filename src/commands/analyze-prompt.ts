@@ -92,7 +92,12 @@ export function createAnalyzePromptCommand(): Command {
               });
               
               // Log to debug file for testing
-              const logDir = path.join(process.env.HOME || '', '.vibe-log');
+              const homeDir = process.env.HOME || process.env.USERPROFILE;
+              if (!homeDir) {
+                logger.warn('Unable to determine home directory for debug logging');
+                return;
+              }
+              const logDir = path.join(homeDir, '.vibe-log');
               await fs.mkdir(logDir, { recursive: true }).catch(() => {});
               const logFile = path.join(logDir, 'hook-debug.log');
               const timestamp = new Date().toISOString();
@@ -165,7 +170,12 @@ export function createAnalyzePromptCommand(): Command {
           const { spawn } = await import('child_process');
           
           // Write a loading state immediately for instant feedback
-          const pendingPath = path.join(process.env.HOME || '', '.vibe-log', 'analyzed-prompts', `${sessionId}.json`);
+          const homeDir = process.env.HOME || process.env.USERPROFILE;
+          if (!homeDir) {
+            logger.warn('Unable to determine home directory for pending analysis');
+            return;
+          }
+          const pendingPath = path.join(homeDir, '.vibe-log', 'analyzed-prompts', `${sessionId}.json`);
           const personality = getStatusLinePersonality();
           const customName = personality.personality === 'custom' ? personality.customPersonality?.name : undefined;
           const pendingState = {
@@ -240,7 +250,9 @@ export function createAnalyzePromptCommand(): Command {
             
             console.log(colors.primary(`Suggestion: ${analysis.suggestion}`));
             console.log();
-            console.log(colors.dim(`Session ID: ${sessionId || 'N/A'}`));
+            if (sessionId) {
+              console.log(colors.dim(`Session ID: ${sessionId}`));
+            }
             console.log(colors.dim(`Analysis time: ${duration}ms`));
           } else {
             // Concise output for normal use
@@ -274,7 +286,12 @@ export function createAnalyzePromptCommand(): Command {
             promotionalTip: ''
           };
           
-          const logDir = path.join(process.env.HOME || '', '.vibe-log', 'analyzed-prompts');
+          const homeDir = process.env.HOME || process.env.USERPROFILE;
+          if (!homeDir) {
+            logger.warn('Unable to determine home directory for analysis storage');
+            return;
+          }
+          const logDir = path.join(homeDir, '.vibe-log', 'analyzed-prompts');
           const sessionPath = path.join(logDir, `${sessionId}.json`);
           
           try {
