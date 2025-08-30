@@ -139,8 +139,9 @@ async function displayEducationalHeader(config: StatusLineConfig): Promise<void>
   } else {
     console.log(colors.info('✨ What you\'ll get:'));
     console.log(colors.subdued('  • Prompt quality analysis and improvement tips'));
-    console.log(colors.subdued('  • Strategic guidance in your status bar'));
+    console.log(colors.subdued('  • Strategic guidance in Claude Code status line'));
     console.log(colors.subdued('  • Choose from multiple coach personalities'));
+    console.log(colors.subdued('  • Uses your Claude Code locally for prompt analysis'));
   }
   
   console.log('');
@@ -225,7 +226,7 @@ async function performInstallation(): Promise<void> {
     console.log(colors.highlight('🚀 Quick Start:'));
     console.log('');
     console.log(colors.success('  1. Submit any prompt') + colors.subdued(' in Claude Code'));
-    console.log(colors.success('  2. Watch your status bar') + colors.subdued(' for strategic guidance'));
+    console.log(colors.success('  2. Watch Claude Code status line') + colors.subdued(' for strategic guidance'));
     console.log(colors.success('  3. Follow the advice') + colors.subdued(' to move forward effectively!'));
     console.log('');
     console.log(colors.accent('  💡 Pro tip:') + colors.subdued(' Ask for a complex feature and watch'));

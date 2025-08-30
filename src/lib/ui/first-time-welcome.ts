@@ -19,11 +19,11 @@ export async function showFirstTimeWelcome(): Promise<WelcomeChoice> {
   // Menu choices formatted exactly as in cli-flows.md
   const choices = [
     {
-      name: `💬 ${colors.accent('Enable Prompt Coaching Claude Status Line')} ${colors.success('(Recommended)')}
-    ${colors.success('└─ 📊 Scores your prompts 0-100 for quality')}
-    ${colors.success('└─ 💡 Get personalized tips after each prompt')}
-    ${colors.success('└─ 🎭 Choose your coach personality')}
-    ${colors.muted('└─ ⚡ Uses your Claude Code locally to for prompt analysis')}`,
+      name: `💬 ${colors.accent('Status Line - Prompt feedback in Claude Code')} ${colors.success('(Recommended)')}
+    ${colors.success('└─ 📊 Analyzes your prompts and provides strategic guidance')}
+    ${colors.success('└─ 💡 Shows feedback in your Claude Code status line')}
+    ${colors.success('└─ 🎭 Choose from multiple coach personalities')}
+    ${colors.muted('└─ ⚡ Uses your Claude Code locally for prompt analysis')}`,
       value: 'statusline' as const,
       short: 'Status line'
     },

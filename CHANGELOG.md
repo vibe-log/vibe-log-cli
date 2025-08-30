@@ -68,7 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.1] - 2025-08-28
 
 ### Added
-- **Status Line in First-Time Menu**: Added "Configure Real-time prompt coach status line" option to the first-time welcome menu for improved feature discoverability during onboarding
+- **Status Line in First-Time Menu**: Added "Configure prompt coach status line" option to the first-time welcome menu for improved feature discoverability during onboarding
 
 ### Improved
 - **Documentation**: Updated README with latest features and improvements
