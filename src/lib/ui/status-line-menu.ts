@@ -164,20 +164,12 @@ async function displayEducationalHeader(config: StatusLineConfig): Promise<void>
     }
   } else {
     console.log('');
-    console.log(colors.info('🎭 Coach Personalities:'));
+    console.log(colors.info('✨ What you\'ll get:'));
+    console.log(colors.subdued('  • Prompt quality analysis and improvement tips'));
+    console.log(colors.subdued('  • Strategic guidance in your status bar'));
+    console.log(colors.subdued('  • Choose from multiple coach personalities'));
     console.log('');
-    console.log(colors.warning('  🔥 Gordon') + colors.subdued(' - Direct, results-focused'));
-    console.log(colors.dim('     "Focus on the MVP first, skip the nice-to-haves"'));
-    console.log('');
-    console.log(colors.accent('  💜 Vibe-Log') + colors.subdued(' - Supportive, encouraging'));
-    console.log(colors.dim('     "Great start! Consider breaking this into steps"'));
-    console.log('');
-    console.log(colors.primary('  ✨ Custom') + colors.subdued(' - Your strategic style'));
-    console.log(colors.dim('     Define your ideal strategic advisor'));
-    console.log('');
-    console.log(colors.info('📊 Example Feedback:'));
-    console.log(colors.success('  🟢 85/100') + colors.subdued(' | ') + colors.highlight('Start with authentication, then add features'));
-    console.log(colors.subdued('  ') + colors.primary('✅ NEXT STEP: "Implement login endpoint with JWT"'));
+    console.log(colors.dim('  Example: ') + colors.success('🟢 85/100') + colors.subdued(' | ') + colors.highlight('Great! Add expected output format for clarity'));
   }
   
   console.log('');
@@ -658,7 +650,7 @@ export async function showStatusLineMenu(): Promise<void> {
           console.log('');
           showSuccess('ccusage metrics enabled!');
           console.log(colors.dim('\n  Token usage will now appear in your status line'));
-          console.log(colors.dim('  Powered by ccusage - npmjs.com/package/ccusage'));
+          console.log(colors.dim('  Powered by ccusage 🙌 - npmjs.com/package/ccusage'));
           console.log(colors.dim('  Note: ccusage may take a moment to calculate on first use'));
         } catch (error) {
           console.log('');
