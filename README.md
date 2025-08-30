@@ -45,23 +45,11 @@ Generate comprehensive productivity reports using Claude Code's sub-agents to an
 ### 3. ☁️ Cloud Sync (Optional)
 Optionally sync sanitized session data to the vibe-log dashboard for web-based analytics and team insights.
 
-## How Local Report Generation Works
-
-```mermaid
-flowchart TD
-    Start([📝 Claude Code Sessions]) --> Select[vibe-log-cli select time frame and projects]
-    Select --> Extract[Extracts & prepares session data]
-    Extract --> Launch[Launches Claude with instructions]
-    Launch --> Parallel{Parallel sub-agents<br/> session analysis}
-    Parallel --> Gather[Gathers results &<br/>Generates report]
-    Gather --> Output[📊 HTML Report in current folder]    
-    style Start fill:#e1f5fe
-    style Output fill:#d4edda
-```
-
 ## Status Line - Claude Strategic Co-pilot / Advisor
 
 The Status Line uses your local Claude Code to provide strategic guidance that pushes you to ship faster. It remembers your original goal and gives concrete, actionable steps to achieve it.
+
+<img width="560" height="174" alt="image" src="https://github.com/user-attachments/assets/f509c63e-8b16-47f3-9e8f-3c36d1718ca6" />
 
 ### Why Use Status Line?
 
@@ -75,22 +63,6 @@ The Status Line uses your local Claude Code to provide strategic guidance that p
 1. Analyzes via local Claude Code latest prompt with relavent sesison context.
 4. Provides strategic guidance and pushes you to ship
 5. Displays actionable feedback in Claude Code status line
-
-In high-level:
-```mermaid
-flowchart LR
-    Mission[Original Mission] --> Track[vibe-log tracks goal]
-    Prompt[Current Prompt] --> Intercept[vibe-log intercepts]
-    Track --> Analyze[Local Claude analyzes progress]
-    Intercept --> Analyze
-    Analyze --> Strategy[Strategic guidance]
-    Strategy --> Push[Push to ship with deadlines]
-    Push --> Display[Actionable steps in status line]
-    
-    style Mission fill:#ffd700
-    style Prompt fill:#e1f5fe
-    style Display fill:#d4edda
-```
 
 In more details:
 ```mermaid
@@ -141,6 +113,23 @@ flowchart LR
 3. Choose coach personality
 4. Prompts will be analyzed locally in Claude Code
 
+## Local Report Generation Works
+
+Generate comprehensive productivity reports using Claude Code's sub-agents to analyze your sessions in parallel. No data leaves your machine.
+- Select timefrema
+- Select projects
+  
+```mermaid
+flowchart TD
+    Start([📝 Claude Code Sessions]) --> Select[vibe-log-cli select time frame and projects]
+    Select --> Extract[Extracts & prepares session data]
+    Extract --> Launch[Launches Claude with instructions]
+    Launch --> Parallel{Parallel sub-agents<br/> session analysis}
+    Parallel --> Gather[Gathers results &<br/>Generates report]
+    Gather --> Output[📊 HTML Report in current folder]    
+    style Start fill:#e1f5fe
+    style Output fill:#d4edda
+```
 
 ## ☁️ Cloud Sync (Optional)
 
