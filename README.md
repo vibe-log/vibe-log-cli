@@ -59,22 +59,21 @@ flowchart TD
     style Output fill:#d4edda
 ```
 
-## Status Line - Strategic Product Advisor
+## Status Line - Claude Strategic Co-pilot / Advisor
 
-The Status Line feature uses your local Claude Code to provide strategic guidance that pushes you to ship faster. It remembers your original goal and gives concrete, actionable steps to achieve it.
+The Status Line uses your local Claude Code to provide strategic guidance that pushes you to ship faster. It remembers your original goal and gives concrete, actionable steps to achieve it.
 
 ### Why Use Status Line?
 
-- **🚀 Ship Faster**: Get pushed to deliver TODAY with concrete deadlines and MVPs
-- **🎯 Stay Focused**: Remembers your original mission and keeps you on track
-- **⚡ Concrete Actions**: Specific next steps like "Handle 5s timeouts | 429 rate limits | Ship by FRIDAY!"
-- **📈 Strategic Thinking**: Consider edge cases, user experience, and scaling at the right time
+- **🚀 Ship Faster**: Get pushed to deliver
+- **🎯 Stay Focused**: Remembers your original mission and keeps you on track and forward ⏩︎
+- **⚡ Concrete Actions**: Specific next steps like:
+- **📈 Strategic Thinking**: Considers edge cases, user experience, and scaling at the right time
 
 ### How Status Line Works
-1. Captures your original mission (first message) to track your goal
-2. Intercepts prompts submitted in Claude Code
-3. Analyzes your progress and provides strategic guidance
-4. Pushes you to ship with concrete deadlines and actions
+1. Intercepts prompts submitted in Claude Code
+1. Analyzes via local Claude Code latest prompt with relavent sesison context.
+4. Provides strategic guidance and pushes you to ship
 5. Displays actionable feedback in Claude Code status line
 
 In high-level:
@@ -134,10 +133,7 @@ flowchart LR
 - **Custom** - User-defined personality with strategic focus
 
 ### Example Output
-```
-🟡 65/100 | 🎯 Gordon: Stop overthinking and ship something!
-✅ TRY THIS: Handle these errors NOW: Network timeout (5s) | Auth token expiry (401 → refresh) | Rate limits (429 → backoff). Ship by FRIDAY or you're fired!
-```
+
 
 ### Setup
 1. Run `npx vibe-log-cli`
