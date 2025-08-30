@@ -128,7 +128,7 @@ async function displayEducationalHeader(config: StatusLineConfig): Promise<void>
     // Check and display ccusage status
     const ccusageConfig = await getCCUsageConfig();
     if (ccusageConfig.enabled) {
-      console.log(`💰 Usage Metrics: ${colors.success('Enabled (via ccusage)')}`);
+      console.log(`💰 Usage Metrics: ${colors.success('Enabled (powered by ccusage)')}`);
     }
   }
   
@@ -536,12 +536,12 @@ export async function showStatusLineMenu(): Promise<void> {
       
       if (ccusageConfig.enabled) {
         choices.push({
-          name: `💰 Disable ccusage metrics`,
+          name: `💰 Disable token usage metrics (ccusage)`,
           value: 'disable-ccusage'
         });
       } else {
         choices.push({
-          name: `💰 Enable ccusage metrics`,
+          name: `💰 Enable token usage metrics (ccusage)`,
           value: 'enable-ccusage'
         });
       }
@@ -602,6 +602,7 @@ export async function showStatusLineMenu(): Promise<void> {
           console.log('');
           showSuccess('ccusage metrics enabled!');
           console.log(colors.dim('\n  Token usage will now appear in your status line'));
+          console.log(colors.dim('  Powered by ccusage - npmjs.com/package/ccusage'));
           console.log(colors.dim('  Note: ccusage may take a moment to calculate on first use'));
         } catch (error) {
           console.log('');
