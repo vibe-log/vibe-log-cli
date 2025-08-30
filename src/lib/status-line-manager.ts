@@ -6,7 +6,7 @@
  */
 
 import { claudeSettingsManager, StatusLineFeatureStatus } from './claude-settings-manager';
-import { getCliPath } from './config';
+import { getCliPath, getStatusLineBackup } from './config';
 import { logger } from '../utils/logger';
 
 /**
@@ -64,12 +64,13 @@ export async function installStatusLine(cliPath?: string): Promise<void> {
 /**
  * Uninstall the status line feature
  * Removes both UserPromptSubmit hook and statusLine display
+ * @param restoreBackup - Whether to restore the backed up status line
  */
-export async function uninstallStatusLine(): Promise<void> {
+export async function uninstallStatusLine(restoreBackup: boolean = false): Promise<void> {
   try {
-    logger.debug('Uninstalling status line');
+    logger.debug(`Uninstalling status line${restoreBackup ? ' (with restore)' : ''}`);
     
-    await claudeSettingsManager.removeStatusLineFeature();
+    await claudeSettingsManager.removeStatusLineFeature(restoreBackup);
   } catch (error) {
     logger.error('Error uninstalling status line:', error);
     throw new Error(`Failed to uninstall status line: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -106,4 +107,43 @@ export function buildAnalyzePromptCommand(): string {
 export function buildStatuslineCommand(): string {
   const cliPath = getCliPath();
   return `${cliPath} statusline`;
+}
+
+/**
+ * Check if there's a backup of a previous status line
+ */
+export function hasStatusLineBackup(): boolean {
+  const backup = getStatusLineBackup();
+  return !!(backup && backup.originalCommand);
+}
+
+/**
+ * Get details about the backed up status line
+ */
+export function getBackupDetails(): { command?: string; date?: string } | null {
+  const backup = getStatusLineBackup();
+  if (!backup || !backup.originalCommand) return null;
+  
+  return {
+    command: backup.originalCommand,
+    date: backup.backupDate
+  };
+}
+
+/**
+ * Check for existing non-vibe-log status line
+ */
+export async function detectExistingStatusLine(): Promise<{
+  command?: string;
+  type?: string;
+  padding?: number;
+} | null> {
+  try {
+    const { readGlobalSettings } = await import('./claude-settings-reader');
+    const settings = await readGlobalSettings();
+    return claudeSettingsManager.detectExistingStatusLine(settings);
+  } catch (error) {
+    logger.error('Error detecting existing status line:', error);
+    return null;
+  }
 }
