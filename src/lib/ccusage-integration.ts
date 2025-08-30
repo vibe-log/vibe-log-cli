@@ -1,3 +1,13 @@
+/**
+ * CCUsage Integration Module
+ * 
+ * This module integrates with ccusage (https://www.npmjs.com/package/ccusage)
+ * to provide real-time token usage metrics for Claude Code sessions.
+ * 
+ * Credit: Special thanks to the ccusage project for providing 
+ * comprehensive token tracking capabilities for Claude Code.
+ */
+
 import { spawn } from 'child_process';
 import { logger } from '../utils/logger';
 

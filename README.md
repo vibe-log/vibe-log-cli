@@ -296,6 +296,8 @@ MIT © Vibe-Log - see the [LICENSE](LICENSE) file for details.
 
 Built with love by the Vibe-Log team [@mickmicksh](https://github.com/mickmicksh), [@dannyshmueli](https://github.com/dannyshmueli)
 
+Special thanks to [ccusage](https://www.npmjs.com/package/ccusage) for providing token usage metrics integration for Claude Code sessions.
+
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=vibe-log/vibe-log-cli&type=Date)](https://www.star-history.com/#vibe-log/vibe-log-cli&Date)
