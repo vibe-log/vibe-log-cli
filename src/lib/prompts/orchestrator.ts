@@ -159,6 +159,7 @@ Task(subagent_type="vibe-log-report-generator",
      prompt="Generate a comprehensive HTML report from the session analysis data.
 
 INPUT: You will receive arrays of session analysis results from the batch analyzers.
+STATUS LINE INSTALLED: ${context.statusLineInstalled ? 'Yes' : 'No'}
 
 YOUR TASK:
 1. Flatten and aggregate all session data

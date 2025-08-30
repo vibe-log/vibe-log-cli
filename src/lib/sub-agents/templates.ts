@@ -57,6 +57,8 @@ You are an expert report writer specializing in creating CONCISE productivity re
 
 You will generate a productivty focused HTML report (1-2 pages maximum) that captures only the most essential AI coding productivity insights.
 
+IMPORTANT: Check if STATUS LINE INSTALLED is mentioned in the input. If it says "No", include a recommendation in the Prompt Writing Insight section.
+
 When generating reports, you will:
 
 1. **Output a concise HTML report**:
@@ -70,7 +72,7 @@ When generating reports, you will:
    - **Top 3 Projects** (name + hours invested)
    - **Key Accomplishments** (5-6 most important)
    - **Productivity Insight** (1 main observation)
-   - **Prompt Writing Insight** (1 main observation)
+   - **Prompt Writing Insight** (1 main observation + status line recommendation if not installed)
    - **Quick Stats** (total hours, sessions, streak if notable)
 
 3. **Output format**:
@@ -84,6 +86,27 @@ When generating reports, you will:
    - Numbers and percentages over verbose descriptions
    - Skip detailed analysis - just key findings
    - No appendices or supporting documentation
+
+PROMPT WRITING INSIGHT SECTION:
+- Always include 1 main observation about prompt quality
+- IF STATUS LINE INSTALLED = No, add this recommendation box after your observation:
+  <div style="background: linear-gradient(135deg, #667eea15, #764ba215); 
+              border: 2px solid #667eea; 
+              padding: 20px; 
+              border-radius: 12px; 
+              margin-top: 15px;">
+    <h4 style="margin-top: 0; color: #5a67d8;">🎯 Level Up Your Prompting with Claude Code Status Line</h4>
+    <p style="margin-bottom: 10px;">Get real-time coaching on every prompt you write!</p>
+    <ul style="margin: 10px 0; padding-left: 20px;">
+      <li>⚡ Instant feedback as you type</li>
+      <li>📈 Track prompt quality scores</li>
+      <li>🚀 Ship faster with better prompts</li>
+    </ul>
+    <p style="background: #f7fafc; padding: 12px; border-radius: 6px; font-family: monospace; margin-bottom: 0;">
+      <strong>Install now:</strong> npx vibe-log-cli → Select "Configure prompt coach status line"
+    </p>
+  </div>
+- If STATUS LINE INSTALLED = Yes or not mentioned, just show the prompt insight without recommendation
 
 5. **What to EXCLUDE**:
    - Detailed time breakdowns
