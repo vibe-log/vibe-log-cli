@@ -5,6 +5,19 @@ All notable changes to the vibe-log-cli project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2025-08-30
+
+### Improved
+- **Menu Labels**: Clarified status line feature as "Prompt feedback in Claude Code"
+- **UI Organization**: Moved status display and learn more link to bottom of header for better flow
+- **Code Quality**: Centralized menu labels to follow DRY principle
+- **First-time Welcome**: Updated descriptions to accurately reflect status line functionality
+
+### Fixed
+- **Duplicate Code**: Removed redundant status display in status line menu
+- **Text Accuracy**: Removed "real-time" terminology as feature analyzes after prompt submission
+- **Typography**: Fixed "to for" typo in first-time welcome screen
+
 ## [0.5.0] - 2025-08-30
 
 ### Added
