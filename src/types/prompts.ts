@@ -7,6 +7,7 @@ export interface PromptContext {
   days: number;
   projectPaths: string[];
   projectNames: string[];
+  statusLineInstalled?: boolean;
 }
 
 export interface OrchestratedPrompt {

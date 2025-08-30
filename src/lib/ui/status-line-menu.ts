@@ -83,32 +83,6 @@ async function displayEducationalHeader(config: StatusLineConfig): Promise<void>
   console.log(colors.subdued('Analyzes your prompts in Claude Code and provides'));
   console.log(colors.subdued('strategic guidance to keep you productive.\n'));
   
-  console.log(colors.dim('📖 Learn more: https://github.com/vibe-log/vibe-log-cli#status-line'));
-  
-  // Current status display
-  console.log(box.horizontal.repeat(60));
-  console.log('');
-  
-  let statusText = '';
-  let statusColor = colors.muted;
-  let statusIcon = '○';
-  
-  if (config.state === 'FULLY_INSTALLED') {
-    statusText = 'Installed and Active';
-    statusColor = colors.success;
-    statusIcon = '✅';
-  } else if (config.state === 'PARTIALLY_INSTALLED') {
-    statusText = 'Partially Installed (Needs Fix)';
-    statusColor = colors.warning;
-    statusIcon = '⚠️';
-  } else {
-    statusText = 'Not Installed';
-    statusColor = colors.muted;
-    statusIcon = '○';
-  }
-  
-  console.log(`${statusIcon} Status: ${statusColor(statusText)}`);
-  
   // Show personality if status line is installed
   if (config.state === 'FULLY_INSTALLED') {
     const personality = getStatusLinePersonality();
@@ -163,13 +137,14 @@ async function displayEducationalHeader(config: StatusLineConfig): Promise<void>
       }
     }
   } else {
-    console.log('');
     console.log(colors.info('✨ What you\'ll get:'));
     console.log(colors.subdued('  • Prompt quality analysis and improvement tips'));
     console.log(colors.subdued('  • Strategic guidance in your status bar'));
     console.log(colors.subdued('  • Choose from multiple coach personalities'));
   }
   
+  console.log('');
+  console.log(colors.dim('📖 Learn more: https://github.com/vibe-log/vibe-log-cli#status-line'));
   console.log('');
   console.log(box.horizontal.repeat(60));
   console.log('');

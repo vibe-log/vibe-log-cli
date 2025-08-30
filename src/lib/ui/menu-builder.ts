@@ -1,5 +1,11 @@
 import { colors, icons, box, padRight, getTerminalWidth } from './styles';
 
+// Menu item labels - centralized for consistency
+const MENU_LABELS = {
+  STRATEGIC_COPILOT: '🚀 Configure Strategic Co-pilot',
+  STRATEGIC_COPILOT_DESC: 'Strategic guidance to move forward effectively'
+};
+
 export interface MenuItem {
   id: string;
   label: string;
@@ -74,8 +80,8 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
     // Real-time assistant first
     items.push({
       id: 'status-line',
-      label: `🚀 Configure Strategic Co-pilot`,
-      description: 'Strategic guidance to move forward effectively',
+      label: MENU_LABELS.STRATEGIC_COPILOT,
+      description: MENU_LABELS.STRATEGIC_COPILOT_DESC,
       action: 'status-line'
     });
     
@@ -110,8 +116,8 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
     // Local features first - Real-time assistant
     items.push({
       id: 'status-line',
-      label: `🚀 Configure Strategic Co-pilot`,
-      description: 'Strategic guidance to move forward effectively',
+      label: MENU_LABELS.STRATEGIC_COPILOT,
+      description: MENU_LABELS.STRATEGIC_COPILOT_DESC,
       action: 'status-line'
     });
     

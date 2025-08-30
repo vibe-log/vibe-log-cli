@@ -7,6 +7,7 @@ import { buildOrchestratedPrompt, getExecutableCommand } from '../prompts/orches
 import { PromptContext } from '../../types/prompts';
 import { checkClaudeInstalled } from '../../utils/claude-executor';
 import { executeClaudePrompt } from '../report-executor';
+import { getStatusLineStatus } from '../status-line-manager';
 import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
@@ -244,12 +245,17 @@ export async function generateLocalReportInteractive(): Promise<void> {
   console.log(colors.muted(`   Estimated generation time: ${estimatedTime}`));
   console.log();
   
+  // Check if status line is installed for the report recommendation
+  const statusLineStatus = await getStatusLineStatus();
+  const isStatusLineInstalled = statusLineStatus === 'installed';
+  
   // Build the orchestrated prompt
   const promptContext: PromptContext = {
     timeframe,
     days,
     projectPaths: selectedProjects.map(p => p.id),
-    projectNames: selectedProjects.map(p => p.name)
+    projectNames: selectedProjects.map(p => p.name),
+    statusLineInstalled: isStatusLineInstalled
   };
   
   const orchestrated = buildOrchestratedPrompt(promptContext);
