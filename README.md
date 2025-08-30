@@ -36,14 +36,14 @@ vibe-log-cli is an open-source command-line tool that analyzes your Claude Code 
 
 ## Architecture
 
-### 1. 💬 Status Line (Local)
-Strategic product advisor in Claude Code. Your prompts are analyzed locally to provide actionable guidance that pushes you to ship faster. Feedback appears in your Claude Code status line with concrete next steps.
+### 1. 💬 Claude Status Line - Strategic Co-pilot / Advisor (Local)
+Strategic product advisor in Claude Code. Your prompts are analyzed locally (via CC) to provide actionable guidance that pushes you to ship faster. Feedback appears in your Claude Code status line with concrete next steps.
 
-### 2. 📊 Local Report Generation (Local) 
+### 2. 📊 Claude Code Productivity Report Generation (Local) 
 Generate comprehensive productivity reports using Claude Code's sub-agents to analyze your sessions in parallel. No data leaves your machine.
 
-### 3. ☁️ Cloud Sync (Optional)
-Optionally sync sanitized session data to the vibe-log dashboard for web-based analytics and team insights.
+### 3. 📈 Web Dashboard - Cloud Sync (Optional)
+Sync sanitized session data to the Vibe-Log dashboard for web-based analytics and deep insights across sessions and projects.
 
 ## Status Line - Claude Strategic Co-pilot / Advisor
 
@@ -60,9 +60,9 @@ The Status Line uses your local Claude Code to provide strategic guidance that p
 
 ### How Status Line Works
 1. Intercepts prompts submitted in Claude Code
-1. Analyzes via local Claude Code latest prompt with relavent sesison context.
+1. Analyzes via the local Claude Code latest prompt with relevant session context.
 4. Provides strategic guidance and pushes you to ship
-5. Displays actionable feedback in Claude Code status line
+5. Displays actionable feedback in the Claude Code status line
 
 In more details:
 ```mermaid
