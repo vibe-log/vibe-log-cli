@@ -168,8 +168,6 @@ async function displayEducationalHeader(config: StatusLineConfig): Promise<void>
     console.log(colors.subdued('  • Prompt quality analysis and improvement tips'));
     console.log(colors.subdued('  • Strategic guidance in your status bar'));
     console.log(colors.subdued('  • Choose from multiple coach personalities'));
-    console.log('');
-    console.log(colors.dim('  Example: ') + colors.success('🟢 85/100') + colors.subdued(' | ') + colors.highlight('Great! Add expected output format for clarity'));
   }
   
   console.log('');
@@ -575,7 +573,7 @@ export async function showStatusLineMenu(): Promise<void> {
       });
     } else if (config.state === 'FULLY_INSTALLED') {
       choices.push({
-        name: `✅ Strategic Co-pilot Active (Reinstall to Update)`,
+        name: `✅ Strategic Co-pilot Active (Reinstall)`,
         value: 'reinstall'
       });
       
