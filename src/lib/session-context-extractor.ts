@@ -11,7 +11,7 @@ import { logger } from '../utils/logger';
  * Each turn is a user-assistant message pair
  * Increase for more context, decrease for faster analysis
  */
-export const DEFAULT_CONVERSATION_TURNS_TO_EXTRACT_AS_CONTEXT = 3;
+export const DEFAULT_CONVERSATION_TURNS_TO_EXTRACT_AS_CONTEXT = 10;
 
 /**
  * Extract conversation context including first message and recent turns
