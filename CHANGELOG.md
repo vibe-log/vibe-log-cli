@@ -5,6 +5,24 @@ All notable changes to the vibe-log-cli project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2025-08-30
+
+### Added
+- **Strategic Product Advisor**: Status line now acts as a proactive co-pilot that pushes users to ship faster
+- **Original Mission Tracking**: Remembers user's first message to maintain focus on original goal
+- **Concrete Actionable Guidance**: Provides specific values (timeouts, error codes) and deadlines
+- **Enhanced Context Extraction**: Increased conversation context from 3 to 10 turns for better analysis
+
+### Improved
+- **Gordon Personality**: Now sharp and business-focused with less food metaphors, creates urgency
+- **Vibe-Log Personality**: Supportive but pushy senior dev that helps ship with concrete deadlines
+- **Prompt Analysis**: More specific and action-oriented with MVP focus and "ship TODAY" mentality
+- **README Documentation**: Updated to reflect strategic advisor capabilities
+
+### Fixed
+- **Context Extraction**: Handles duplicate first messages in short conversations gracefully
+- **TypeScript Compilation**: Fixed potential null reference in session context extractor
+
 ## [0.4.3] - 2025-08-29
 
 ### Fixed
