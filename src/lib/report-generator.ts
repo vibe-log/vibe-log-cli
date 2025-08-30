@@ -1,4 +1,4 @@
-import { promises as fs } from 'fs';
+import { promises as fs, existsSync } from 'fs';
 import path from 'path';
 import { colors, icons } from './ui/styles';
 import { logger } from '../utils/logger';
@@ -26,6 +26,41 @@ export interface ReportResult {
   reportContent?: string;
   executionStats?: ExecutionStats;
   error?: string;
+}
+
+/**
+ * Generate a unique report filename by checking for existing files
+ * and appending an incremental suffix if needed
+ */
+function getUniqueReportFilename(basePath: string): string {
+  const dateStr = new Date().toISOString().split('T')[0];
+  const baseFilename = `vibe-log-report-${dateStr}`;
+  
+  // Check if base filename exists
+  let filename = `${baseFilename}.html`;
+  let fullPath = path.join(basePath, filename);
+  
+  if (!existsSync(fullPath)) {
+    return fullPath;
+  }
+  
+  // If it exists, try with incremental suffixes
+  let counter = 1;
+  while (counter < 100) { // Reasonable upper limit
+    filename = `${baseFilename}-${counter}.html`;
+    fullPath = path.join(basePath, filename);
+    
+    if (!existsSync(fullPath)) {
+      return fullPath;
+    }
+    
+    counter++;
+  }
+  
+  // Fallback: use timestamp if somehow we have 100+ reports
+  const timestamp = Date.now();
+  filename = `${baseFilename}-${timestamp}.html`;
+  return path.join(basePath, filename);
 }
 
 /**
@@ -65,8 +100,7 @@ export class ReportGenerator {
         console.log(colors.dim(`[DEBUG] Extracted content between markers: ${this.reportContent.length} chars`));
         
         // Store the report path for later
-        const reportFile = `vibe-log-report-${new Date().toISOString().split('T')[0]}.html`;
-        this.reportFilePath = path.join(process.cwd(), reportFile);
+        this.reportFilePath = getUniqueReportFilename(process.cwd());
         
         console.log(colors.dim(`[DEBUG] Will save report to: ${this.reportFilePath} after stats are available`));
         console.log(colors.dim(`[DEBUG] Report size: ${this.reportContent.length} bytes`));
@@ -114,8 +148,7 @@ export class ReportGenerator {
       if (this.capturingReport && this.reportContent.trim()) {
         // Store the report for later processing
         this.capturingReport = false;
-        const reportFile = `vibe-log-report-${new Date().toISOString().split('T')[0]}.html`;
-        this.reportFilePath = path.join(process.cwd(), reportFile);
+        this.reportFilePath = getUniqueReportFilename(process.cwd());
         
         console.log(colors.dim(`[DEBUG] Will save report to: ${this.reportFilePath} after stats are available`));
         console.log(colors.dim(`[DEBUG] Report size: ${this.reportContent.length} bytes`));
