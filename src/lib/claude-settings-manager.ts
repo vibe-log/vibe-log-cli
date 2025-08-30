@@ -12,7 +12,7 @@ import {
   readProjectLocalSettings,
   ClaudeSettings
 } from './claude-settings-reader';
-import { getCliPath } from './config';
+import { getCliPath, saveStatusLineBackup, getStatusLineBackup, clearStatusLineBackup } from './config';
 import { logger } from '../utils/logger';
 
 /**
@@ -123,10 +123,22 @@ export class ClaudeSettingsManager {
     const cliPath = config?.cliPath || getCliPath();
     const settings = await readGlobalSettings() || { hooks: {} };
     
-    // 1. Remove any existing status line components to prevent duplicates
+    // 1. Check for existing non-vibe-log status line and backup if found
+    const existingStatusLine = this.detectExistingStatusLine(settings);
+    if (existingStatusLine) {
+      logger.debug('Backing up existing status line:', existingStatusLine);
+      saveStatusLineBackup({
+        originalCommand: existingStatusLine.command,
+        originalType: existingStatusLine.type,
+        originalPadding: existingStatusLine.padding,
+        backupReason: 'Replaced by vibe-log status line'
+      });
+    }
+    
+    // 2. Remove any existing status line components to prevent duplicates
     this.removeStatusLineComponents(settings);
     
-    // 2. Install UserPromptSubmit hook for analysis
+    // 3. Install UserPromptSubmit hook for analysis
     if (!settings.hooks) settings.hooks = {};
     if (!settings.hooks.UserPromptSubmit) settings.hooks.UserPromptSubmit = [];
     
@@ -140,7 +152,7 @@ export class ClaudeSettingsManager {
     
     logger.debug(`Added UserPromptSubmit hook: ${analyzeCommand}`);
     
-    // 3. Install statusLine display configuration
+    // 4. Install statusLine display configuration
     const statuslineCommand = `${cliPath} statusline`;
     settings.statusLine = {
       type: 'command',
@@ -150,21 +162,36 @@ export class ClaudeSettingsManager {
     
     logger.debug(`Added statusLine config: ${statuslineCommand}`);
     
-    // 4. Save settings
+    // 5. Save settings
     await writeGlobalSettings(settings);
     logger.debug('Status line feature installed successfully');
   }
   
   /**
    * Remove the Status Line feature completely
+   * @param restoreBackup - Whether to restore the backed up status line
    */
-  async removeStatusLineFeature(): Promise<void> {
+  async removeStatusLineFeature(restoreBackup: boolean = false): Promise<void> {
     logger.debug('Removing status line feature');
     
     const settings = await readGlobalSettings();
     if (!settings) return;
     
     this.removeStatusLineComponents(settings);
+    
+    // Check if we should restore a backed up status line
+    if (restoreBackup) {
+      const backup = getStatusLineBackup();
+      if (backup && backup.originalCommand) {
+        logger.debug('Restoring backed up status line:', backup);
+        settings.statusLine = {
+          type: backup.originalType || 'command',
+          command: backup.originalCommand,
+          padding: backup.originalPadding !== undefined ? backup.originalPadding : 0
+        };
+        clearStatusLineBackup(); // Clear the backup after restoring
+      }
+    }
     
     await writeGlobalSettings(settings);
     logger.debug('Status line feature removed successfully');
@@ -381,6 +408,31 @@ export class ClaudeSettingsManager {
   private hasStatusLineDisplay(settings: ClaudeSettings | null): boolean {
     return !!(settings?.statusLine?.command && 
               this.isStatuslineCommand(settings.statusLine.command));
+  }
+  
+  /**
+   * Detect existing non-vibe-log status line configuration
+   * Returns the existing configuration if found, null otherwise
+   */
+  detectExistingStatusLine(settings: ClaudeSettings | null): {
+    command?: string;
+    type?: string;
+    padding?: number;
+  } | null {
+    // Check if there's a statusLine configured
+    if (!settings?.statusLine) return null;
+    
+    // Check if it's NOT a vibe-log status line
+    if (this.isStatuslineCommand(settings.statusLine.command)) {
+      return null; // It's our own status line, not a third-party one
+    }
+    
+    // Return the existing third-party status line configuration
+    return {
+      command: settings.statusLine.command,
+      type: settings.statusLine.type || 'command',
+      padding: settings.statusLine.padding
+    };
   }
   
   /**

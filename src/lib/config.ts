@@ -43,6 +43,13 @@ interface ConfigSchema {
       };
     };
   };
+  statusLineBackup?: {
+    originalCommand?: string;
+    originalType?: string;
+    originalPadding?: number;
+    backupDate: string;
+    backupReason?: string; // Why it was backed up (e.g., "Replaced by vibe-log status line")
+  };
 }
 
 const config = new Conf<ConfigSchema>({
@@ -420,4 +427,27 @@ export async function clearAllConfig(): Promise<void> {
 
 export function getConfigPath(): string {
   return config.path;
+}
+
+// Status line backup management functions
+export function saveStatusLineBackup(backup: {
+  originalCommand?: string;
+  originalType?: string;
+  originalPadding?: number;
+  backupReason?: string;
+}): void {
+  config.set('statusLineBackup', {
+    ...backup,
+    backupDate: new Date().toISOString()
+  });
+  logger.debug('Status line backup saved:', backup);
+}
+
+export function getStatusLineBackup(): ConfigSchema['statusLineBackup'] | undefined {
+  return config.get('statusLineBackup');
+}
+
+export function clearStatusLineBackup(): void {
+  config.delete('statusLineBackup');
+  logger.debug('Status line backup cleared');
 }

@@ -3,7 +3,10 @@ import { colors, box } from './styles';
 import { 
   getStatusLineStatus,
   installStatusLine,
-  uninstallStatusLine
+  uninstallStatusLine,
+  hasStatusLineBackup,
+  getBackupDetails,
+  detectExistingStatusLine
 } from '../status-line-manager';
 import { showSuccess, showError, showInfo } from '../ui';
 import { logger } from '../../utils/logger';
@@ -132,6 +135,20 @@ async function displayEducationalHeader(config: StatusLineConfig): Promise<void>
     }
   }
   
+  // Show backup information if exists
+  if (hasStatusLineBackup()) {
+    const backup = getBackupDetails();
+    if (backup) {
+      console.log('');
+      console.log(`📦 ${colors.info('Backed up status line:')}`);
+      console.log(colors.subdued(`   Command: ${backup.command}`));
+      if (backup.date) {
+        const backupDate = new Date(backup.date);
+        console.log(colors.subdued(`   Saved on: ${backupDate.toLocaleDateString()}`));
+      }
+    }
+  }
+  
   // Show component status if partially installed
   if (config.state === 'PARTIALLY_INSTALLED') {
     console.log('');
@@ -202,6 +219,17 @@ async function performInstallation(): Promise<void> {
   // Show what will be installed
   console.log(colors.highlight('\n🚀 Installing Strategic Co-pilot\n'));
   
+  // Check for existing status line
+  const existingStatusLine = await detectExistingStatusLine();
+  if (existingStatusLine && existingStatusLine.command) {
+    console.log(colors.warning('⚠️  Existing status line detected!\n'));
+    console.log(colors.info('Current status line:'));
+    console.log(colors.subdued(`  Command: ${existingStatusLine.command}`));
+    console.log('');
+    console.log(colors.success('📦 We\'ll save it so you can restore it later'));
+    console.log('');
+  }
+  
   console.log(colors.success('What you\'ll get:'));
   console.log('');
   console.log(colors.primary('  ✓ Strategic guidance') + colors.subdued(' on your development approach'));
@@ -219,7 +247,7 @@ async function performInstallation(): Promise<void> {
     {
       type: 'confirm',
       name: 'confirm',
-      message: 'Proceed with installation?',
+      message: existingStatusLine ? 'Replace existing status line and proceed?' : 'Proceed with installation?',
       default: true
     }
   ]);
@@ -331,31 +359,71 @@ async function performUninstall(): Promise<void> {
   console.log('');
   console.log(colors.subdued('Your analysis history will be preserved'));
   console.log('');
-
-  const { confirm } = await inquirer.prompt([
-    {
-      type: 'confirm',
-      name: 'confirm',
-      message: colors.warning('Are you sure you want to uninstall?'),
-      default: false
+  
+  // Check if there's a backup to restore
+  let restoreBackup = false;
+  if (hasStatusLineBackup()) {
+    const backup = getBackupDetails();
+    if (backup && backup.command) {
+      console.log(colors.info('📦 Found backed up status line:'));
+      console.log(colors.subdued(`   ${backup.command}`));
+      if (backup.date) {
+        const backupDate = new Date(backup.date);
+        console.log(colors.subdued(`   Saved on: ${backupDate.toLocaleDateString()}`));
+      }
+      console.log('');
+      
+      const { restoreChoice } = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'restoreChoice',
+          message: 'What would you like to do?',
+          choices: [
+            { name: 'Remove vibe-log and restore original status line', value: 'restore' },
+            { name: 'Remove vibe-log completely (no status line)', value: 'remove' },
+            { name: 'Cancel', value: 'cancel' }
+          ]
+        }
+      ]);
+      
+      if (restoreChoice === 'cancel') {
+        console.log(colors.muted('\nUninstall cancelled'));
+        return;
+      }
+      
+      restoreBackup = (restoreChoice === 'restore');
     }
-  ]);
+  } else {
+    const { confirm } = await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'confirm',
+        message: colors.warning('Are you sure you want to uninstall?'),
+        default: false
+      }
+    ]);
 
-  if (!confirm) {
-    console.log(colors.muted('\nUninstall cancelled'));
-    return;
+    if (!confirm) {
+      console.log(colors.muted('\nUninstall cancelled'));
+      return;
+    }
   }
 
   try {
     console.log('');
     console.log(colors.muted('Uninstalling...'));
     
-    // Perform uninstallation
-    await uninstallStatusLine();
+    // Perform uninstallation with optional restore
+    await uninstallStatusLine(restoreBackup);
     
     console.log('');
-    showInfo('Strategic Co-pilot uninstalled');
-    console.log(colors.dim('  You can reinstall it anytime from the menu'));
+    if (restoreBackup) {
+      showSuccess('Original status line restored');
+      console.log(colors.dim('  Your previous status line is now active'));
+    } else {
+      showInfo('Strategic Co-pilot uninstalled');
+      console.log(colors.dim('  You can reinstall it anytime from the menu'));
+    }
     console.log('');
     
   } catch (error) {
