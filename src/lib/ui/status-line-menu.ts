@@ -80,22 +80,10 @@ async function displayEducationalHeader(config: StatusLineConfig): Promise<void>
   console.log(colors.accent('\n🚀 Status Line - Strategic Co-pilot'));
   console.log(colors.highlight('   Strategic guidance to move your project forward\n'));
   
-  // Value proposition
-  console.log(colors.subdued('The Status Line uses your local Claude Code to provide strategic'));
-  console.log(colors.subdued('guidance on your prompts. It helps you think strategically about'));
-  console.log(colors.subdued('your next steps with actionable suggestions to stay productive.\n'));
+  console.log(colors.subdued('Analyzes your prompts in Claude Code and provides'));
+  console.log(colors.subdued('strategic guidance to keep you productive.\n'));
   
-  console.log(colors.info('🎯 Why Use Status Line?'));
-  console.log(colors.success('  🚀 Move Forward') + colors.subdued(' - Strategic advice on next steps'));
-  console.log(colors.success('  🎯 Stay Focused') + colors.subdued(' - Remember your goal and stay on track'));
-  console.log(colors.success('  ⚡ Concrete Actions') + colors.subdued(' - Specific suggestions to improve'));
-  console.log(colors.success('  📈 Strategic Thinking') + colors.subdued(' - Consider the right approach\n'));
-  
-  console.log(colors.info('⚙️  How Status Line Works:'));
-  console.log(colors.subdued('  1. Intercepts prompts submitted in Claude Code'));
-  console.log(colors.subdued('  2. Analyzes via local Claude Code with session context'));
-  console.log(colors.subdued('  3. Provides strategic guidance to push you forward'));
-  console.log(colors.subdued('  4. Displays actionable feedback in your status bar'));
+  console.log(colors.dim('📖 Learn more: https://github.com/vibe-log/vibe-log-cli#status-line'));
   
   // Current status display
   console.log(box.horizontal.repeat(60));
@@ -247,7 +235,7 @@ async function performInstallation(): Promise<void> {
     {
       type: 'confirm',
       name: 'confirm',
-      message: existingStatusLine ? 'Replace existing status line and proceed?' : 'Proceed with installation?',
+      message: existingStatusLine ? 'Replace existing status line and proceed? (Don\'t worry, you can restore it later)' : 'Proceed with installation?',
       default: true
     }
   ]);
