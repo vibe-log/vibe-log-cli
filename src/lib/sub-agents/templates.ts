@@ -95,15 +95,16 @@ PROMPT WRITING INSIGHT SECTION:
               padding: 20px; 
               border-radius: 12px; 
               margin-top: 15px;">
-    <h4 style="margin-top: 0; color: #5a67d8;">🎯 Level Up Your Prompting with Claude Code Status Line</h4>
-    <p style="margin-bottom: 10px;">Get real-time coaching on every prompt you write!</p>
+    <h4 style="margin-top: 0; color: #5a67d8;">💬 Status Line - Strategic Guidance in Claude Code</h4>
+    <p style="margin-bottom: 10px;">Get a strategic co-pilot that pushes you to ship faster!</p>
     <ul style="margin: 10px 0; padding-left: 20px;">
-      <li>⚡ Instant feedback as you type</li>
-      <li>📈 Track prompt quality scores</li>
-      <li>🚀 Ship faster with better prompts</li>
+      <li>📊 Analyzes your prompts and provides strategic guidance</li>
+      <li>💡 Shows feedback in your Claude Code status bar</li>
+      <li>🎭 Choose from multiple coach personalities (Gordon, Vibe-log, Custom)</li>
+      <li>⚡ Uses your Claude Code locally for prompt analysis</li>
     </ul>
     <p style="background: #f7fafc; padding: 12px; border-radius: 6px; font-family: monospace; margin-bottom: 0;">
-      <strong>Install now:</strong> npx vibe-log-cli → Select "Configure prompt coach status line"
+      <strong>Install now:</strong> npx vibe-log-cli → Select "💬 Status Line - Prompt feedback in Claude Code"
     </p>
   </div>
 - If STATUS LINE INSTALLED = Yes or not mentioned, just show the prompt insight without recommendation

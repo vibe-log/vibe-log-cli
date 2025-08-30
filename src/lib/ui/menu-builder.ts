@@ -2,8 +2,8 @@ import { colors, icons, box, padRight, getTerminalWidth } from './styles';
 
 // Menu item labels - centralized for consistency
 const MENU_LABELS = {
-  STRATEGIC_COPILOT: '🚀 Configure Strategic Co-pilot',
-  STRATEGIC_COPILOT_DESC: 'Strategic guidance to move forward effectively'
+  STRATEGIC_COPILOT: '🚀 Status Line - Prompt feedback in Claude Code',
+  STRATEGIC_COPILOT_DESC: 'Get strategic feedback on your prompts in the status line'
 };
 
 export interface MenuItem {
@@ -77,7 +77,6 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
   
   // For LOCAL_ONLY state
   if (context.state === 'LOCAL_ONLY') {
-    // Real-time assistant first
     items.push({
       id: 'status-line',
       label: MENU_LABELS.STRATEGIC_COPILOT,
@@ -85,7 +84,7 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
       action: 'status-line'
     });
     
-    // Separator between real-time and analysis tools
+    // Separator between local and analysis tools
     items.push({ separator: true } as MenuItem);
     
     // Analysis tools
@@ -113,7 +112,7 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
   
   // For CLOUD states
   if (context.state === 'CLOUD_AUTO' || context.state === 'CLOUD_MANUAL' || context.state === 'CLOUD_ONLY') {
-    // Local features first - Real-time assistant
+    // Local features first 
     items.push({
       id: 'status-line',
       label: MENU_LABELS.STRATEGIC_COPILOT,
@@ -121,7 +120,6 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
       action: 'status-line'
     });
     
-    // Separator between real-time and analysis tools
     items.push({ separator: true } as MenuItem);
     
     // Local analysis tools
