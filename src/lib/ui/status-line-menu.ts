@@ -64,25 +64,35 @@ import {
 } from '../personality-manager';
 import { createCustomPersonality, editCustomPersonality } from './personality-creator';
 import { interactivePersonalityTester } from './personality-tester';
+import { 
+  getCCUsageConfig, 
+  enableCCUsage, 
+  disableCCUsage 
+} from '../ccusage-config-manager';
 
 /**
  * Display educational header about status line
  */
 async function displayEducationalHeader(config: StatusLineConfig): Promise<void> {
-  console.log(colors.accent('\n💡 Prompt Coaching Status Line\n'));
+  console.log(colors.accent('\n🚀 Status Line - Strategic Co-pilot'));
+  console.log(colors.highlight('   Strategic guidance to move your project forward\n'));
   
-  // Educational content
-  console.log(colors.subdued('Prompt quality feedback directly in Claude Code.\n'));
+  // Value proposition
+  console.log(colors.subdued('The Status Line uses your local Claude Code to provide strategic'));
+  console.log(colors.subdued('guidance on your prompts. It helps you think strategically about'));
+  console.log(colors.subdued('your next steps with actionable suggestions to stay productive.\n'));
   
-  console.log(colors.info('What is the Status Line?'));
-  console.log(colors.subdued('  • Analyzes each prompt using Claude Code (Haiku model)'));
-  console.log(colors.subdued('  • Shows quality score (0-100) in your status bar'));
-  console.log(colors.subdued('  • Provides instant improvement suggestions\n'));
+  console.log(colors.info('🎯 Why Use Status Line?'));
+  console.log(colors.success('  🚀 Move Forward') + colors.subdued(' - Strategic advice on next steps'));
+  console.log(colors.success('  🎯 Stay Focused') + colors.subdued(' - Remember your goal and stay on track'));
+  console.log(colors.success('  ⚡ Concrete Actions') + colors.subdued(' - Specific suggestions to improve'));
+  console.log(colors.success('  📈 Strategic Thinking') + colors.subdued(' - Consider the right approach\n'));
   
-  console.log(colors.info('How it works:'));
-  console.log(colors.subdued('  1. UserPromptSubmit hook analyzes your prompts'));
-  console.log(colors.subdued('  2. Status line displays the analysis results'));
-  console.log(colors.subdued('  3. Anaylsis starts when you submit your prompts and is not blocking '));
+  console.log(colors.info('⚙️  How Status Line Works:'));
+  console.log(colors.subdued('  1. Intercepts prompts submitted in Claude Code'));
+  console.log(colors.subdued('  2. Analyzes via local Claude Code with session context'));
+  console.log(colors.subdued('  3. Provides strategic guidance to push you forward'));
+  console.log(colors.subdued('  4. Displays actionable feedback in your status bar'));
   
   // Current status display
   console.log(box.horizontal.repeat(60));
@@ -114,6 +124,12 @@ async function displayEducationalHeader(config: StatusLineConfig): Promise<void>
     const personalityIcon = getPersonalityIcon(personality.personality);
     const personalityName = getPersonalityDisplayName(personality.personality);
     console.log(`${personalityIcon} Personality: ${colors.accent(personalityName)}`);
+    
+    // Check and display ccusage status
+    const ccusageConfig = await getCCUsageConfig();
+    if (ccusageConfig.enabled) {
+      console.log(`💰 Usage Metrics: ${colors.success('Enabled (via ccusage)')}`);
+    }
   }
   
   // Show component status if partially installed
@@ -143,8 +159,20 @@ async function displayEducationalHeader(config: StatusLineConfig): Promise<void>
     }
   } else {
     console.log('');
-    console.log(colors.subdued('Example display:'));
-    console.log(colors.primary('  [GOOD 75/100] Add more implementation details'));
+    console.log(colors.info('🎭 Coach Personalities:'));
+    console.log('');
+    console.log(colors.warning('  🔥 Gordon') + colors.subdued(' - Direct, results-focused'));
+    console.log(colors.dim('     "Focus on the MVP first, skip the nice-to-haves"'));
+    console.log('');
+    console.log(colors.accent('  💜 Vibe-Log') + colors.subdued(' - Supportive, encouraging'));
+    console.log(colors.dim('     "Great start! Consider breaking this into steps"'));
+    console.log('');
+    console.log(colors.primary('  ✨ Custom') + colors.subdued(' - Your strategic style'));
+    console.log(colors.dim('     Define your ideal strategic advisor'));
+    console.log('');
+    console.log(colors.info('📊 Example Feedback:'));
+    console.log(colors.success('  🟢 85/100') + colors.subdued(' | ') + colors.highlight('Start with authentication, then add features'));
+    console.log(colors.subdued('  ') + colors.primary('✅ NEXT STEP: "Implement login endpoint with JWT"'));
   }
   
   console.log('');
@@ -172,15 +200,19 @@ async function performInstallation(): Promise<void> {
   console.clear();
   
   // Show what will be installed
-  console.log(colors.highlight('\n🚀 Installing Status Line\n'));
+  console.log(colors.highlight('\n🚀 Installing Strategic Co-pilot\n'));
   
-  console.log('This will configure:');
+  console.log(colors.success('What you\'ll get:'));
   console.log('');
-  console.log(`  ○ UserPromptSubmit hook for prompt analysis`);
-  console.log(`  ○ Status line display in Claude Code`);
+  console.log(colors.primary('  ✓ Strategic guidance') + colors.subdued(' on your development approach'));
+  console.log(colors.primary('  ✓ Actionable next steps') + colors.subdued(' to keep moving forward'));
+  console.log(colors.primary('  ✓ Choose your advisor') + colors.subdued(' (Gordon/Vibe-Log/Custom)'));
   console.log('');
-  console.log(colors.subdued('Installation location:'));
-  console.log(colors.dim('  ~/.claude/settings.json'));
+  
+  console.log(colors.info('Technical setup:'));
+  console.log(colors.dim('  • UserPromptSubmit hook for analysis'));
+  console.log(colors.dim('  • Status line display in Claude Code'));
+  console.log(colors.dim('  • Installation path: ~/.claude/settings.json'));
   console.log('');
 
   const { confirm } = await inquirer.prompt([
@@ -207,12 +239,16 @@ async function performInstallation(): Promise<void> {
     
     // Success message
     console.log('');
-    showSuccess('Status line installed successfully!');
+    showSuccess('Strategic Co-pilot activated!');
     console.log('');
-    console.log(colors.primary('✨ Try it out:'));
-    console.log(colors.dim('  1. Type a prompt in Claude Code'));
-    console.log(colors.dim('  2. Look at the bottom status bar'));
-    console.log(colors.dim('  3. See your prompt quality score!'));
+    console.log(colors.highlight('🚀 Quick Start:'));
+    console.log('');
+    console.log(colors.success('  1. Submit any prompt') + colors.subdued(' in Claude Code'));
+    console.log(colors.success('  2. Watch your status bar') + colors.subdued(' for strategic guidance'));
+    console.log(colors.success('  3. Follow the advice') + colors.subdued(' to move forward effectively!'));
+    console.log('');
+    console.log(colors.accent('  💡 Pro tip:') + colors.subdued(' Ask for a complex feature and watch'));
+    console.log(colors.subdued('     your co-pilot suggest a strategic approach!'));
     console.log('');
     
   } catch (error) {
@@ -232,7 +268,7 @@ async function performFix(config: StatusLineConfig): Promise<void> {
   console.clear();
   
   // Show what's broken
-  console.log(colors.warning('\n🔧 Fixing Status Line Installation\n'));
+  console.log(colors.warning('\n🔧 Fixing Strategic Co-pilot Installation\n'));
   
   console.log('Current state:');
   console.log('');
@@ -266,7 +302,7 @@ async function performFix(config: StatusLineConfig): Promise<void> {
     await installStatusLine();
     
     console.log('');
-    showSuccess('Status line fixed successfully!');
+    showSuccess('Strategic Co-pilot fixed successfully!');
     console.log('');
     
   } catch (error) {
@@ -286,7 +322,7 @@ async function performUninstall(): Promise<void> {
   console.clear();
   
   // Show what will be removed
-  console.log(colors.warning('\n⚠️  Uninstalling Status Line\n'));
+  console.log(colors.warning('\n⚠️  Uninstalling Strategic Co-pilot\n'));
   
   console.log('This will remove:');
   console.log('');
@@ -318,7 +354,7 @@ async function performUninstall(): Promise<void> {
     await uninstallStatusLine();
     
     console.log('');
-    showInfo('Status line uninstalled');
+    showInfo('Strategic Co-pilot uninstalled');
     console.log(colors.dim('  You can reinstall it anytime from the menu'));
     console.log('');
     
@@ -477,23 +513,39 @@ export async function showStatusLineMenu(): Promise<void> {
     
     if (config.state === 'NOT_INSTALLED') {
       choices.push({
-        name: `✅ Install Status Line`,
+        name: `🚀 Install Strategic Co-pilot`,
         value: 'install'
       });
     } else if (config.state === 'PARTIALLY_INSTALLED') {
       choices.push({
-        name: `⚠️  Fix Status Line Installation`,
+        name: `⚠️  Fix Strategic Co-pilot Installation`,
         value: 'fix'
       });
       choices.push({
-        name: `❌ Uninstall Status Line`,
+        name: `❌ Uninstall Strategic Co-pilot`,
         value: 'uninstall'
       });
     } else if (config.state === 'FULLY_INSTALLED') {
       choices.push({
-        name: `✅ Status Line Active (Reinstall to Update Paths)`,
+        name: `✅ Strategic Co-pilot Active (Reinstall to Update)`,
         value: 'reinstall'
       });
+      
+      // Add ccusage toggle option
+      const ccusageConfig = await getCCUsageConfig();
+      
+      if (ccusageConfig.enabled) {
+        choices.push({
+          name: `💰 Disable ccusage metrics`,
+          value: 'disable-ccusage'
+        });
+      } else {
+        choices.push({
+          name: `💰 Enable ccusage metrics`,
+          value: 'enable-ccusage'
+        });
+      }
+      
       choices.push({
         name: `🎭 Manage Personality`,
         value: 'personality'
@@ -503,7 +555,7 @@ export async function showStatusLineMenu(): Promise<void> {
         value: 'test-quick'
       });
       choices.push({
-        name: `❌ Uninstall Status Line`,
+        name: `❌ Uninstall Strategic Co-pilot`,
         value: 'uninstall'
       });
     }
@@ -539,6 +591,43 @@ export async function showStatusLineMenu(): Promise<void> {
         
       case 'reinstall':
         await performInstallation();
+        await promptToContinue();
+        break;
+      
+      case 'enable-ccusage':
+        try {
+          console.log('');
+          console.log(colors.muted('Enabling ccusage integration...'));
+          await enableCCUsage();
+          console.log('');
+          showSuccess('ccusage metrics enabled!');
+          console.log(colors.dim('\n  Token usage will now appear in your status line'));
+          console.log(colors.dim('  Note: ccusage may take a moment to calculate on first use'));
+        } catch (error) {
+          console.log('');
+          showError('Failed to enable ccusage');
+          if (error instanceof Error) {
+            console.log(colors.dim(`  ${error.message}`));
+          }
+        }
+        await promptToContinue();
+        break;
+      
+      case 'disable-ccusage':
+        try {
+          console.log('');
+          console.log(colors.muted('Disabling ccusage integration...'));
+          await disableCCUsage();
+          console.log('');
+          showInfo('ccusage metrics disabled');
+          console.log(colors.dim('\n  Token usage will no longer appear in status line'));
+        } catch (error) {
+          console.log('');
+          showError('Failed to disable ccusage');
+          if (error instanceof Error) {
+            console.log(colors.dim(`  ${error.message}`));
+          }
+        }
         await promptToContinue();
         break;
       

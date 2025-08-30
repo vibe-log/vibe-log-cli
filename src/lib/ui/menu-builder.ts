@@ -74,8 +74,8 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
     // Real-time assistant first
     items.push({
       id: 'status-line',
-      label: `💡 Configure prompt coach status line`,
-      description: 'AI feedback & personality in Claude Code',
+      label: `🚀 Configure Strategic Co-pilot`,
+      description: 'Strategic guidance to move forward effectively',
       action: 'status-line'
     });
     
@@ -110,8 +110,8 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
     // Local features first - Real-time assistant
     items.push({
       id: 'status-line',
-      label: `💡 Configure prompt coach status line`,
-      description: 'AI feedback & personality in Claude Code',
+      label: `🚀 Configure Strategic Co-pilot`,
+      description: 'Strategic guidance to move forward effectively',
       action: 'status-line'
     });
     

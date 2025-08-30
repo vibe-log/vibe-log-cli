@@ -99,7 +99,7 @@ export class ClaudeSettingsManager {
    */
   private isStatuslineCommand(command: string | undefined): boolean {
     if (!command) return false;
-    return command.includes('statusline') && !command.includes('--');
+    return command.includes('statusline');
   }
   
   /**

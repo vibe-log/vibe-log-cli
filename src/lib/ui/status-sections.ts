@@ -188,7 +188,33 @@ export function createCloudStatusSection(status: CloudStatus): string {
 export function createLocalEngineSection(engine: LocalEngine): string {
   const content: string[] = [];
   
-  // Report generators (sub-agents) status
+  // Strategic Co-pilot (status-line) status - FIRST since it's real-time
+  const coachIcon = engine.statusLineStatus === 'installed' ? icons.check :
+                    engine.statusLineStatus === 'partial' ? icons.warning : icons.cross;
+  const coachColor = engine.statusLineStatus === 'installed' ? colors.success :
+                     engine.statusLineStatus === 'partial' ? colors.warning : colors.error;
+  
+  let coachStatus = '';
+  if (engine.statusLineStatus === 'installed') {
+    coachStatus = 'Active';
+  } else if (engine.statusLineStatus === 'partial') {
+    coachStatus = 'Partially installed';
+  } else {
+    coachStatus = 'Not installed';
+  }
+  
+  content.push(
+    `🚀 ${colors.muted('Strategic Co-pilot status line:')} ${coachIcon} ${coachColor(coachStatus)}`
+  );
+  
+  // Add explanation if not installed
+  if (engine.statusLineStatus !== 'installed') {
+    content.push(
+      colors.subdued(`                      → Strategic guidance to move forward effectively`)
+    );
+  }
+  
+  // Report generators (sub-agents) status - SECOND
   const reportIcon = engine.installStatus === 'installed' ? icons.check : 
                      engine.installStatus === 'partial' ? icons.warning : icons.cross;
   const reportColor = engine.installStatus === 'installed' ? colors.success : 
@@ -211,32 +237,6 @@ export function createLocalEngineSection(engine: LocalEngine): string {
   if (engine.installStatus !== 'installed') {
     content.push(
       colors.subdued(`                      → Generates local productivity reports`)
-    );
-  }
-  
-  // Prompt coach (status-line) status
-  const coachIcon = engine.statusLineStatus === 'installed' ? icons.check :
-                    engine.statusLineStatus === 'partial' ? icons.warning : icons.cross;
-  const coachColor = engine.statusLineStatus === 'installed' ? colors.success :
-                     engine.statusLineStatus === 'partial' ? colors.warning : colors.error;
-  
-  let coachStatus = '';
-  if (engine.statusLineStatus === 'installed') {
-    coachStatus = 'Active';
-  } else if (engine.statusLineStatus === 'partial') {
-    coachStatus = 'Partially installed';
-  } else {
-    coachStatus = 'Not installed';
-  }
-  
-  content.push(
-    `💡 ${colors.muted('Prompt coach status line:')} ${coachIcon} ${coachColor(coachStatus)}`
-  );
-  
-  // Add explanation if not installed
-  if (engine.statusLineStatus !== 'installed') {
-    content.push(
-      colors.subdued(`                      → Shows prompt analysis suggestions and improvments`)
     );
   }
   

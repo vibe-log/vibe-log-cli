@@ -6,6 +6,7 @@ import { PromptAnalysis } from '../lib/prompt-analyzer';
 import { logger } from '../utils/logger';
 import { transformSuggestion, getStatusLinePersonality, getPersonalityDisplayName } from '../lib/personality-manager';
 import { isLoadingState, isStaleLoadingState, LoadingState, getLoadingMessage } from '../types/loading-state';
+import { getCCUsageMetrics } from '../lib/ccusage-integration';
 
 /**
  * Output format types for the statusline
@@ -26,8 +27,9 @@ function getScoreEmoji(score: number): string {
  * Format the analysis for compact output (default)
  * Example: 🟢 85/100 | ✨ Great context! Consider adding expected output format
  * With actionableSteps: Adds second line with "✅ TRY THIS:" prefix
+ * With ccusage: Adds usage metrics on additional line
  */
-function formatCompact(analysis: PromptAnalysis): string {
+function formatCompact(analysis: PromptAnalysis, ccusageOutput?: string | null): string {
   const score = analysis.score;
   let suggestion = analysis.suggestion;
   const actionableSteps = analysis.actionableSteps;
@@ -60,6 +62,11 @@ function formatCompact(analysis: PromptAnalysis): string {
   // Add persisted promotional tip if it exists
   if (analysis.promotionalTip) {
     output += analysis.promotionalTip;
+  }
+  
+  // Add ccusage metrics if available
+  if (ccusageOutput) {
+    output += '\n' + ccusageOutput;
   }
   
   return output;
@@ -167,9 +174,13 @@ function formatLoadingState(state: LoadingState, format: OutputFormat): string {
 /**
  * Format the analysis based on the selected format
  */
-function formatAnalysis(analysis: PromptAnalysis, format: OutputFormat): string {
+function formatAnalysis(analysis: PromptAnalysis, format: OutputFormat, ccusageOutput?: string | null): string {
   switch (format) {
     case 'json':
+      // For JSON, include ccusage as a separate field
+      if (ccusageOutput) {
+        return JSON.stringify({ ...analysis, ccusage: ccusageOutput });
+      }
       return JSON.stringify(analysis);
     case 'detailed':
       return formatDetailed(analysis);
@@ -179,7 +190,7 @@ function formatAnalysis(analysis: PromptAnalysis, format: OutputFormat): string 
       return formatMinimal(analysis);
     case 'compact':
     default:
-      return formatCompact(analysis);
+      return formatCompact(analysis, ccusageOutput);
   }
 }
 
@@ -259,17 +270,19 @@ export function createStatuslineCommand(): Command {
   const command = new Command('statusline')
     .description('Display prompt analysis in Claude Code status line (hidden command)')
     .option('-f, --format <type>', 'Output format: compact, detailed, emoji, minimal, json', 'compact')
+    .option('--with-usage', 'Include ccusage metrics in output')
     .action(async (options) => {
       const startTime = Date.now();
       
       try {
         // Try to read Claude Code context from stdin
         let currentSessionId: string | undefined;
+        let claudeContext: any = null;
         const stdinData = await readStdinWithTimeout(50); // 50ms timeout for speed
         
         if (stdinData) {
           try {
-            const claudeContext = JSON.parse(stdinData);
+            claudeContext = JSON.parse(stdinData);
             currentSessionId = claudeContext.session_id;
             logger.debug(`Statusline received session ID: ${currentSessionId}`);
           } catch (parseError) {
@@ -348,8 +361,33 @@ export function createStatuslineCommand(): Command {
         }
         
         // No need to check session ID - we're reading the session-specific file
+        
+        // Get ccusage metrics if requested
+        let ccusageOutput: string | null = null;
+        if (options.withUsage && claudeContext) {
+          // Wait for ccusage to complete (typically takes ~1s)
+          const usageTimeout = 2000;  // Give ccusage enough time to complete
+          logger.debug(`Fetching ccusage metrics with ${usageTimeout}ms timeout`);
+          
+          try {
+            ccusageOutput = await getCCUsageMetrics(claudeContext, usageTimeout);
+            if (ccusageOutput) {
+              logger.debug('Got ccusage metrics successfully');
+            } else {
+              logger.debug('No ccusage metrics returned');
+            }
+          } catch (err) {
+            logger.debug('ccusage error:', err);
+            ccusageOutput = null;
+          }
+        } else {
+          // Debug why we're not calling ccusage
+          const fs = require('fs');
+          fs.appendFileSync('/tmp/vibe-ccusage-debug.log', `[${new Date().toISOString()}] Not calling ccusage - withUsage: ${options.withUsage}, hasContext: ${!!claudeContext}\n`);
+        }
+        
         // Format and output the analysis
-        const output = formatAnalysis(analysis, format);
+        const output = formatAnalysis(analysis, format, ccusageOutput);
         process.stdout.write(output);
         
         // Log performance metrics

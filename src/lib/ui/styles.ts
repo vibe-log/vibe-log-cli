@@ -13,8 +13,8 @@ export const colors = {
   dim: chalk.hex('#606060'),  // Custom gray instead of chalk.dim for consistency
   
   // Semantic helpers for better readability
-  subdued: chalk.hex('#707070'),  // For secondary text
-  hint: chalk.hex('#6B7280'),     // For help text and instructions
+  subdued: chalk.hex('#909090'),  // Increased contrast for better readability
+  hint: chalk.hex('#7A8290'),     // Slightly brighter for better visibility
   inactive: chalk.hex('#4B5563'),  // For disabled/inactive items
 };
 
