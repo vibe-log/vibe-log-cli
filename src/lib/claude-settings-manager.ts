@@ -89,7 +89,13 @@ export class ClaudeSettingsManager {
    */
   private isAnalyzePromptCommand(command: string | undefined): boolean {
     if (!command) return false;
-    return command.includes('analyze-prompt') && 
+    
+    // Get the configured CLI path to match exactly what we installed
+    const cliPath = getCliPath();
+    const expectedPrefix = `${cliPath} analyze-prompt`;
+    
+    // Must be our exact command pattern
+    return command.startsWith(expectedPrefix) && 
            command.includes('--silent') && 
            command.includes('--stdin');
   }
@@ -99,7 +105,16 @@ export class ClaudeSettingsManager {
    */
   private isStatuslineCommand(command: string | undefined): boolean {
     if (!command) return false;
-    return command.includes('statusline');
+    
+    // Get the configured CLI path to match exactly what we installed
+    const cliPath = getCliPath();
+    
+    // Our statusline command is exactly: [cliPath] statusline [options]
+    // Check if command starts with our CLI path and has statusline as the command
+    const expectedPrefix = `${cliPath} statusline`;
+    
+    // Must match our exact pattern (with or without options like --with-usage)
+    return command === expectedPrefix || command.startsWith(`${expectedPrefix} `);
   }
   
   /**
@@ -107,7 +122,13 @@ export class ClaudeSettingsManager {
    */
   private isAutoSyncCommand(command: string | undefined): boolean {
     if (!command) return false;
-    return command.includes('send') && 
+    
+    // Get the configured CLI path to match exactly what we installed
+    const cliPath = getCliPath();
+    const expectedPrefix = `${cliPath} send`;
+    
+    // Must be our exact command pattern for auto-sync
+    return command.startsWith(expectedPrefix) && 
            command.includes('--silent') && 
            command.includes('--background') &&
            command.includes('--hook-trigger');
