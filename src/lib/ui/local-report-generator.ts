@@ -309,9 +309,12 @@ export async function generateLocalReportInteractive(): Promise<void> {
     console.log();
     console.log(colors.accent('Pre-fetching session data...'));
     
+    // Get the temp report directory that will be used as cwd
+    const tempReportDir = getTempDirectoryPath('PRODUCTIVITY_REPORT');
+    
     try {
-      // Create temp directory
-      const tempDir = path.join(process.cwd(), '.vibe-log-temp');
+      // Create temp directory for session files within the report directory
+      const tempDir = path.join(tempReportDir, '.vibe-log-temp');
       
       // Remove old temp directory if it exists
       try {
@@ -446,8 +449,7 @@ export async function generateLocalReportInteractive(): Promise<void> {
       console.log(colors.muted(`Using orchestrated prompt (${updatedPrompt.length} characters)`));
       console.log(colors.muted(`System prompt adds behavioral instructions (${orchestrated.systemPrompt.length} characters)`));
       
-      // Create temp directory for report generation to avoid polluting project history
-      const tempReportDir = getTempDirectoryPath('PRODUCTIVITY_REPORT');
+      // Ensure temp report directory exists (already defined above)
       await fs.mkdir(tempReportDir, { recursive: true }).catch(() => {});
       
       await executeClaudePrompt(updatedPrompt, {
@@ -459,7 +461,7 @@ export async function generateLocalReportInteractive(): Promise<void> {
           
           // Clean up temp directory
           try {
-            const tempDir = path.join(process.cwd(), '.vibe-log-temp');
+            const tempDir = path.join(tempReportDir, '.vibe-log-temp');
             await fs.rm(tempDir, { recursive: true, force: true });
             console.log(colors.muted('Cleaned up temporary session files'));
           } catch (e) {
@@ -486,7 +488,7 @@ export async function generateLocalReportInteractive(): Promise<void> {
           console.log();
           
           // Clean up temp directory before exiting
-          const tempDir = path.join(process.cwd(), '.vibe-log-temp');
+          const tempDir = path.join(tempReportDir, '.vibe-log-temp');
           fs.rm(tempDir, { recursive: true, force: true }).catch(() => {
             // Ignore cleanup errors
           });
@@ -516,7 +518,7 @@ export async function generateLocalReportInteractive(): Promise<void> {
       console.log();
       
       // Clean up temp directory before exiting
-      const tempDir = path.join(process.cwd(), '.vibe-log-temp');
+      const tempDir = path.join(tempReportDir, '.vibe-log-temp');
       await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {
         // Ignore cleanup errors
       });
