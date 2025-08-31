@@ -327,15 +327,20 @@ Respond with JSON only, no explanation.`;
       // No timeout - let the SDK complete naturally
       logger.debug('Starting SDK query with prompt length:', analysisPrompt.length);
       
+      // Create temp directory for analysis sessions to avoid polluting project history
+      const tempAnalysisDir = path.join(os.homedir(), '.vibe-log', 'temp-local-report');
+      await fs.mkdir(tempAnalysisDir, { recursive: true }).catch(() => {});
+      
       // Simplified options - optimize for speed in hook mode
       const queryOptions = {
         maxTurns: 1,                    // Single turn only
         model: selectedModel,           // Use selected model (haiku by default)
-        disallowedTools: ['*']          // No tools needed for JSON response
+        disallowedTools: ['*'],         // No tools needed for JSON response
+        cwd: tempAnalysisDir            // Use temp directory to isolate analysis sessions
       };
       
       logger.debug('Query options:', queryOptions);
-      await this.logToDebugFile(`Starting SDK query for session ${sessionId} with model ${selectedModel}`);
+      await this.logToDebugFile(`Starting SDK query for session ${sessionId} with model ${selectedModel} in temp dir: ${tempAnalysisDir}`);
         
         for await (const message of query({
           prompt: analysisPrompt,
