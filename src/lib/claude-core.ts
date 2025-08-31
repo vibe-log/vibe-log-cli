@@ -19,6 +19,7 @@ import {
   getProjectLocalSettingsPath,
   getEnterpriseManagedSettingsPath
 } from './claude-fs';
+import { isClaudeTempProject } from './temp-directories';
 
 // Re-export types and utility functions for backward compatibility
 export type { ClaudeProject };
@@ -102,6 +103,13 @@ export async function discoverProjects(): Promise<ClaudeProject[]> {
     
     for (const projectPath of projectDirs) {
       const dirName = path.basename(projectPath);
+      
+      // Skip temp directories used for automated analysis
+      if (isClaudeTempProject(dirName)) {
+        logger.debug(`Skipping temp project: ${dirName}`);
+        continue;
+      }
+      
       const project = await analyzeProject(projectPath, dirName);
       if (project) {
         projects.push(project);

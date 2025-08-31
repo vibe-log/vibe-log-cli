@@ -11,6 +11,7 @@ import { getStatusLineStatus } from '../status-line-manager';
 import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
+import { getTempDirectoryPath } from '../temp-directories';
 
 interface TimeframeOption {
   name: string;
@@ -446,7 +447,7 @@ export async function generateLocalReportInteractive(): Promise<void> {
       console.log(colors.muted(`System prompt adds behavioral instructions (${orchestrated.systemPrompt.length} characters)`));
       
       // Create temp directory for report generation to avoid polluting project history
-      const tempReportDir = path.join(os.homedir(), '.vibe-log', 'temp-productivity-report');
+      const tempReportDir = getTempDirectoryPath('PRODUCTIVITY_REPORT');
       await fs.mkdir(tempReportDir, { recursive: true }).catch(() => {});
       
       await executeClaudePrompt(updatedPrompt, {

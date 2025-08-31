@@ -6,6 +6,7 @@ import { getStatusLinePersonality } from './personality-manager';
 import { getToken } from './config';
 import { LoadingState, getLoadingMessage } from '../types/loading-state';
 import { generatePromotionalTip } from './promotional-tips';
+import { getTempDirectoryPath } from './temp-directories';
 
 /**
  * Analysis result for a prompt
@@ -328,7 +329,7 @@ Respond with JSON only, no explanation.`;
       logger.debug('Starting SDK query with prompt length:', analysisPrompt.length);
       
       // Create temp directory for analysis sessions to avoid polluting project history
-      const tempAnalysisDir = path.join(os.homedir(), '.vibe-log', 'temp-prompt-analysis');
+      const tempAnalysisDir = getTempDirectoryPath('PROMPT_ANALYSIS');
       await fs.mkdir(tempAnalysisDir, { recursive: true }).catch(() => {});
       
       // Simplified options - optimize for speed in hook mode
