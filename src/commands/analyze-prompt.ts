@@ -4,9 +4,10 @@ import { logger } from '../utils/logger';
 import { colors } from '../lib/ui/styles';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { extractConversationContext, DEFAULT_CONVERSATION_TURNS_TO_EXTRACT_AS_CONTEXT } from '../lib/session-context-extractor';
+import { extractConversationContext, extractSessionMetadata, DEFAULT_CONVERSATION_TURNS_TO_EXTRACT_AS_CONTEXT } from '../lib/session-context-extractor';
 import { getStatusLinePersonality } from '../lib/personality-manager';
 import { getLoadingMessage } from '../types/loading-state';
+import { SessionMetadata } from '../lib/prompt-analyzer';
 
 /**
  * Read stdin with a timeout
@@ -125,24 +126,45 @@ export function createAnalyzePromptCommand(): Command {
 
         // Extract conversation context from transcript if available, or use provided context
         let conversationContext: string | undefined = providedContext;
-        if (!conversationContext && transcriptPath) {
+        let sessionMetadata: SessionMetadata | undefined;
+        
+        if (transcriptPath) {
           try {
-            // Extract last conversation turns for better context
-            conversationContext = await extractConversationContext(transcriptPath, DEFAULT_CONVERSATION_TURNS_TO_EXTRACT_AS_CONTEXT) || undefined;
-            if (conversationContext) {
-              logger.debug('Extracted conversation context', {
-                length: conversationContext.length,
-                preview: conversationContext.substring(0, 100)
-              });
+            // Extract conversation context if not provided
+            if (!conversationContext) {
+              conversationContext = await extractConversationContext(transcriptPath, DEFAULT_CONVERSATION_TURNS_TO_EXTRACT_AS_CONTEXT) || undefined;
+              if (conversationContext) {
+                logger.debug('Extracted conversation context', {
+                  length: conversationContext.length,
+                  preview: conversationContext.substring(0, 100)
+                });
+              }
             }
+            
+            // Always extract session metadata when we have a transcript
+            sessionMetadata = await extractSessionMetadata(transcriptPath, prompt);
+            logger.debug('Extracted session metadata', sessionMetadata);
+            
           } catch (error) {
-            logger.debug('Could not extract context from transcript:', error);
+            logger.debug('Could not extract context or metadata from transcript:', error);
           }
         } else if (conversationContext) {
           logger.debug('Using provided conversation context', {
             length: conversationContext.length,
             preview: conversationContext.substring(0, 100)
           });
+          
+          // Create minimal metadata when no transcript available
+          sessionMetadata = {
+            isFirstPrompt: false, // Assume not first if context provided
+            hasImages: /\[\d+\s+image\s+attachments?\]/i.test(prompt),
+            imageCount: 0
+          };
+          
+          const imageMatch = prompt.match(/\[(\d+)\s+image\s+attachments?\]/i);
+          if (imageMatch) {
+            sessionMetadata.imageCount = parseInt(imageMatch[1], 10);
+          }
         }
 
         logger.debug('Starting prompt analysis', {
@@ -225,7 +247,8 @@ export function createAnalyzePromptCommand(): Command {
           sessionId,
           timeout: parseInt(timeout),
           verbose,
-          conversationContext
+          conversationContext,
+          sessionMetadata
         });
 
         const duration = Date.now() - startTime;

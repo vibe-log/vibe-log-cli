@@ -24,6 +24,19 @@ export interface PromptAnalysis {
 }
 
 /**
+ * Session metadata for better context awareness
+ */
+export interface SessionMetadata {
+  messageNumber?: number;        // Position in conversation (1, 2, 3...)
+  totalMessages?: number;         // Total messages in session
+  isFirstPrompt?: boolean;        // True if this is message #1
+  hasImages?: boolean;            // Current prompt contains images
+  imageCount?: number;            // Number of images in current prompt
+  lastAssistantEndsWithQuestion?: boolean;  // Previous assistant message was a question
+  truncatedMessages?: number;     // Number of messages that were truncated
+}
+
+/**
  * Options for prompt analysis
  */
 export interface AnalysisOptions {
@@ -33,6 +46,7 @@ export interface AnalysisOptions {
   verbose?: boolean;
   conversationContext?: string; // Context from previous 2-3 conversation turns
   previousAssistantMessage?: string; // Deprecated: Use conversationContext instead
+  sessionMetadata?: SessionMetadata; // Rich metadata about the session
 }
 
 // Cache the SDK import to avoid re-importing on every analysis
@@ -150,7 +164,8 @@ Emoji selection:
       sessionId,
       verbose = false,
       conversationContext,
-      previousAssistantMessage // For backward compatibility
+      previousAssistantMessage, // For backward compatibility
+      sessionMetadata
     } = options;
     
     // Use conversationContext if available, fallback to previousAssistantMessage for compatibility
@@ -187,10 +202,30 @@ Emoji selection:
     await this.ensureAnalysisDir();
 
     // Build the analysis prompt with CLEAR instructions
-    let analysisPrompt = `You are a strategic product advisor analyzing a developer's prompt WHILE Claude is already processing their request.
-Your role is to provide high-level strategic guidance, not implementation details.
+    let analysisPrompt = `You are a thoughtful technical advisor analyzing a developer's prompt while they work.
+Your role is to ask strategic questions and suggest specific considerations they might be overlooking.
 
-User's current prompt:
+IMPORTANT: You only see the current session, not their full project context.
+- Don't assume you know their overall goals
+- Ask clarifying questions when context is unclear
+- Suggest specific aspects to consider, not vague wonderings
+
+`;
+
+    // Add session metadata if available for better context awareness
+    if (sessionMetadata) {
+      analysisPrompt += `SESSION CONTEXT:
+- Message position: ${sessionMetadata.messageNumber || 'unknown'} of ${sessionMetadata.totalMessages || 'unknown'}
+- First prompt in session: ${sessionMetadata.isFirstPrompt ? 'YES (be encouraging and helpful!)' : 'NO'}
+- Images attached to current prompt: ${sessionMetadata.hasImages ? `YES (${sessionMetadata.imageCount || 1} image${(sessionMetadata.imageCount || 1) > 1 ? 's' : ''})` : 'NO'}
+- Previous assistant ended with question: ${sessionMetadata.lastAssistantEndsWithQuestion ? 'YES (user may be answering)' : 'NO'}
+${sessionMetadata.truncatedMessages ? `- Some messages truncated for space (${sessionMetadata.truncatedMessages} messages)` : ''}
+
+`;
+      logger.debug('Including session metadata in analysis', sessionMetadata);
+    }
+
+    analysisPrompt += `User's current prompt:
 ---
 ${promptText}
 ---
@@ -211,38 +246,45 @@ ${context.substring(0, 1500)}${context.length > 1500 ? '...' : ''}
       });
     }
 
-    // Add explicit JSON format instructions with product manager focus
+    // Add explicit JSON format instructions with thoughtful questioning approach
     analysisPrompt += `
-Analyze the prompt and provide strategic product-level guidance that pushes them to ship faster.
+Analyze the prompt and provide thoughtful questions that help them consider important aspects.
+
+CONTEXT AWARENESS:
+- First 3 prompts: Be encouraging, help them get oriented
+- Image attachments: "[N image attachments]" means images are present - ask about specific visual elements
+- Question responses: Simple answers like "Yes", "No", or one-word responses are PERFECT (score 90+)
+- Balance: Sometimes shipping fast is right (experiments), sometimes quality matters (user-facing features)
+- You see only this session: Ask questions to understand their broader context when needed
 
 You must respond with ONLY a JSON object in this exact format:
 {
   "quality": "poor" | "fair" | "good" | "excellent",
-  "missing": ["1-2 strategic considerations they might be overlooking"],
-  "suggestion": "Brief diagnosis of their approach (15-20 words)",
-  "actionableSteps": "Concrete strategic next steps with specifics - push them to SHIP (40-60 words)",
+  "missing": ["1-2 specific aspects they might be overlooking"],
+  "suggestion": "Brief observation about their current focus (15-20 words)",
+  "actionableSteps": "Specific questions and considerations with concrete examples (40-60 words)",
   "score": 0-100,
   "contextualEmoji": "🎯" | "🚀" | "⚡" | "🔄" | "📊" | "🎨" | "🔍" | "✅"
 }
 
 CRITICAL for actionableSteps field:
-- Be SPECIFIC and PUSHY - help them ship TODAY not someday
-- Give concrete examples they can implement NOW
-- Consider their ORIGINAL MISSION and push them toward completion
-- Include specific values, timeouts, error codes when relevant
-- Create urgency - what's the minimum viable version?
-- Balance shipping fast with not breaking things
+- Ask SPECIFIC questions with concrete examples
+- Suggest particular aspects they might not have considered
+- Point out specific edge cases or scenarios
+- Balance between shipping and quality based on context
+- Help them think through implications
+- Provide specific test cases or values to consider
 
-EXCELLENT actionableSteps examples (be this specific):
-- "Handle these errors NOW: Network timeout (5s) | Auth token expiry (401 → refresh) | Rate limits (429 → backoff) | Show user 'Try again' not stack traces!"
-- "Ship v1 TODAY: 1) Basic CRUD works 2) One wow feature 3) THEN worry about onboarding. Progressive disclosure comes AFTER people can install it!"
-- "Security basics before launch: Validate all inputs | Sanitize outputs | Add rate limiting (100/min) | Log failures | THEN ship it!"
-- "Make it work for ONE user first: Manual setup is OK | Config file is fine | Perfect UI comes later | Ship to 1 user THIS WEEK!"
+EXCELLENT actionableSteps examples (specific questions with examples):
+- "Have you considered: API timeout handling? Maybe test with 5s timeout and show 'Still working...' after 2s. Also, what happens if user's connection drops mid-request?"
+- "Worth thinking about: How does this look on iPhone SE (375px)? The buttons might overlap. Also, have you tested with users who have large font settings enabled?"
+- "Question: If someone pastes 'C++' or '@username' in search, does it break? Might need to escape special regex characters. What about emoji in search terms?"
+- "Consider: Your auth tokens expire in 1 hour - should there be a 'Remember me' option for 30 days? What's the security tradeoff for your use case?"
 
 WEAK actionableSteps (avoid these):
-- "Consider error handling patterns" (too vague)
-- "Think about user experience" (not actionable)
-- "Plan for scale" (no specifics)
+- "What would make this complete?" (too vague)
+- "Think about user experience" (not specific)
+- "Consider error handling" (which errors specifically?)
 
 Scoring: 
 - poor(0-40): Missing critical context or unclear goal
@@ -251,14 +293,14 @@ Scoring:
 - excellent(81-100): Comprehensive with clear success criteria
 
 For the contextualEmoji:
-- 🎯 = Need clearer goals/objectives
-- 🚀 = Ready to ship, think about deployment
-- ⚡ = Consider performance/optimization
-- 🔄 = Think about the iteration/feedback loop
-- 📊 = Consider metrics/monitoring
-- 🎨 = UX/design considerations needed
-- 🔍 = Edge cases to explore
-- ✅ = Well-structured, complete thinking
+- 🎯 = Focus on clarifying the goal or user need
+- 🚀 = Consider deployment and user rollout aspects
+- ⚡ = Performance or optimization questions to explore
+- 🔄 = Think about iteration and user feedback cycles
+- 📊 = Data and metrics considerations
+- 🎨 = UI/UX details worth considering
+- 🔍 = Edge cases or error scenarios to think through
+- ✅ = Well-thought-out approach with good coverage
 
 Respond with JSON only, no explanation.`;
     
@@ -375,11 +417,13 @@ Respond with JSON only, no explanation.`;
       throw error;
     }
 
-      // Generate promotional tip for this analysis (10% chance)
+      // Generate promotional tip for this analysis (5% chance, not for first 3 messages)
       if (analysisResult) {
         // Check authentication status for promotional tip
         const token = await getToken();
-        analysisResult.promotionalTip = generatePromotionalTip(!!token);
+        // Pass message number if available from session metadata
+        const messageNumber = sessionMetadata?.messageNumber;
+        analysisResult.promotionalTip = generatePromotionalTip(!!token, messageNumber);
         await this.saveAnalysis(analysisResult, sessionId);
       }
 

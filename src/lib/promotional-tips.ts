@@ -5,15 +5,25 @@
 
 /**
  * Generate a promotional tip for analysis results
- * Shows tips only 10% of the time to avoid being intrusive
+ * Shows tips only 5% of the time to avoid being intrusive
  * Only shown after an analysis completes, not in empty states
+ * Not shown for first 3 messages to avoid overwhelming new users
  * 
  * @param isAuthenticated - Whether the user is logged into cloud mode
- * @returns Formatted promotional tip with newline, or empty string (90% of the time)
+ * @param messageNumber - The message number in the session (optional)
+ * @returns Formatted promotional tip with newline, or empty string (95% of the time)
  */
-export function generatePromotionalTip(isAuthenticated: boolean): string {
-  // Only show tip 10% of the time
-  if (Math.random() > 0.1) {
+export function generatePromotionalTip(
+  isAuthenticated: boolean, 
+  messageNumber?: number
+): string {
+  // Don't show tips for first 3 messages
+  if (messageNumber && messageNumber <= 3) {
+    return '';
+  }
+  
+  // Only show tip 5% of the time (reduced from 10%)
+  if (Math.random() > 0.05) {
     return '';
   }
   
