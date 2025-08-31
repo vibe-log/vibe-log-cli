@@ -45,9 +45,11 @@ Generate comprehensive productivity reports using Claude Code's sub-agents to an
 ### 3. 📈 Web Dashboard - Cloud Sync (Optional)
 Sync sanitized session data to the Vibe-Log dashboard for web-based analytics and deep insights across sessions and projects.
 
-## Status Line - Claude Strategic Co-pilot / Advisor
+## Status Line - Claude Strategic Co-pilot / Advisor (Safe & Reversible)
 
 The Status Line uses your local Claude Code to provide strategic guidance that pushes you to ship faster. It remembers your original goal and gives concrete, actionable steps to achieve it.
+
+**🔒 Installation Safety**: Automatically backs up your existing status line configuration. Uninstalling instantly restores your original setup - zero risk to your Claude Code configuration.
 
 <img width="560" height="174" alt="image" src="https://github.com/user-attachments/assets/f509c63e-8b16-47f3-9e8f-3c36d1718ca6" />
 
@@ -57,6 +59,8 @@ The Status Line uses your local Claude Code to provide strategic guidance that p
 - **🎯 Stay Focused**: Remembers your original mission and keeps you on track and forward ⏩︎
 - **⚡ Concrete Actions**: Specific next steps like:
 - **📈 Strategic Thinking**: Considers edge cases, user experience, and scaling at the right time
+- **📊 Token Usage Display**: Integrates with ccusage to show real-time token metrics
+- **↩️ Easy Restore**: Your original status line is backed up and can be restored anytime
 
 ### How Status Line Works
 1. Intercepts prompts submitted in Claude Code
@@ -111,7 +115,10 @@ flowchart LR
 1. Run `npx vibe-log-cli`
 2. Select "Configure prompt coach status line"
 3. Choose coach personality
-4. Prompts will be analyzed locally in Claude Code
+4. (Optional) Enable ccusage token metrics display
+5. Prompts will be analyzed locally in Claude Code
+
+**Note**: Installation automatically backs up your current status line (if any). When you uninstall vibe-log, your original configuration is instantly restored.
 
 ## Local Report Generation Works
 
