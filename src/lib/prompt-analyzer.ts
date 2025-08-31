@@ -328,7 +328,7 @@ Respond with JSON only, no explanation.`;
       logger.debug('Starting SDK query with prompt length:', analysisPrompt.length);
       
       // Create temp directory for analysis sessions to avoid polluting project history
-      const tempAnalysisDir = path.join(os.homedir(), '.vibe-log', 'temp-local-report');
+      const tempAnalysisDir = path.join(os.homedir(), '.vibe-log', 'temp-prompt-analysis');
       await fs.mkdir(tempAnalysisDir, { recursive: true }).catch(() => {});
       
       // Simplified options - optimize for speed in hook mode

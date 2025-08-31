@@ -445,9 +445,13 @@ export async function generateLocalReportInteractive(): Promise<void> {
       console.log(colors.muted(`Using orchestrated prompt (${updatedPrompt.length} characters)`));
       console.log(colors.muted(`System prompt adds behavioral instructions (${orchestrated.systemPrompt.length} characters)`));
       
+      // Create temp directory for report generation to avoid polluting project history
+      const tempReportDir = path.join(os.homedir(), '.vibe-log', 'temp-productivity-report');
+      await fs.mkdir(tempReportDir, { recursive: true }).catch(() => {});
+      
       await executeClaudePrompt(updatedPrompt, {
         systemPrompt: orchestrated.systemPrompt,  // Pass the system prompt
-        cwd: process.cwd(),
+        cwd: tempReportDir,  // Use temp directory to isolate report generation sessions
         claudePath: claudeCheck.path,  // Pass the found Claude path
         onComplete: async (code) => {
           console.log(colors.muted(`Claude completed with exit code: ${code}`));
