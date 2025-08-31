@@ -66,6 +66,7 @@ When generating reports, you will:
    - Do NOT use Write tool - just OUTPUT (respond) the HTML as plain text
    - Keep total length to 1-2 pages maximum
    - Focus on clarity and brevity over comprehensiveness
+   - ALWAYS use the Vibe Log brand colors defined in the CSS
 
 2. **Structure the report with only essential sections**:
    - **Executive Summary** (3-4 bullet points max)
@@ -87,29 +88,266 @@ When generating reports, you will:
    - Skip detailed analysis - just key findings
    - No appendices or supporting documentation
 
+5. **CRITICAL STYLING REQUIREMENTS**:
+   You MUST include this exact CSS styling block at the beginning of your HTML report:
+   
+   <style>
+     :root {
+       --color-primary: #10b981;    /* Vibe green */
+       --color-accent: #34d399;     /* Light green */
+       --color-success: #10b981;    /* Success green */
+       --color-warning: #f59e0b;    /* Amber warning */
+       --color-danger: #ef4444;     /* Red danger */
+       --color-bg: #0a0b0d;         /* Dark background */
+       --color-surface: #1a1b1e;    /* Card backgrounds */
+       --color-surface-light: #2a2b2e; /* Lighter surface */
+       --color-text: #e5e7eb;       /* Light gray text */
+       --color-text-bright: #ffffff; /* White text */
+       --color-muted: #6b7280;      /* Muted gray text */
+       --color-border: #374151;     /* Dark gray borders */
+     }
+     
+     body {
+       background: var(--color-bg);
+       color: var(--color-text);
+       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+       max-width: 900px;
+       margin: 0 auto;
+       padding: 40px 20px;
+       line-height: 1.6;
+     }
+     
+     h1 { 
+       color: var(--color-text-bright);
+       font-size: 2em;
+       font-weight: bold;
+       margin-bottom: 30px;
+       padding-bottom: 15px;
+       border-bottom: 2px solid var(--color-primary);
+     }
+     
+     h2 { 
+       color: var(--color-text-bright);
+       margin-top: 30px;
+       margin-bottom: 15px;
+       font-size: 1.4em;
+       display: flex;
+       align-items: center;
+       gap: 10px;
+     }
+     
+     h2::before {
+       content: "▸";
+       color: var(--color-primary);
+     }
+     
+     .summary-box {
+       background: var(--color-surface);
+       border: 1px solid var(--color-border);
+       border-left: 4px solid var(--color-primary);
+       padding: 20px;
+       border-radius: 12px;
+       margin-bottom: 25px;
+     }
+     
+     .project-card {
+       background: var(--color-surface);
+       border: 1px solid var(--color-border);
+       padding: 15px 20px;
+       border-radius: 12px;
+       margin-bottom: 12px;
+       display: flex;
+       justify-content: space-between;
+       align-items: center;
+       transition: background 0.2s;
+     }
+     
+     .project-card:hover {
+       background: var(--color-surface-light);
+     }
+     
+     .project-name {
+       color: var(--color-text-bright);
+       font-weight: 500;
+     }
+     
+     .project-hours {
+       color: var(--color-primary);
+       font-weight: bold;
+       font-size: 1.1em;
+     }
+     
+     .accomplishment {
+       padding-left: 28px;
+       position: relative;
+       margin-bottom: 10px;
+       color: var(--color-text);
+     }
+     
+     .accomplishment::before {
+       content: "✓";
+       position: absolute;
+       left: 0;
+       color: var(--color-success);
+       font-weight: bold;
+       font-size: 1.1em;
+     }
+     
+     .stat-grid {
+       display: grid;
+       grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+       gap: 15px;
+       margin: 25px 0;
+     }
+     
+     .stat-card {
+       background: var(--color-surface);
+       border: 1px solid var(--color-border);
+       padding: 20px 15px;
+       border-radius: 12px;
+       text-align: center;
+       transition: transform 0.2s, border-color 0.2s;
+     }
+     
+     .stat-card:hover {
+       transform: translateY(-2px);
+       border-color: var(--color-primary);
+     }
+     
+     .stat-value {
+       font-size: 2.2em;
+       font-weight: bold;
+       color: var(--color-primary);
+       margin-bottom: 5px;
+     }
+     
+     .stat-label {
+       color: var(--color-muted);
+       font-size: 0.9em;
+       text-transform: uppercase;
+       letter-spacing: 0.5px;
+     }
+     
+     .insight-box {
+       background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.05));
+       border: 1px solid rgba(16,185,129,0.3);
+       border-left: 4px solid var(--color-success);
+       padding: 18px;
+       border-radius: 12px;
+       margin: 20px 0;
+       color: var(--color-text);
+     }
+     
+     .warning-box {
+       background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.05));
+       border: 1px solid rgba(245,158,11,0.3);
+       border-left: 4px solid var(--color-warning);
+       padding: 18px;
+       border-radius: 12px;
+       margin: 20px 0;
+       color: var(--color-text);
+     }
+     
+     .activity-bar {
+       display: flex;
+       height: 35px;
+       border-radius: 20px;
+       overflow: hidden;
+       margin: 20px 0;
+       background: var(--color-surface);
+       border: 1px solid var(--color-border);
+     }
+     
+     .activity-segment {
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       color: var(--color-bg);
+       font-weight: 600;
+       font-size: 0.9em;
+     }
+     
+     .activity-segment-feature { 
+       background: var(--color-success); 
+     }
+     
+     .activity-segment-debug { 
+       background: var(--color-danger); 
+     }
+     
+     .activity-segment-refactor { 
+       background: #3b82f6; /* Blue for refactoring */
+     }
+     
+     .activity-segment-other { 
+       background: var(--color-muted); 
+     }
+     
+     .badge {
+       display: inline-block;
+       padding: 4px 10px;
+       border-radius: 6px;
+       font-size: 0.85em;
+       font-weight: 600;
+       margin-right: 8px;
+     }
+     
+     .badge-feature {
+       background: rgba(16,185,129,0.2);
+       color: var(--color-primary);
+       border: 1px solid rgba(16,185,129,0.3);
+     }
+     
+     .badge-high {
+       background: rgba(239,68,68,0.2);
+       color: #ef4444;
+       border: 1px solid rgba(239,68,68,0.3);
+     }
+     
+     ul {
+       color: var(--color-text);
+     }
+     
+     li {
+       margin-bottom: 6px;
+     }
+     
+     strong {
+       color: var(--color-text-bright);
+     }
+   </style>
+
+   Use these exact colors consistently throughout the report:
+   - Primary green (#10b981) for main emphasis and positive metrics
+   - Bright white (#ffffff) for important text and headers
+   - Light gray (#e5e7eb) for body text
+   - Dark surface (#1a1b1e) for cards and sections
+   - Red (#ef4444) for debugging time or issues
+   - Amber (#f59e0b) for warnings
+
 PROMPT WRITING INSIGHT SECTION:
 - Always include 1 main observation about prompt quality
 - IF STATUS LINE INSTALLED = No, add this recommendation box after your observation:
-  <div style="background: linear-gradient(135deg, #667eea15, #764ba215); 
-              border: 2px solid #667eea; 
+  <div style="background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(16,185,129,0.03)); 
+              border: 2px solid #10b981; 
               padding: 20px; 
               border-radius: 12px; 
               margin-top: 15px;">
-    <h4 style="margin-top: 0; color: #5a67d8;">💬 Status Line - Strategic Guidance in Claude Code</h4>
-    <p style="margin-bottom: 10px;">Get a strategic co-pilot that pushes you to ship faster!</p>
-    <ul style="margin: 10px 0; padding-left: 20px;">
+    <h4 style="margin-top: 0; color: #10b981;">💬 Status Line - Strategic Guidance in Claude Code</h4>
+    <p style="margin-bottom: 10px; color: #e5e7eb;">Get a strategic co-pilot that pushes you to ship faster!</p>
+    <ul style="margin: 10px 0; padding-left: 20px; color: #e5e7eb;">
       <li>📊 Analyzes your prompts and provides strategic guidance</li>
       <li>💡 Shows feedback in your Claude Code status bar</li>
       <li>🎭 Choose from multiple coach personalities (Gordon, Vibe-log, Custom)</li>
       <li>⚡ Uses your Claude Code locally for prompt analysis</li>
     </ul>
-    <p style="background: #f7fafc; padding: 12px; border-radius: 6px; font-family: monospace; margin-bottom: 0;">
-      <strong>Install now:</strong> npx vibe-log-cli → Select "💬 Status Line - Prompt feedback in Claude Code"
+    <p style="background: #1a1b1e; border: 1px solid #374151; padding: 12px; border-radius: 6px; font-family: monospace; margin-bottom: 0; color: #10b981;">
+      <strong style="color: #10b981;">Install now:</strong> npx vibe-log-cli → Select "💬 Status Line - Prompt feedback in Claude Code"
     </p>
   </div>
 - If STATUS LINE INSTALLED = Yes or not mentioned, just show the prompt insight without recommendation
 
-5. **What to EXCLUDE**:
+6. **What to EXCLUDE**:
    - Detailed time breakdowns
    - Complex trend analysis
    - Multiple recommendations
@@ -123,9 +361,20 @@ CRITICAL: You MUST output the HTML report like this:
 === REPORT START ===
 <!DOCTYPE html>
 <html>
-... your complete HTML report with all sections and styling ...
+<head>
+  <meta charset="UTF-8">
+  <title>Vibe Log Productivity Report</title>
+  <!-- COPY THE EXACT <style> BLOCK FROM SECTION 5 ABOVE (LINES 94-318) -->
+  <!-- YOU MUST USE THE DARK THEME CSS PROVIDED - DO NOT CREATE YOUR OWN STYLES -->
+  <!-- THE BACKGROUND MUST BE DARK (#0a0b0d) WITH GREEN ACCENTS (#10b981) -->
+</head>
+<body>
+  ... your report content using the defined CSS classes and colors ...
+</body>
 </html>
 === REPORT END ===
+
+IMPORTANT: Copy the ENTIRE <style>...</style> block from section 5 above exactly as shown. The report MUST have a dark background with green accent colors.
 
 Do NOT use Write tool - just OUTPUT the text between the markers.`
 };

@@ -237,42 +237,42 @@ export class ReportGenerator {
       // Add stats if available
       if (this.executionStats) {
         statsHtml = `
-    <div style="background: white; 
+    <div style="background: #1a1b1e; 
                 margin: 40px auto 20px; 
                 max-width: 800px; 
                 padding: 25px; 
                 border-radius: 12px; 
-                border: 2px solid #e2e8f0;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+                border: 1px solid #374151;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-      <div style="font-size: 16px; color: #2d3748; margin-bottom: 20px; font-weight: 600;">
+      <div style="font-size: 16px; color: #e5e7eb; margin-bottom: 20px; font-weight: 600;">
         📊 Report Generation Stats
       </div>
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;">
-        <div style="text-align: center; background: #f7fafc; padding: 15px; border-radius: 8px;">
-          <div style="font-size: 24px; font-weight: bold; color: #5a67d8;">${this.formatDuration(this.executionStats.duration_ms)}</div>
-          <div style="font-size: 12px; color: #4a5568; margin-top: 5px; font-weight: 500;">⏱️ Duration</div>
+        <div style="text-align: center; background: #0a0b0d; padding: 15px; border-radius: 8px; border: 1px solid #374151;">
+          <div style="font-size: 24px; font-weight: bold; color: #10b981;">${this.formatDuration(this.executionStats.duration_ms)}</div>
+          <div style="font-size: 12px; color: #6b7280; margin-top: 5px; font-weight: 500;">⏱️ Duration</div>
         </div>
-        <div style="text-align: center; background: #f7fafc; padding: 15px; border-radius: 8px;">
-          <div style="font-size: 24px; font-weight: bold; color: #5a67d8;">${this.formatDuration(this.executionStats.duration_api_ms)}</div>
-          <div style="font-size: 12px; color: #4a5568; margin-top: 5px; font-weight: 500;">🚀 API Time</div>
+        <div style="text-align: center; background: #0a0b0d; padding: 15px; border-radius: 8px; border: 1px solid #374151;">
+          <div style="font-size: 24px; font-weight: bold; color: #10b981;">${this.formatDuration(this.executionStats.duration_api_ms)}</div>
+          <div style="font-size: 12px; color: #6b7280; margin-top: 5px; font-weight: 500;">🚀 API Time</div>
         </div>
-        <div style="text-align: center; background: #f7fafc; padding: 15px; border-radius: 8px;">
-          <div style="font-size: 24px; font-weight: bold; color: #5a67d8;">${this.executionStats.num_turns}</div>
-          <div style="font-size: 12px; color: #4a5568; margin-top: 5px; font-weight: 500;">🔄 Turns</div>
+        <div style="text-align: center; background: #0a0b0d; padding: 15px; border-radius: 8px; border: 1px solid #374151;">
+          <div style="font-size: 24px; font-weight: bold; color: #10b981;">${this.executionStats.num_turns}</div>
+          <div style="font-size: 12px; color: #6b7280; margin-top: 5px; font-weight: 500;">🔄 Turns</div>
         </div>
-        <div style="text-align: center; background: #f7fafc; padding: 15px; border-radius: 8px;">
-          <div style="font-size: 24px; font-weight: bold; color: #5a67d8;">$${this.executionStats.total_cost_usd.toFixed(2)}</div>
-          <div style="font-size: 12px; color: #4a5568; margin-top: 5px; font-weight: 500;">💰 Cost</div>
+        <div style="text-align: center; background: #0a0b0d; padding: 15px; border-radius: 8px; border: 1px solid #374151;">
+          <div style="font-size: 24px; font-weight: bold; color: #10b981;">$${this.executionStats.total_cost_usd.toFixed(2)}</div>
+          <div style="font-size: 12px; color: #6b7280; margin-top: 5px; font-weight: 500;">💰 Cost</div>
         </div>
       </div>
-      <div style="text-align: center; padding-top: 20px; border-top: 2px solid #e2e8f0;">
-        <div style="font-size: 14px; color: #2d3748; margin-bottom: 12px; font-weight: 500;">
+      <div style="text-align: center; padding-top: 20px; border-top: 1px solid #374151;">
+        <div style="font-size: 14px; color: #9ca3af; margin-bottom: 12px; font-weight: 500;">
           💡 Get instant reports without using your Claude Code subscription
         </div>
         <a href="https://vibe-log.dev" style="display: inline-block; 
-           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-           color: white; 
+           background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+           color: #0a0b0d; 
            text-decoration: none; 
            padding: 10px 24px; 
            border-radius: 6px; 
