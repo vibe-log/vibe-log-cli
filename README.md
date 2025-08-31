@@ -47,11 +47,13 @@ Sync sanitized session data to the Vibe-Log dashboard for web-based analytics an
 
 ## Status Line - Claude Strategic Co-pilot / Advisor (Safe & Reversible)
 
+<img width="612" height="227" alt="image" src="https://github.com/user-attachments/assets/b2f7f10b-8a29-429b-921a-d0fc0bc45183" />
+
+
 The Status Line uses your local Claude Code to provide strategic guidance that pushes you to ship faster. It remembers your original goal and gives concrete, actionable steps to achieve it.
 
 **🔒 Installation Safety**: Automatically backs up your existing status line configuration. Uninstalling instantly restores your original setup - zero risk to your Claude Code configuration.
 
-<img width="560" height="174" alt="image" src="https://github.com/user-attachments/assets/f509c63e-8b16-47f3-9e8f-3c36d1718ca6" />
 
 ### Why Use Status Line?
 
