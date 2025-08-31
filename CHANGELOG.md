@@ -5,6 +5,23 @@ All notable changes to the vibe-log-cli project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.2] - 2025-08-31
+
+### Improved
+- **Status Line Analysis**: Transformed approach from aggressive "Ship NOW!" to thoughtful questioning with specific examples
+- **Session Context Awareness**: Now detects first prompts, question/answer patterns, and image attachments
+- **Smarter Suggestions**: Provides specific test cases and edge cases to consider rather than just pushing to ship
+- **Promotional Tips**: Reduced frequency from 10% to 5% and disabled for first 3 messages
+- **Documentation**: Enhanced README to highlight status line safety features and backup/restore capability
+- **User Trust**: Added prominent messaging about automatic backup of existing status line configurations
+- **Setup Flow**: Reorganized ccusage token metrics as optional step after coach personality selection
+
+### Added
+- **Session Metadata Tracking**: Rich context extraction including message position and attachments
+- **Thoughtful Questioning**: Status line now asks clarifying questions with concrete examples
+- **Safety Documentation**: Clear explanation that uninstalling restores original status line configuration
+- **Feature Visibility**: Added backup/restore and ccusage support to feature list
+
 ## [0.5.1] - 2025-08-30
 
 ### Improved
