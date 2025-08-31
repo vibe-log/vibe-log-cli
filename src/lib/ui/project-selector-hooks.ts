@@ -3,7 +3,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { colors } from './styles';
 import { parseProjectName } from './project-display';
-import { getClaudeProjectsPath } from '../claude-core';
+import { discoverProjects } from '../claude-core';
 import { logger } from '../../utils/logger';
 import { getHookMode, getTrackedProjects } from '../claude-settings-reader';
 
@@ -23,41 +23,32 @@ export interface SelectedProject {
  * Allows users to select which projects should have auto-sync enabled
  */
 export async function showProjectSelectorForHooks(): Promise<SelectedProject[]> {
-  const projectsPath = getClaudeProjectsPath();
-  
   try {
     // Get current hook configuration
     const hookMode = await getHookMode();
     const trackedProjects = hookMode === 'selected' ? await getTrackedProjects() : [];
     
-    // Get all project directories
-    const entries = await fs.readdir(projectsPath, { withFileTypes: true });
-    const projectDirs = entries
-      .filter(entry => entry.isDirectory())
-      .map(entry => entry.name);
+    // Use the filtered discoverProjects which already excludes temp directories
+    const discoveredProjects = await discoverProjects();
     
-    if (projectDirs.length === 0) {
+    if (discoveredProjects.length === 0) {
       console.log(colors.warning('No Claude Code projects found.'));
       return [];
     }
     
-    // Get project info for each directory
-    const projectInfos = await Promise.all(
-      projectDirs.map(async (dir) => {
-        const info = await getProjectInfo(path.join(projectsPath, dir));
-        if (!info) return null;
-        
-        // Check if this project has hooks enabled
-        const hasHooks = hookMode === 'all' || trackedProjects.includes(dir);
-        
-        return { ...info, path: dir, hasHooks };
-      })
-    );
-    
-    // Filter out null values and sort by last activity
-    const validProjects = projectInfos
-      .filter((info): info is NonNullable<typeof info> => info !== null)
-      .sort((a, b) => b.lastActive.getTime() - a.lastActive.getTime());
+    // Convert discovered projects to SelectedProject format
+    const validProjects = discoveredProjects.map(project => {
+      // Check if this project has hooks enabled
+      const hasHooks = hookMode === 'all' || trackedProjects.includes(project.claudePath);
+      
+      return {
+        path: project.claudePath,
+        name: project.name,
+        lastActive: project.lastActivity || new Date(0),  // Use epoch if no activity
+        hasHooks,
+        actualPath: project.actualPath
+      };
+    });
     
     if (validProjects.length === 0) {
       console.log(colors.warning('No valid projects found with sessions.'));
@@ -72,10 +63,10 @@ export async function showProjectSelectorForHooks(): Promise<SelectedProject[]> 
     const lastWeek = new Date(today);
     lastWeek.setDate(lastWeek.getDate() - 7);
     
-    const todayProjects = validProjects.filter(p => p && p.lastActive >= today);
-    const yesterdayProjects = validProjects.filter(p => p && p.lastActive >= yesterday && p.lastActive < today);
-    const weekProjects = validProjects.filter(p => p && p.lastActive >= lastWeek && p.lastActive < yesterday);
-    const olderProjects = validProjects.filter(p => p && p.lastActive < lastWeek);
+    const todayProjects = validProjects.filter(p => p.lastActive >= today);
+    const yesterdayProjects = validProjects.filter(p => p.lastActive >= yesterday && p.lastActive < today);
+    const weekProjects = validProjects.filter(p => p.lastActive >= lastWeek && p.lastActive < yesterday);
+    const olderProjects = validProjects.filter(p => p.lastActive < lastWeek);
     
     // Build choices for inquirer
     const choices: any[] = [];
@@ -86,13 +77,11 @@ export async function showProjectSelectorForHooks(): Promise<SelectedProject[]> 
         name: colors.accent(`──── Today's Projects ────`)
       });
       todayProjects.forEach(project => {
-        if (project) {
-          choices.push({
-            name: formatProjectChoice(project),
-            value: project,
-            checked: project.hasHooks || false  // Pre-select if already tracked
-          });
-        }
+        choices.push({
+          name: formatProjectChoice(project),
+          value: project,
+          checked: project.hasHooks || false  // Pre-select if already tracked
+        });
       });
     }
     
@@ -102,13 +91,11 @@ export async function showProjectSelectorForHooks(): Promise<SelectedProject[]> 
         name: colors.accent(`──── Yesterday ────`)
       });
       yesterdayProjects.forEach(project => {
-        if (project) {
-          choices.push({
-            name: formatProjectChoice(project),
-            value: project,
-            checked: project.hasHooks || false  // Pre-select if already tracked
-          });
-        }
+        choices.push({
+          name: formatProjectChoice(project),
+          value: project,
+          checked: project.hasHooks || false  // Pre-select if already tracked
+        });
       });
     }
     
@@ -118,13 +105,11 @@ export async function showProjectSelectorForHooks(): Promise<SelectedProject[]> 
         name: colors.accent(`──── Last 7 Days ────`)
       });
       weekProjects.forEach(project => {
-        if (project) {
-          choices.push({
-            name: formatProjectChoice(project),
-            value: project,
-            checked: project.hasHooks || false  // Pre-select if already tracked
-          });
-        }
+        choices.push({
+          name: formatProjectChoice(project),
+          value: project,
+          checked: project.hasHooks || false  // Pre-select if already tracked
+        });
       });
     }
     
@@ -134,13 +119,11 @@ export async function showProjectSelectorForHooks(): Promise<SelectedProject[]> 
         name: colors.accent(`──── Older Projects ────`)
       });
       olderProjects.forEach(project => {
-        if (project) {
-          choices.push({
-            name: formatProjectChoice(project),
-            value: project,
-            checked: project.hasHooks || false  // Pre-select if already tracked
-          });
-        }
+        choices.push({
+          name: formatProjectChoice(project),
+          value: project,
+          checked: project.hasHooks || false  // Pre-select if already tracked
+        });
       });
     }
     

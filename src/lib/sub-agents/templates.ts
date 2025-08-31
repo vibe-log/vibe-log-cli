@@ -107,9 +107,13 @@ When generating reports, you will:
        --color-border: #374151;     /* Dark gray borders */
      }
      
+     html {
+       background: #0a0b0d !important;
+     }
+     
      body {
-       background: var(--color-bg);
-       color: var(--color-text);
+       background: #0a0b0d !important;
+       color: #e5e7eb !important;
        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
        max-width: 900px;
        margin: 0 auto;
@@ -142,17 +146,18 @@ When generating reports, you will:
      }
      
      .summary-box {
-       background: var(--color-surface);
-       border: 1px solid var(--color-border);
-       border-left: 4px solid var(--color-primary);
+       background: #1a1b1e !important;
+       border: 1px solid #374151 !important;
+       border-left: 4px solid #10b981 !important;
        padding: 20px;
        border-radius: 12px;
        margin-bottom: 25px;
+       color: #e5e7eb !important;
      }
      
      .project-card {
-       background: var(--color-surface);
-       border: 1px solid var(--color-border);
+       background: #1a1b1e !important;
+       border: 1px solid #374151 !important;
        padding: 15px 20px;
        border-radius: 12px;
        margin-bottom: 12px;
@@ -160,6 +165,7 @@ When generating reports, you will:
        justify-content: space-between;
        align-items: center;
        transition: background 0.2s;
+       color: #e5e7eb !important;
      }
      
      .project-card:hover {
@@ -201,12 +207,13 @@ When generating reports, you will:
      }
      
      .stat-card {
-       background: var(--color-surface);
-       border: 1px solid var(--color-border);
+       background: #1a1b1e !important;
+       border: 1px solid #374151 !important;
        padding: 20px 15px;
        border-radius: 12px;
        text-align: center;
        transition: transform 0.2s, border-color 0.2s;
+       color: #e5e7eb !important;
      }
      
      .stat-card:hover {
@@ -229,23 +236,25 @@ When generating reports, you will:
      }
      
      .insight-box {
-       background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.05));
-       border: 1px solid rgba(16,185,129,0.3);
-       border-left: 4px solid var(--color-success);
+       background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05)) !important;
+       background-color: #1a1b1e !important;
+       border: 1px solid rgba(16,185,129,0.3) !important;
+       border-left: 4px solid #10b981 !important;
        padding: 18px;
        border-radius: 12px;
        margin: 20px 0;
-       color: var(--color-text);
+       color: #e5e7eb !important;
      }
      
      .warning-box {
-       background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.05));
-       border: 1px solid rgba(245,158,11,0.3);
-       border-left: 4px solid var(--color-warning);
+       background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05)) !important;
+       background-color: #1a1b1e !important;
+       border: 1px solid rgba(245,158,11,0.3) !important;
+       border-left: 4px solid #f59e0b !important;
        padding: 18px;
        border-radius: 12px;
        margin: 20px 0;
-       color: var(--color-text);
+       color: #e5e7eb !important;
      }
      
      .activity-bar {
@@ -305,15 +314,34 @@ When generating reports, you will:
      }
      
      ul {
-       color: var(--color-text);
+       color: #e5e7eb !important;
      }
      
      li {
        margin-bottom: 6px;
+       color: #e5e7eb !important;
      }
      
      strong {
-       color: var(--color-text-bright);
+       color: #ffffff !important;
+     }
+     
+     p {
+       color: #e5e7eb !important;
+     }
+     
+     div {
+       color: #e5e7eb;
+     }
+     
+     table {
+       background: #1a1b1e !important;
+       color: #e5e7eb !important;
+     }
+     
+     th, td {
+       color: #e5e7eb !important;
+       border-color: #374151 !important;
      }
    </style>
 
