@@ -5,6 +5,22 @@ All notable changes to the vibe-log-cli project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.3] - 2025-08-31
+
+### Fixed
+- **Hook Installation**: Now correctly appends vibe-log hook to existing UserPromptSubmit hooks instead of overwriting
+- **Claude Sessions**: Isolated all automated Claude sessions to dedicated temp directories to prevent project clutter
+- **Session File Access**: Fixed local report generation by copying session files to temp directory accessible by Claude
+- **Project Filtering**: Temp projects are now properly hidden from all project lists and menus
+
+### Added
+- **Temp Directory Management**: Centralized configuration for temp directories with single source of truth
+- **Dark Theme**: Applied consistent dark theme to local report generation for better readability
+
+### Improved
+- **Project Discovery**: Unified project filtering across all features using single discoverProjects function
+- **Code Organization**: Eliminated code duplication for temp directory handling
+
 ## [0.5.2] - 2025-08-31
 
 ### Improved
