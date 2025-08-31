@@ -164,12 +164,23 @@ export class ClaudeSettingsManager {
     if (!settings.hooks.UserPromptSubmit) settings.hooks.UserPromptSubmit = [];
     
     const analyzeCommand = `${cliPath} analyze-prompt --silent --stdin`;
-    settings.hooks.UserPromptSubmit.push({
-      hooks: [{
+    
+    // Check if there's already a UserPromptSubmit config with hooks array
+    if (settings.hooks.UserPromptSubmit.length > 0 && settings.hooks.UserPromptSubmit[0].hooks) {
+      // Append to existing hooks array
+      settings.hooks.UserPromptSubmit[0].hooks.push({
         type: 'command',
         command: analyzeCommand
-      }]
-    });
+      });
+    } else {
+      // Create new config with hooks array
+      settings.hooks.UserPromptSubmit.push({
+        hooks: [{
+          type: 'command',
+          command: analyzeCommand
+        }]
+      });
+    }
     
     logger.debug(`Added UserPromptSubmit hook: ${analyzeCommand}`);
     
