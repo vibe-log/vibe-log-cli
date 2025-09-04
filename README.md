@@ -178,11 +178,36 @@ flowchart TD
     style Cloud fill:#f3e5f5
     style Features fill:#d4edda
 ```
+## Auto-Sync 
+### What is Auto-Sync
+Claude Code Hooks allow Vibe-Log to automatically sync your Claude Code sessions.
 
+What are Claude Code Hooks?
+
+  • Small commands that run at specific moments in Claude Code
+  
+  • They work silently in the background (you won't notice them)
+
+  
+Which hooks do we use?
+
+  📍 SessionStart - Syncs previous sessions when you start/resume work
+     (Triggers: startup, resume, clear commands)
+     
+  📦 PreCompact - Syncs full session before context compression
+     (Triggers: manual or automatic context cleanup)
+
+     
+Why we recommend both:
+
+  ✓ SessionStart ensures nothing is lost between sessions
+  
+  ✓ PreCompact syncs everything before Claude compresses context
+    
 ### Setup Auto-sync
 1. Run `npx vibe-log-cli`
 2. Authenticate with your Github account
-3. Enable auto-sync in cli menu
+3. Enable auto-sync via CLI menu
 
 ## Supported Coding Engines 
 
