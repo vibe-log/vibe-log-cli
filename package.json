@@ -22,10 +22,10 @@
     "verify:build": "test -f dist/index.js && test -f dist/index.js.map && echo '✓ Build artifacts present'",
     "verify:checksums": "if [ -f dist/checksums.sha256 ]; then cd dist && sha256sum -c checksums.sha256 && echo '✓ Checksums verified'; else echo '⚠ No checksums file found'; fi",
     "prebuild": "npm run clean",
-    "clean": "rm -rf dist",
+    "clean": "rimraf dist",
     "postbuild": "npm run copy-templates && npm run generate-checksums",
     "copy-templates": "node scripts/copy-templates.js",
-    "generate-checksums": "cd dist && sha256sum index.js index.js.map > checksums.sha256 && echo '✓ Checksums generated'"
+    "generate-checksums": "node scripts/generate-checksums.js"
   },
   "keywords": [
     "cli",
@@ -79,6 +79,7 @@
     "execa": "^9.6.0",
     "fs-extra": "^11.3.1",
     "prettier": "^3.0.0",
+    "rimraf": "^6.0.1",
     "tsup": "^8.0.0",
     "typescript": "^5.3.0",
     "vitest": "^3.2.4"
