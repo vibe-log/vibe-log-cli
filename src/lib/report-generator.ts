@@ -3,6 +3,8 @@ import path from 'path';
 import { colors, icons } from './ui/styles';
 import { logger } from '../utils/logger';
 import { parseProjectName } from './ui/project-display';
+import { ReportTemplateEngine } from './report-template-engine';
+import type { ReportData } from '../types/report-data';
 
 /**
  * Execution statistics from Claude
@@ -64,111 +66,90 @@ function getUniqueReportFilename(basePath: string): string {
 }
 
 /**
- * Handles HTML report generation, processing, and saving
+ * Handles JSON report generation, processing, and saving
  */
 export class ReportGenerator {
-  private reportContent: string = '';
-  private capturingReport: boolean = false;
+  private reportData: ReportData | null = null;
+  private capturingJson: boolean = false;
+  private jsonBuffer: string = '';
   private reportFilePath: string = '';
   private executionStats: ExecutionStats | null = null;
+  private templateEngine: ReportTemplateEngine;
+
+  constructor() {
+    this.templateEngine = new ReportTemplateEngine();
+  }
 
   /**
    * Start capturing report content
    */
   public startCapture(): void {
-    this.capturingReport = true;
-    this.reportContent = '';
-    console.log(colors.success('📝 Generating HTML report...'));
+    this.capturingJson = true;
+    this.jsonBuffer = '';
+    this.reportData = null;
+    console.log();
+    console.log(colors.highlight('🚀 TEMPLATE-BASED REPORT GENERATOR v0.6.0'));
+    console.log(colors.muted('   Using new JSON → Template engine (no direct HTML generation)'));
+    console.log();
+    console.log(colors.success('📝 Generating report data...'));
   }
 
   /**
-   * Process a message that may contain report content
+   * Process a message that may contain JSON report data
    */
   public processMessage(text: string): void {
-    const hasStartMarker = text.includes('=== REPORT START ===');
-    const hasEndMarker = text.includes('=== REPORT END ===');
-
-    // Case 1: Both markers in same message
-    if (hasStartMarker && hasEndMarker) {
-      console.log(colors.dim('[DEBUG] Found BOTH markers in same message'));
-      console.log(colors.success('📝 Generating HTML report...'));
-      
-      // Extract content between markers
-      const match = text.match(/=== REPORT START ===([\s\S]*?)=== REPORT END ===/);
-      if (match && match[1]) {
-        this.reportContent = match[1];
-        console.log(colors.dim(`[DEBUG] Extracted content between markers: ${this.reportContent.length} chars`));
+    // Try to detect JSON object in the message
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    
+    if (jsonMatch) {
+      try {
+        // Attempt to parse the JSON
+        const parsedData = JSON.parse(jsonMatch[0]) as ReportData;
         
-        // Store the report path for later
-        this.reportFilePath = getUniqueReportFilename(process.cwd());
-        
-        console.log(colors.dim(`[DEBUG] Will save report to: ${this.reportFilePath} after stats are available`));
-        console.log(colors.dim(`[DEBUG] Report size: ${this.reportContent.length} bytes`));
+        // Validate that it has the expected structure
+        if (parsedData.metadata && parsedData.executiveSummary && parsedData.activityDistribution) {
+          this.reportData = parsedData;
+          this.capturingJson = false;
+          console.log(colors.success('✅ JSON data captured (template engine will format)'));
+          logger.debug('Captured report data:', parsedData);
+          
+          // Store the report path for later
+          this.reportFilePath = getUniqueReportFilename(process.cwd());
+          console.log(colors.dim(`[DEBUG] Will save report to: ${this.reportFilePath} after stats are available`));
+        } else {
+          // Not the expected structure, might be capturing multi-line JSON
+          if (this.capturingJson) {
+            this.jsonBuffer += text;
+          }
+        }
+      } catch (e) {
+        // Not valid JSON yet, might be partial
+        if (this.capturingJson) {
+          this.jsonBuffer += text;
+          
+          // Try to parse accumulated buffer
+          const bufferMatch = this.jsonBuffer.match(/\{[\s\S]*\}/);
+          if (bufferMatch) {
+            try {
+              const parsedData = JSON.parse(bufferMatch[0]) as ReportData;
+              if (parsedData.metadata && parsedData.executiveSummary) {
+                this.reportData = parsedData;
+                this.capturingJson = false;
+                this.jsonBuffer = '';
+                console.log(colors.success('✅ JSON data captured (template engine will format)'));
+                this.reportFilePath = getUniqueReportFilename(process.cwd());
+              }
+            } catch {
+              // Still not complete, continue capturing
+              console.log(colors.muted(`Capturing report data... (${(this.jsonBuffer.length / 1024).toFixed(1)} KB)`));
+            }
+          }
+        }
       }
-      
-      // Show any content before/after markers
-      const beforeStart = text.split('=== REPORT START ===')[0];
-      if (beforeStart.trim()) {
-        console.log('  ' + beforeStart);
-      }
-      const afterEnd = text.split('=== REPORT END ===')[1];
-      if (afterEnd && afterEnd.trim()) {
-        console.log('  ' + afterEnd);
-      }
-    }
-    // Case 2: Only start marker
-    else if (hasStartMarker) {
-      console.log(colors.dim('[DEBUG] Found REPORT START marker'));
-      this.capturingReport = true;
-      this.reportContent = '';
-      console.log(colors.success('📝 Generating HTML report...'));
-      
-      // Don't display the marker itself
-      const beforeMarker = text.split('=== REPORT START ===')[0];
-      if (beforeMarker.trim()) {
-        console.log('  ' + beforeMarker);
-      }
-      // Start capturing after the marker
-      const afterMarker = text.split('=== REPORT START ===')[1];
-      if (afterMarker) {
-        this.reportContent += afterMarker;
-        console.log(colors.dim(`[DEBUG] Started capturing, initial content: ${afterMarker.length} chars`));
-      }
-    }
-    // Case 3: Only end marker
-    else if (hasEndMarker) {
-      console.log(colors.dim('[DEBUG] Found REPORT END marker'));
-      // Capture content before the end marker
-      const beforeMarker = text.split('=== REPORT END ===')[0];
-      if (this.capturingReport && beforeMarker) {
-        this.reportContent += beforeMarker;
-        console.log(colors.dim(`[DEBUG] Final content length: ${this.reportContent.length} chars`));
-      }
-      
-      if (this.capturingReport && this.reportContent.trim()) {
-        // Store the report for later processing
-        this.capturingReport = false;
-        this.reportFilePath = getUniqueReportFilename(process.cwd());
-        
-        console.log(colors.dim(`[DEBUG] Will save report to: ${this.reportFilePath} after stats are available`));
-        console.log(colors.dim(`[DEBUG] Report size: ${this.reportContent.length} bytes`));
-      } else {
-        console.log(colors.dim(`[DEBUG] Not saving - capturing: ${this.capturingReport}, content length: ${this.reportContent?.length || 0}`));
-      }
-      
-      // Show any content after the end marker
-      const afterMarker = text.split('=== REPORT END ===')[1];
-      if (afterMarker && afterMarker.trim()) {
-        console.log('  ' + afterMarker);
-      }
-    }
-    // Case 4: Content between markers (multi-message capture)
-    else if (this.capturingReport) {
-      // Capture report content but don't display it
-      this.reportContent += text;
-      console.log(colors.dim(`[DEBUG] Capturing content: ${text.length} chars, total: ${this.reportContent.length}`));
-      // Show progress indicator
-      console.log(colors.muted(`Generating report... (${(this.reportContent.length / 1024).toFixed(1)} KB)`));
+    } else if (this.capturingJson) {
+      // No JSON detected but we're capturing, add to buffer
+      this.jsonBuffer += text;
+      console.log(colors.muted(`Capturing report data... (${(this.jsonBuffer.length / 1024).toFixed(1)} KB)`));
     }
   }
 
@@ -184,14 +165,14 @@ export class ReportGenerator {
    * Check if we're currently capturing a report
    */
   public isCapturing(): boolean {
-    return this.capturingReport;
+    return this.capturingJson;
   }
 
   /**
-   * Check if we have report content ready to save
+   * Check if we have report data ready to save
    */
   public hasReport(): boolean {
-    return this.reportContent.trim().length > 0 && this.reportFilePath.length > 0;
+    return this.reportData !== null && this.reportFilePath.length > 0;
   }
 
   /**
@@ -209,125 +190,48 @@ export class ReportGenerator {
   }
 
   /**
-   * Post-process and save the HTML report
+   * Generate HTML from JSON data and save the report
    */
   public async saveReport(): Promise<ReportResult> {
-    if (!this.hasReport()) {
+    if (!this.hasReport() || !this.reportData) {
       return {
         success: false,
-        error: 'No report content to save'
+        error: 'No report data to save'
       };
     }
 
-    console.log(colors.dim('[DEBUG] Processing report with stats...'));
+    console.log(colors.dim('[DEBUG] Processing report with template engine v0.6.0...'));
     
-    // Post-process the HTML
-    let processedContent = this.reportContent.trim();
-    
-    // 1. Convert vibe-log.dev text to clickable links (if any)
-    processedContent = processedContent.replace(
-      /vibe-log\.dev/g,
-      '<a href="https://vibe-log.dev" style="color: inherit; text-decoration: none;">vibe-log.dev</a>'
-    );
-    
-    // 2. Inject execution stats and promotional footer before </body>
-    if (processedContent.includes('</body>')) {
-      let statsHtml = '';
+    try {
+      // Load the template
+      console.log(colors.info('🔧 Loading HTML template...'));
+      await this.templateEngine.loadTemplate();
+      console.log(colors.success('✅ Template loaded, injecting data...'));
       
-      // Add stats if available
+      // If we have execution stats, update the report data
       if (this.executionStats) {
-        statsHtml = `
-    <div style="background: #1a1b1e; 
-                margin: 40px auto 20px; 
-                max-width: 800px; 
-                padding: 25px; 
-                border-radius: 12px; 
-                border: 1px solid #374151;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-      <div style="font-size: 16px; color: #e5e7eb; margin-bottom: 20px; font-weight: 600;">
-        📊 Report Generation Stats
-      </div>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;">
-        <div style="text-align: center; background: #0a0b0d; padding: 15px; border-radius: 8px; border: 1px solid #374151;">
-          <div style="font-size: 24px; font-weight: bold; color: #10b981;">${this.formatDuration(this.executionStats.duration_ms)}</div>
-          <div style="font-size: 12px; color: #6b7280; margin-top: 5px; font-weight: 500;">⏱️ Duration</div>
-        </div>
-        <div style="text-align: center; background: #0a0b0d; padding: 15px; border-radius: 8px; border: 1px solid #374151;">
-          <div style="font-size: 24px; font-weight: bold; color: #10b981;">${this.formatDuration(this.executionStats.duration_api_ms)}</div>
-          <div style="font-size: 12px; color: #6b7280; margin-top: 5px; font-weight: 500;">🚀 API Time</div>
-        </div>
-        <div style="text-align: center; background: #0a0b0d; padding: 15px; border-radius: 8px; border: 1px solid #374151;">
-          <div style="font-size: 24px; font-weight: bold; color: #10b981;">${this.executionStats.num_turns}</div>
-          <div style="font-size: 12px; color: #6b7280; margin-top: 5px; font-weight: 500;">🔄 Turns</div>
-        </div>
-        <div style="text-align: center; background: #0a0b0d; padding: 15px; border-radius: 8px; border: 1px solid #374151;">
-          <div style="font-size: 24px; font-weight: bold; color: #10b981;">$${this.executionStats.total_cost_usd.toFixed(2)}</div>
-          <div style="font-size: 12px; color: #6b7280; margin-top: 5px; font-weight: 500;">💰 Cost</div>
-        </div>
-      </div>
-      <div style="text-align: center; padding-top: 20px; border-top: 1px solid #374151;">
-        <div style="font-size: 14px; color: #9ca3af; margin-bottom: 12px; font-weight: 500;">
-          💡 Get instant reports without using your Claude Code subscription
-        </div>
-        <a href="https://vibe-log.dev" style="display: inline-block; 
-           background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
-           color: #0a0b0d; 
-           text-decoration: none; 
-           padding: 10px 24px; 
-           border-radius: 6px; 
-           font-size: 14px;
-           font-weight: 600;
-           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-           transition: transform 0.2s, box-shadow 0.2s;">
-          Visit vibe-log.dev →
-        </a>
-      </div>
-    </div>`;
-      } else {
-        // Even without stats, add a promotional footer
-        statsHtml = `
-    <div style="text-align: center; margin: 40px auto 20px; max-width: 600px; 
-                padding: 25px;
-                background: white;
-                border: 2px solid #e2e8f0;
-                border-radius: 12px;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-      <div style="font-size: 14px; color: #2d3748; margin-bottom: 12px; font-weight: 500;">
-        💡 Get instant productivity reports with vibe-log.dev
-      </div>
-      <a href="https://vibe-log.dev" style="display: inline-block; 
-         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-         color: white; 
-         text-decoration: none; 
-         padding: 10px 24px; 
-         border-radius: 6px; 
-         font-size: 14px;
-         font-weight: 600;
-         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
-        Visit vibe-log.dev →
-      </a>
-    </div>`;
+        this.reportData.reportGeneration = {
+          duration: this.formatDuration(this.executionStats.duration_ms),
+          apiTime: this.formatDuration(this.executionStats.duration_api_ms),
+          turns: this.executionStats.num_turns,
+          estimatedCost: this.executionStats.total_cost_usd,
+          sessionId: this.executionStats.session_id
+        };
       }
       
-      processedContent = processedContent.replace(
-        '</body>',
-        statsHtml + '\n</body>'
-      );
-    }
-    
-    // Now save the processed report
-    try {
-      await fs.writeFile(this.reportFilePath, processedContent);
+      // Generate HTML from the template and data
+      const htmlContent = this.templateEngine.generateReport(this.reportData);
+      
+      // Save the HTML report
+      await fs.writeFile(this.reportFilePath, htmlContent);
       const reportFile = parseProjectName(this.reportFilePath);
-      console.log(colors.success(`✅ Report saved as: ${reportFile}`));
-      console.log(colors.muted(`   Size: ${(processedContent.length / 1024).toFixed(2)} KB`));
+      console.log(colors.success(`✅ Template-based report saved as: ${reportFile}`));
+      console.log(colors.muted(`   Size: ${(htmlContent.length / 1024).toFixed(2)} KB`));
       
       return {
         success: true,
         reportPath: this.reportFilePath,
-        reportContent: processedContent,
+        reportContent: htmlContent,
         executionStats: this.executionStats || undefined
       };
     } catch (error) {
@@ -349,7 +253,7 @@ export class ReportGenerator {
 
     const reportFile = parseProjectName(this.reportFilePath);
     
-    console.log(colors.success(`${icons.check} Report generation complete!`));
+    console.log(colors.success(`${icons.check} Template-based report generation complete! (v0.6.0)`));
     console.log(colors.info(`📁 Report saved as: ${reportFile}`));
     console.log(colors.muted(`📂 Location: ${this.reportFilePath}`));
     console.log();

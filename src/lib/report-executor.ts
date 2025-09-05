@@ -165,6 +165,11 @@ export async function executeClaudePrompt(
               if (toolName === 'Task' && content.input?.subagent_type) {
                 const subagentType = content.input.subagent_type;
                 console.log(colors.dim(formatTimestamp(now)) + ' 🚀 ' + colors.accent(`Launching sub-agent: ${subagentType}...`));
+                
+                // Start capturing when report generator is launched
+                if (subagentType === 'vibe-log-report-generator') {
+                  reportGenerator.startCapture();
+                }
               } else {
                 console.log(colors.dim(formatTimestamp(now)) + ' 🔧 ' + colors.primary(`Calling ${toolName}...`));
               }

@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe-Log Analytics Report - {{metadata.dateRange}}</title>
+    
+    <style type="text/css">
+      /* CSS Reset and Dark Theme Variables */
+      :root {
+        --bg-primary: #1a1a1a !important;
+        --bg-secondary: #0f0f0f !important;
+        --bg-card: #1a1b1e !important;
+        --bg-card-hover: #27272a !important;
+        --text-primary: #e5e5e5 !important;
+        --text-secondary: #9ca3af !important;
+        --text-muted: #6b7280 !important;
+        --text-dim: #4a5568 !important;
+        --accent-purple: #8b5cf6 !important;
+        --accent-green: #10b981 !important;
+        --accent-blue: #3b82f6 !important;
+        --accent-yellow: #eab308 !important;
+        --accent-red: #ef4444 !important;
+        --accent-orange: #f97316 !important;
+        --accent-cyan: #06b6d4 !important;
+        --accent-pink: #ec4899 !important;
+        --border-color: #374151 !important;
+        --border-subtle: #2a2a2a !important;
+        --shadow-color: rgba(0, 0, 0, 0.4) !important;
+      }
+
+      /* Global Styles */
+      * {
+        margin: 0 !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+      }
+
+      html {
+        scroll-behavior: smooth !important;
+      }
+
+      body {
+        background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%) !important;
+        color: var(--text-primary) !important;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+        line-height: 1.6 !important;
+        min-height: 100vh !important;
+        font-size: 16px !important;
+        overflow-x: hidden !important;
+        padding: 20px !important;
+      }
+
+      /* Container and Layout - FORCE CENTERING */
+      .container, .main-content, .content, .report-container {
+        max-width: 800px !important;
+        width: 100% !important;
+        margin: 0 auto !important;
+        padding: 20px !important;
+      }
+      
+      /* Ensure proper centering for all content */
+      body > *, body > div, body > section {
+        max-width: 800px !important;
+        width: 100% !important;
+        margin: 0 auto !important;
+      }
+
+      /* Typography Hierarchy */
+      h1, h2, h3, h4, h5, h6 {
+        color: var(--text-primary) !important;
+        font-weight: 600 !important;
+        margin: 24px 0 16px 0 !important;
+        line-height: 1.3 !important;
+      }
+
+      h1 {
+        font-size: 2.5rem !important;
+        font-weight: 700 !important;
+        margin: 32px 0 24px 0 !important;
+        color: white !important;
+        text-align: center !important;
+        background: none !important;
+        -webkit-background-clip: initial !important;
+        background-clip: initial !important;
+      }
+
+      h2 {
+        font-size: 1.875rem !important;
+        color: var(--accent-purple) !important;
+        border-bottom: 2px solid var(--border-subtle) !important;
+        padding-bottom: 8px !important;
+      }
+
+      h3 {
+        font-size: 1.5rem !important;
+        color: var(--accent-green) !important;
+      }
+
+      h4 {
+        font-size: 1.25rem !important;
+        color: var(--accent-blue) !important;
+      }
+
+      /* Paragraphs and Text */
+      p {
+        color: var(--text-secondary) !important;
+        margin: 16px 0 !important;
+        line-height: 1.7 !important;
+      }
+
+      .subtitle {
+        text-align: center !important;
+        color: var(--text-muted) !important;
+        font-size: 1.125rem !important;
+        margin-top: -16px !important;
+      }
+
+      /* Lists */
+      ul, ol {
+        margin: 16px 0 !important;
+        padding-left: 24px !important;
+      }
+
+      li {
+        color: var(--text-secondary) !important;
+        margin: 8px 0 !important;
+        line-height: 1.6 !important;
+      }
+
+      li::marker {
+        color: var(--accent-purple) !important;
+      }
+
+      /* Cards and Sections */
+      .card, .section, .analysis-section, .metric-card, .breakdown-section {
+        background: var(--bg-card) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 12px !important;
+        padding: 24px !important;
+        margin: 24px 0 !important;
+        box-shadow: 0 4px 6px var(--shadow-color) !important;
+        transition: all 0.3s ease !important;
+      }
+
+      .card:hover {
+        background: var(--bg-card-hover) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 12px var(--shadow-color) !important;
+      }
+
+      /* CTA Banner */
+      .cta-banner {
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%) !important;
+        border: 1px solid var(--accent-purple) !important;
+        border-radius: 8px !important;
+        padding: 16px !important;
+        margin: 20px 0 !important;
+        text-align: center !important;
+        position: relative !important;
+        overflow: hidden !important;
+        transition: all 0.3s ease !important;
+      }
+
+      .cta-banner:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 8px rgba(139, 92, 246, 0.2) !important;
+      }
+
+      .cta-banner-text {
+        margin: 0 !important;
+        color: var(--text-primary) !important;
+        font-size: 1.125rem !important;
+        font-weight: 500 !important;
+      }
+
+      .cta-icon {
+        display: inline-block !important;
+        width: 20px !important;
+        height: 20px !important;
+        margin-right: 8px !important;
+        vertical-align: middle !important;
+        color: var(--accent-yellow) !important;
+      }
+
+      .cta-inline-link {
+        color: var(--accent-green) !important;
+        font-weight: 600 !important;
+        text-decoration: none !important;
+        margin-left: 8px !important;
+        transition: color 0.2s ease !important;
+        display: inline-block !important;
+      }
+
+      .cta-inline-link:hover {
+        color: var(--accent-purple) !important;
+        transform: translateX(2px) !important;
+      }
+
+      /* Metadata Bar */
+      .metadata-bar {
+        text-align: center !important;
+        font-size: 1.1rem !important;
+        color: var(--text-secondary) !important;
+        margin: 20px 0 !important;
+        padding: 16px !important;
+        background: var(--bg-card) !important;
+        border-radius: 8px !important;
+        border: 1px solid var(--border-color) !important;
+      }
+
+      /* Activity Distribution Section */
+      .activity-distribution {
+        margin: 24px 0 !important;
+      }
+
+      .activity-item {
+        margin: 16px 0 !important;
+        padding: 12px !important;
+        background: var(--bg-secondary) !important;
+        border-radius: 8px !important;
+        border: 1px solid var(--border-subtle) !important;
+      }
+
+      .activity-header {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        margin-bottom: 8px !important;
+      }
+
+      .activity-name {
+        color: var(--text-primary) !important;
+        font-weight: 500 !important;
+      }
+
+      .activity-percentage {
+        color: var(--accent-green) !important;
+        font-weight: 600 !important;
+        font-size: 1.125rem !important;
+      }
+
+      .activity-bar {
+        height: 8px !important;
+        background: var(--border-subtle) !important;
+        border-radius: 4px !important;
+        overflow: hidden !important;
+        position: relative !important;
+      }
+
+      .activity-fill {
+        height: 100% !important;
+        transition: width 0.5s ease !important;
+        border-radius: 4px !important;
+      }
+
+      /* Activity Colors */
+      .activity-debugging { background: #ef4444 !important; }
+      .activity-feature-development { background: #10b981 !important; }
+      .activity-refactoring { background: #3b82f6 !important; }
+      .activity-planning { background: #eab308 !important; }
+      .activity-research { background: #8b5cf6 !important; }
+      .activity-learning { background: #06b6d4 !important; }
+      .activity-testing { background: #f97316 !important; }
+      .activity-review { background: #ec4899 !important; }
+      .activity-optimization { background: #10b981 !important; }
+      .activity-other { background: #6b7280 !important; }
+      .activity-architecture { background: #8b5cf6 !important; }
+      .activity-integration { background: #3b82f6 !important; }
+
+      /* Project Cards */
+      .project-grid {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 20px !important;
+        margin-top: 20px !important;
+      }
+
+      .project-card {
+        background: var(--bg-secondary) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 8px !important;
+        padding: 20px !important;
+        transition: all 0.3s ease !important;
+      }
+
+      .project-card:hover {
+        background: var(--bg-card-hover) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 8px var(--shadow-color) !important;
+      }
+
+      .project-header {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        margin-bottom: 12px !important;
+        padding-bottom: 12px !important;
+        border-bottom: 1px solid var(--border-subtle) !important;
+      }
+
+      .project-name {
+        color: var(--accent-purple) !important;
+        font-weight: 600 !important;
+        font-size: 1.125rem !important;
+      }
+
+      .session-count {
+        color: var(--accent-green) !important;
+        font-weight: 500 !important;
+      }
+
+      .project-stats {
+        color: var(--text-muted) !important;
+        font-size: 0.875rem !important;
+        margin-bottom: 12px !important;
+      }
+
+      .project-focus {
+        color: var(--text-secondary) !important;
+        line-height: 1.6 !important;
+      }
+
+      /* Prompt Quality Section */
+      .quality-section {
+        margin: 24px 0 !important;
+      }
+
+      .quality-meter {
+        margin: 20px 0 !important;
+      }
+
+      .quality-score-display {
+        text-align: center !important;
+        margin: 20px 0 !important;
+      }
+
+      .quality-score-value {
+        font-size: 3rem !important;
+        font-weight: 300 !important;
+        color: var(--accent-green) !important;
+        display: block !important;
+      }
+
+      .quality-score-label {
+        color: var(--text-muted) !important;
+        font-size: 0.875rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.1em !important;
+        margin-top: 8px !important;
+      }
+
+      .quality-breakdown {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)) !important;
+        gap: 16px !important;
+        margin: 20px 0 !important;
+      }
+
+      .quality-item {
+        text-align: center !important;
+        padding: 12px !important;
+        background: var(--bg-secondary) !important;
+        border-radius: 8px !important;
+        border: 1px solid var(--border-subtle) !important;
+      }
+
+      .quality-label {
+        display: block !important;
+        font-size: 0.75rem !important;
+        text-transform: uppercase !important;
+        margin-bottom: 4px !important;
+      }
+
+      .quality-value {
+        font-size: 1.5rem !important;
+        font-weight: 600 !important;
+      }
+
+      .excellent { color: #10b981 !important; }
+      .good { color: #eab308 !important; }
+      .fair { color: #f97316 !important; }
+      .poor { color: #ef4444 !important; }
+
+      /* Info Icon and Tooltip */
+      .info-icon-container {
+        position: relative !important;
+        display: inline-block !important;
+        margin-left: 8px !important;
+      }
+
+      .info-icon {
+        display: inline-block !important;
+        width: 18px !important;
+        height: 18px !important;
+        cursor: help !important;
+        transition: all 0.3s ease !important;
+        vertical-align: middle !important;
+        color: var(--accent-blue) !important;
+        opacity: 0.7 !important;
+      }
+
+      .info-icon:hover {
+        color: var(--accent-purple) !important;
+        transform: scale(1.15) !important;
+        opacity: 1 !important;
+      }
+
+      .info-icon svg {
+        width: 100% !important;
+        height: 100% !important;
+      }
+
+      .tooltip-content {
+        position: absolute !important;
+        bottom: 100% !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: 320px !important;
+        padding: 0 !important;
+        margin-bottom: 10px !important;
+        background: var(--bg-card) !important;
+        border: 1px solid var(--accent-blue) !important;
+        border-radius: 8px !important;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4) !important;
+        z-index: 1000 !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        transition: opacity 0.3s ease, visibility 0.3s ease !important;
+        pointer-events: none !important;
+      }
+
+      .info-icon-container:hover .tooltip-content {
+        visibility: visible !important;
+        opacity: 1 !important;
+      }
+
+      .tooltip-content::after {
+        content: '' !important;
+        position: absolute !important;
+        top: 100% !important;
+        left: 50% !important;
+        margin-left: -5px !important;
+        border-width: 5px !important;
+        border-style: solid !important;
+        border-color: var(--accent-blue) transparent transparent transparent !important;
+      }
+
+      .tooltip-header {
+        padding: 12px 16px !important;
+        background: var(--bg-secondary) !important;
+        border-bottom: 1px solid var(--border-subtle) !important;
+        color: var(--accent-blue) !important;
+        font-weight: 600 !important;
+        font-size: 0.95rem !important;
+        border-radius: 8px 8px 0 0 !important;
+      }
+
+      .tooltip-body {
+        padding: 16px !important;
+        color: var(--text-secondary) !important;
+        font-size: 0.875rem !important;
+        line-height: 1.6 !important;
+      }
+
+      .tooltip-list {
+        margin: 12px 0 8px 0 !important;
+        padding-left: 20px !important;
+        list-style-type: none !important;
+      }
+
+      .tooltip-list li {
+        margin: 6px 0 !important;
+        position: relative !important;
+        padding-left: 16px !important;
+      }
+
+      .tooltip-list li::before {
+        content: '▸' !important;
+        position: absolute !important;
+        left: 0 !important;
+        color: var(--accent-blue) !important;
+      }
+
+      .tooltip-list strong {
+        color: var(--text-primary) !important;
+        font-weight: 600 !important;
+      }
+
+      /* Mobile adjustments for tooltip */
+      @media (max-width: 768px) {
+        .tooltip-content {
+          width: 280px !important;
+          left: -100px !important;
+          transform: none !important;
+        }
+      }
+
+      /* Timeline */
+      .timeline {
+        margin: 20px 0 !important;
+      }
+
+      .timeline-item {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 12px !important;
+        margin: 8px 0 !important;
+        background: var(--bg-secondary) !important;
+        border-radius: 8px !important;
+        border-left: 3px solid var(--accent-purple) !important;
+      }
+
+      .timeline-time {
+        color: var(--accent-blue) !important;
+        font-weight: 600 !important;
+        font-size: 0.875rem !important;
+        min-width: 120px !important;
+      }
+
+      .timeline-activity {
+        color: var(--text-secondary) !important;
+        flex: 1 !important;
+        margin-left: 20px !important;
+      }
+
+      /* Recommendations */
+      .recommendations {
+        margin: 20px 0 !important;
+      }
+
+      .recommendation-group {
+        margin: 20px 0 !important;
+      }
+
+      .recommendation-title {
+        color: var(--accent-green) !important;
+        font-weight: 600 !important;
+        font-size: 1.125rem !important;
+        margin-bottom: 12px !important;
+      }
+
+      /* Links */
+      a {
+        color: var(--accent-purple) !important;
+        text-decoration: none !important;
+        transition: color 0.2s ease !important;
+      }
+
+      a:hover {
+        color: var(--accent-green) !important;
+        text-decoration: underline !important;
+      }
+
+      /* Footer Styling */
+      .footer, .report-footer {
+        margin-top: 40px !important;
+        padding: 32px !important;
+        border-top: 1px solid var(--border-subtle) !important;
+        text-align: center !important;
+      }
+
+      /* Report Generation Stats */
+      .report-stats {
+        background: var(--bg-card) !important;
+        margin: 40px auto 20px !important;
+        padding: 25px !important;
+        border-radius: 12px !important;
+        border: 1px solid var(--border-color) !important;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2) !important;
+        text-align: center !important;
+      }
+
+      .stats-header {
+        font-size: 16px !important;
+        color: var(--text-primary) !important;
+        margin-bottom: 20px !important;
+        font-weight: 600 !important;
+      }
+
+      .stats-grid {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+        gap: 15px !important;
+        margin-bottom: 20px !important;
+      }
+
+      .stat-item {
+        text-align: center !important;
+        background: var(--bg-secondary) !important;
+        padding: 15px !important;
+        border-radius: 8px !important;
+        border: 1px solid var(--border-subtle) !important;
+      }
+
+      .stat-value {
+        font-size: 24px !important;
+        font-weight: bold !important;
+        color: var(--accent-green) !important;
+      }
+
+      .stat-label {
+        font-size: 12px !important;
+        color: var(--text-muted) !important;
+        margin-top: 5px !important;
+        font-weight: 500 !important;
+      }
+
+      .cta-section {
+        text-align: center !important;
+        padding-top: 20px !important;
+        border-top: 1px solid var(--border-subtle) !important;
+      }
+
+      .cta-text {
+        font-size: 14px !important;
+        color: var(--text-secondary) !important;
+        margin-bottom: 12px !important;
+        font-weight: 500 !important;
+      }
+
+      .cta-button {
+        display: inline-block !important;
+        background: linear-gradient(135deg, #10b981 0%, #34d399 100%) !important;
+        color: #000000 !important;
+        text-decoration: none !important;
+        padding: 12px 28px !important;
+        border-radius: 6px !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+        transition: transform 0.2s, box-shadow 0.2s !important;
+        text-shadow: none !important;
+      }
+
+      .cta-button:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3) !important;
+        color: #000000 !important;
+        text-decoration: none !important;
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .container, .main-content, .content, .report-container {
+          padding: 16px !important;
+        }
+        
+        h1 {
+          font-size: 2rem !important;
+        }
+        
+        h2 {
+          font-size: 1.5rem !important;
+        }
+
+        .project-header {
+          flex-direction: column !important;
+          align-items: flex-start !important;
+        }
+
+        .timeline-item {
+          flex-direction: column !important;
+          align-items: flex-start !important;
+        }
+
+        .timeline-activity {
+          margin-left: 0 !important;
+          margin-top: 8px !important;
+        }
+      }
+
+      /* Animation Classes */
+      .fade-in {
+        animation: fadeIn 0.6s ease-in !important;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      /* Utility Classes */
+      strong {
+        color: var(--text-primary) !important;
+        font-weight: 600 !important;
+      }
+
+      .icon {
+        margin-right: 8px !important;
+      }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <header class="header">
+            <h1 class="fade-in">🔥 Vibe-Log Analytics Report</h1>
+            <p class="subtitle">{{metadata.dateRange}}</p>
+        </header>
+
+        <!-- CTA Banner -->
+        <div class="cta-banner">
+            <p class="cta-banner-text">
+                <svg class="cta-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+                Get more detailed reports, trends, and breakdowns for free
+                <a href="https://vibe-log.dev" class="cta-inline-link">
+                    <span>vibe-log.dev</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-left: 4px;">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </a>
+            </p>
+        </div>
+
+        <!-- Metadata Bar -->
+        <p class="metadata-bar">
+            Total Sessions: {{metadata.totalSessions}} • 
+            Data Processed: {{metadata.dataProcessed}} • 
+            Active Development: {{metadata.activeDevelopment}} • 
+            Projects: {{metadata.projects}}
+        </p>
+
+        <!-- Executive Summary -->
+        <section class="section fade-in">
+            <h2>📊 Executive Summary</h2>
+            <ul class="bullet-list">
+                {{executiveSummary}}
+            </ul>
+        </section>
+
+        <!-- Activity Distribution -->
+        <section class="section fade-in">
+            <h2>📈 Activity Distribution</h2>
+            <div class="activity-distribution">
+                {{activityBars}}
+            </div>
+        </section>
+
+        <!-- Key Accomplishments -->
+        <section class="section fade-in">
+            <h2>🚀 Key Accomplishments</h2>
+            <ul class="bullet-list">
+                {{keyAccomplishments}}
+            </ul>
+        </section>
+
+        <!-- Project Breakdown -->
+        <section class="section fade-in">
+            <h2>📁 Project Breakdown</h2>
+            <div class="project-grid">
+                {{projectCards}}
+            </div>
+        </section>
+
+        <!-- Prompt Quality Analysis -->
+        <section class="section fade-in">
+            <h2>🎯 Prompt Quality Analysis</h2>
+            <div class="quality-section">
+                <div class="quality-score-display">
+                    <span class="quality-score-value">{{promptQuality.averageScore}}/100</span>
+                    <span class="quality-score-label">
+                        Overall Session Quality
+                        <span class="info-icon-container">
+                            <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M12 16v-4"></path>
+                                <path d="M12 8h.01"></path>
+                            </svg>
+                            <div class="tooltip-content">
+                                <div class="tooltip-header">📐 How This Score Was Calculated</div>
+                                <div class="tooltip-body">
+                                    The quality score is derived from multiple factors:
+                                    <ul class="tooltip-list">
+                                        <li><strong>Session depth</strong> - Larger sessions = more context provided</li>
+                                        <li><strong>Outcome achievement</strong> - Completed tasks vs attempts</li>
+                                        <li><strong>Iteration efficiency</strong> - Fewer back-and-forth exchanges</li>
+                                        <li><strong>Technical clarity</strong> - Specific requirements vs vague requests</li>
+                                    </ul>
+                                    Sessions are weighted by size and complexity for the final score.
+                                </div>
+                            </div>
+                        </span>
+                    </span>
+                </div>
+                
+                <div class="quality-breakdown">
+                    <div class="quality-item">
+                        <span class="quality-label excellent">Excellent</span>
+                        <span class="quality-value excellent">{{promptQuality.breakdown.excellent}}%</span>
+                    </div>
+                    <div class="quality-item">
+                        <span class="quality-label good">Good</span>
+                        <span class="quality-value good">{{promptQuality.breakdown.good}}%</span>
+                    </div>
+                    <div class="quality-item">
+                        <span class="quality-label fair">Fair</span>
+                        <span class="quality-value fair">{{promptQuality.breakdown.fair}}%</span>
+                    </div>
+                    <div class="quality-item">
+                        <span class="quality-label poor">Poor</span>
+                        <span class="quality-value poor">{{promptQuality.breakdown.poor}}%</span>
+                    </div>
+                </div>
+
+                <p>{{promptQuality.methodology}}</p>
+                <p>{{promptQuality.insights}}</p>
+            </div>
+        </section>
+
+        <!-- Timeline (if available) -->
+        {{timeline}}
+
+        <!-- Recommendations (if available) -->
+        {{recommendations}}
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p class="fade-in">Generated by Vibe-Log Analytics | {{metadata.generatedAt}}</p>
+            <p class="fade-in">
+                Enable cloud sync for real-time insights • npx vibe-log-cli → Switch to cloud mode • 
+                <a href="https://vibe-log.dev">vibe-log.dev</a>
+            </p>
+        </footer>
+
+        <!-- Report Generation Stats -->
+        <div class="report-stats">
+            <div class="stats-header">📊 Report Generation Stats</div>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value">{{reportGeneration.duration}}</div>
+                    <div class="stat-label">⏱️ Duration</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{reportGeneration.apiTime}}</div>
+                    <div class="stat-label">🚀 API Time</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{reportGeneration.turns}}</div>
+                    <div class="stat-label">🔄 Turns</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${{reportGeneration.estimatedCost}}</div>
+                    <div class="stat-label">💰 Cost</div>
+                </div>
+            </div>
+            <div class="cta-section">
+                <div class="cta-text">💡 Get instant reports without using your Claude Code subscription</div>
+                <a href="https://vibe-log.dev" class="cta-button">Visit vibe-log.dev →</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

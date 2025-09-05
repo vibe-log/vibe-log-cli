@@ -23,8 +23,9 @@
     "verify:checksums": "if [ -f dist/checksums.sha256 ]; then cd dist && sha256sum -c checksums.sha256 && echo '✓ Checksums verified'; else echo '⚠ No checksums file found'; fi",
     "prebuild": "npm run clean",
     "clean": "rm -rf dist",
-    "postbuild": "npm run generate-checksums",
-    "generate-checksums": "cd dist && sha256sum * > checksums.sha256 && echo '✓ Checksums generated'"
+    "postbuild": "npm run copy-templates && npm run generate-checksums",
+    "copy-templates": "node scripts/copy-templates.js",
+    "generate-checksums": "cd dist && sha256sum index.js index.js.map > checksums.sha256 && echo '✓ Checksums generated'"
   },
   "keywords": [
     "cli",
