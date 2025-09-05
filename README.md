@@ -30,9 +30,14 @@
 
 ![vibe-log-cli](https://github.com/user-attachments/assets/d72bebde-f90d-432f-92dd-6f7f0e4ec480)
 
+
 ## What is Vibe-Log?
 
 vibe-log-cli is an open-source command-line tool that analyzes your Claude Code sessions to extract productivity insights and generate reports. All analysis can run completely locally on your machine using Claude Code's capabilities.
+
+## Updates 
+v0.6.0 – Faster, Smoother Reports 🚀
+Local reports now run on streamlined templates, cutting Claude runtime by up to 3 minutes and making your reports more reliable than ever.
 
 ## Architecture
 
@@ -111,7 +116,7 @@ flowchart LR
 - **Custom** - User-defined personality with strategic focus
 
 ### Example Output
-
+ 
 
 ### Setup
 1. Run `npx vibe-log-cli`
@@ -139,6 +144,8 @@ flowchart TD
     style Start fill:#e1f5fe
     style Output fill:#d4edda
 ```
+## Example of Local Report Output
+<img width="1920" height="4048" alt="screencapture-file-C-vibelog-vibe-log-cli-vibe-log-report-2025-09-05-2-html-2025-09-05-15_54_16" src="https://github.com/user-attachments/assets/545c0515-7649-4561-9e19-86b69a2e7103" />
 
 ## ☁️ Cloud Sync (Optional)
 
