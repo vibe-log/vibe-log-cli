@@ -31,7 +31,9 @@ export class ReportTemplateEngine {
   async loadTemplate(): Promise<void> {
     // Look for template in multiple locations to support both development and NPX usage
     const possiblePaths = [
-      // NPX package - template is now directly in dist/
+      // NPX package - template is directly in dist/ (tsup bundles everything to dist/index.js)
+      join(__dirname, 'report-template.html'),
+      // NPX package - alternative location
       join(__dirname, '..', 'report-template.html'),
       // NPX package - old location for compatibility
       join(__dirname, '..', 'templates', 'report-template.html'),
@@ -43,19 +45,32 @@ export class ReportTemplateEngine {
       join(__dirname, '..', '..', 'dist', 'report-template.html'),
     ];
     
+    // Debug logging
+    if (process.env.VIBELOG_DEBUG === '1') {
+      console.log('[DEBUG] Looking for template file...');
+      console.log('[DEBUG] __dirname:', __dirname);
+      console.log('[DEBUG] process.cwd():', process.cwd());
+    }
+    
     let templatePath: string | null = null;
     for (const path of possiblePaths) {
       try {
         this.template = readFileSync(path, 'utf-8');
         templatePath = path;
+        if (process.env.VIBELOG_DEBUG === '1') {
+          console.log('[DEBUG] ✓ Found template at:', path);
+        }
         break;
-      } catch {
-        // Try next path
+      } catch (err) {
+        if (process.env.VIBELOG_DEBUG === '1') {
+          console.log('[DEBUG] ✗ Not found at:', path);
+        }
       }
     }
     
     if (!templatePath) {
-      throw new Error('Could not find report template file in any expected location');
+      const errorMsg = `Could not find report template file. Searched in:\n${possiblePaths.join('\n')}`;
+      throw new Error(errorMsg);
     }
   }
 
@@ -107,8 +122,9 @@ export class ReportTemplateEngine {
     html = html.replace('{{keyAccomplishments}}', keyAccomplishmentsHtml);
 
     // Generate project breakdown cards with improved structure
-    const projectCardsHtml = data.projectBreakdown
-      .map((project: any) => `                <div class="project-card">
+    const projectCardsHtml = data.projectBreakdown && data.projectBreakdown.length > 0
+      ? data.projectBreakdown
+          .map((project: any) => `                <div class="project-card">
                     <div class="project-header">
                         <span class="project-name">${project.name}</span>
                         <span class="session-count">${project.sessions} sessions</span>
@@ -116,17 +132,27 @@ export class ReportTemplateEngine {
                     <div class="project-stats">Largest: ${project.largestSession}</div>
                     <p class="project-focus">${project.focus}</p>
                 </div>`)
-      .join('\n');
+          .join('\n')
+      : '';
     html = html.replace('{{projectCards}}', projectCardsHtml);
 
     // Replace prompt quality analysis with all fields
-    html = html.replace(/{{promptQuality\.averageScore}}/g, data.promptQuality.averageScore.toString());
-    html = html.replace(/{{promptQuality\.breakdown\.excellent}}/g, data.promptQuality.breakdown.excellent.toString());
-    html = html.replace(/{{promptQuality\.breakdown\.good}}/g, data.promptQuality.breakdown.good.toString());
-    html = html.replace(/{{promptQuality\.breakdown\.fair}}/g, data.promptQuality.breakdown.fair.toString());
-    html = html.replace(/{{promptQuality\.breakdown\.poor}}/g, data.promptQuality.breakdown.poor.toString());
-    html = html.replace(/{{promptQuality\.methodology}}/g, data.promptQuality.methodology);
-    html = html.replace(/{{promptQuality\.insights}}/g, data.promptQuality.insights);
+    if (data.promptQuality) {
+      html = html.replace(/{{promptQuality\.averageScore}}/g, (data.promptQuality.averageScore || 0).toString());
+      html = html.replace(/{{promptQuality\.breakdown\.excellent}}/g, (data.promptQuality.breakdown?.excellent || 0).toString());
+      html = html.replace(/{{promptQuality\.breakdown\.good}}/g, (data.promptQuality.breakdown?.good || 0).toString());
+      html = html.replace(/{{promptQuality\.breakdown\.fair}}/g, (data.promptQuality.breakdown?.fair || 0).toString());
+      html = html.replace(/{{promptQuality\.breakdown\.poor}}/g, (data.promptQuality.breakdown?.poor || 0).toString());
+    } else {
+      // Default values when promptQuality is not provided
+      html = html.replace(/{{promptQuality\.averageScore}}/g, '0');
+      html = html.replace(/{{promptQuality\.breakdown\.excellent}}/g, '0');
+      html = html.replace(/{{promptQuality\.breakdown\.good}}/g, '0');
+      html = html.replace(/{{promptQuality\.breakdown\.fair}}/g, '0');
+      html = html.replace(/{{promptQuality\.breakdown\.poor}}/g, '0');
+    }
+    html = html.replace(/{{promptQuality\.methodology}}/g, data.promptQuality?.methodology || '');
+    html = html.replace(/{{promptQuality\.insights}}/g, data.promptQuality?.insights || '');
 
     // Replace report generation stats
     html = html.replace(/{{reportGeneration\.duration}}/g, data.reportGeneration.duration);
