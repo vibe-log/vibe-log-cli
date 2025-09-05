@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vibe-Log Analytics Report - {{metadata.dateRange}}</title>
+    <title>Vibe-Log Analytics Report - November 1 - December 5, 2024</title>
     
     <style type="text/css">
       /* CSS Reset and Dark Theme Variables */
@@ -697,7 +697,7 @@
         <!-- Header Section -->
         <header class="header">
             <h1 class="fade-in">🔥 Vibe-Log Analytics Report</h1>
-            <p class="subtitle">{{metadata.dateRange}}</p>
+            <p class="subtitle">November 1 - December 5, 2024</p>
         </header>
 
         <!-- CTA Banner -->
@@ -719,17 +719,21 @@
 
         <!-- Metadata Bar -->
         <p class="metadata-bar">
-            Total Sessions: {{metadata.totalSessions}} • 
-            Data Processed: {{metadata.dataProcessed}} • 
-            Active Development: {{metadata.activeDevelopment}} • 
-            Projects: {{metadata.projects}}
+            Total Sessions: 52 • 
+            Data Processed: 28.4 MB • 
+            Active Development: 72h 15m • 
+            Projects: 8
         </p>
 
         <!-- Executive Summary -->
         <section class="section fade-in">
             <h2>📊 Executive Summary</h2>
             <ul class="bullet-list">
-                {{executiveSummary}}
+                                <li><strong>Exceptional productivity:</strong> 52 intensive development sessions demonstrating sustained high-output delivery</li>
+                <li><strong>Enterprise-scale development:</strong> Managing 8 concurrent projects with complex interdependencies</li>
+                <li><strong>Full-stack mastery:</strong> Balanced work across frontend, backend, DevOps, and mobile platforms</li>
+                <li><strong>Innovation focus:</strong> 30% time dedicated to R&D and architectural improvements</li>
+                <li><strong>Team leadership:</strong> Code review and mentoring activities indicate senior technical role</li>
             </ul>
         </section>
 
@@ -737,7 +741,69 @@
         <section class="section fade-in">
             <h2>📈 Activity Distribution</h2>
             <div class="activity-distribution">
-                {{activityBars}}
+                                <div class="activity-item">
+                    <div class="activity-header">
+                        <span class="activity-name">Feature Development</span>
+                        <span class="activity-percentage">35%</span>
+                    </div>
+                    <div class="activity-bar">
+                        <div class="activity-fill activity-feature-development" style="width: 35%; background: #10b981;"></div>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-header">
+                        <span class="activity-name">Architecture & Planning</span>
+                        <span class="activity-percentage">15%</span>
+                    </div>
+                    <div class="activity-bar">
+                        <div class="activity-fill activity-architecture---planning" style="width: 15%; background: #8b5cf6;"></div>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-header">
+                        <span class="activity-name">Integration & Testing</span>
+                        <span class="activity-percentage">15%</span>
+                    </div>
+                    <div class="activity-bar">
+                        <div class="activity-fill activity-integration---testing" style="width: 15%; background: #3b82f6;"></div>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-header">
+                        <span class="activity-name">Debugging & Optimization</span>
+                        <span class="activity-percentage">10%</span>
+                    </div>
+                    <div class="activity-bar">
+                        <div class="activity-fill activity-debugging---optimization" style="width: 10%; background: #ef4444;"></div>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-header">
+                        <span class="activity-name">Code Review</span>
+                        <span class="activity-percentage">10%</span>
+                    </div>
+                    <div class="activity-bar">
+                        <div class="activity-fill activity-code-review" style="width: 10%; background: #6b7280;"></div>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-header">
+                        <span class="activity-name">Research</span>
+                        <span class="activity-percentage">8%</span>
+                    </div>
+                    <div class="activity-bar">
+                        <div class="activity-fill activity-research" style="width: 8%; background: #8b5cf6;"></div>
+                    </div>
+                </div>
+                <div class="activity-item">
+                    <div class="activity-header">
+                        <span class="activity-name">Documentation</span>
+                        <span class="activity-percentage">7%</span>
+                    </div>
+                    <div class="activity-bar">
+                        <div class="activity-fill activity-documentation" style="width: 7%; background: #8b5cf6;"></div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -745,7 +811,13 @@
         <section class="section fade-in">
             <h2>🚀 Key Accomplishments</h2>
             <ul class="bullet-list">
-                {{keyAccomplishments}}
+                                <li><strong>Microservices Migration:</strong> Successfully migrated monolithic application to microservices architecture (12 services)</li>
+                <li><strong>AI Feature Integration:</strong> Implemented GPT-4 powered code review assistant with 95% accuracy</li>
+                <li><strong>Mobile App Launch:</strong> Released React Native app to both iOS and Android stores (4.8★ rating)</li>
+                <li><strong>Performance Breakthrough:</strong> Achieved 10x performance improvement in data processing pipeline</li>
+                <li><strong>Security Hardening:</strong> Passed SOC2 compliance audit with zero critical findings</li>
+                <li><strong>Open Source Contribution:</strong> Published 3 NPM packages with 2,000+ weekly downloads</li>
+                <li><strong>Team Scaling:</strong> Onboarded and mentored 4 new developers with structured training program</li>
             </ul>
         </section>
 
@@ -753,7 +825,70 @@
         <section class="section fade-in">
             <h2>📁 Project Breakdown</h2>
             <div class="project-grid">
-                {{projectCards}}
+                                <div class="project-card">
+                    <div class="project-header">
+                        <span class="project-name">enterprise-platform</span>
+                        <span class="session-count">15 sessions</span>
+                    </div>
+                    <div class="project-stats">Largest: 2.8 MB</div>
+                    <p class="project-focus">Core platform architecture and scaling</p>
+                </div>
+                <div class="project-card">
+                    <div class="project-header">
+                        <span class="project-name">mobile-app</span>
+                        <span class="session-count">10 sessions</span>
+                    </div>
+                    <div class="project-stats">Largest: 1.9 MB</div>
+                    <p class="project-focus">React Native cross-platform development</p>
+                </div>
+                <div class="project-card">
+                    <div class="project-header">
+                        <span class="project-name">data-pipeline</span>
+                        <span class="session-count">8 sessions</span>
+                    </div>
+                    <div class="project-stats">Largest: 2.1 MB</div>
+                    <p class="project-focus">ETL optimization and real-time processing</p>
+                </div>
+                <div class="project-card">
+                    <div class="project-header">
+                        <span class="project-name">ai-assistant</span>
+                        <span class="session-count">6 sessions</span>
+                    </div>
+                    <div class="project-stats">Largest: 1.5 MB</div>
+                    <p class="project-focus">ML model integration and prompt engineering</p>
+                </div>
+                <div class="project-card">
+                    <div class="project-header">
+                        <span class="project-name">auth-service</span>
+                        <span class="session-count">5 sessions</span>
+                    </div>
+                    <div class="project-stats">Largest: 980 KB</div>
+                    <p class="project-focus">OAuth2 and SSO implementation</p>
+                </div>
+                <div class="project-card">
+                    <div class="project-header">
+                        <span class="project-name">analytics-dashboard</span>
+                        <span class="session-count">4 sessions</span>
+                    </div>
+                    <div class="project-stats">Largest: 1.1 MB</div>
+                    <p class="project-focus">Data visualization and reporting</p>
+                </div>
+                <div class="project-card">
+                    <div class="project-header">
+                        <span class="project-name">devops-automation</span>
+                        <span class="session-count">3 sessions</span>
+                    </div>
+                    <div class="project-stats">Largest: 750 KB</div>
+                    <p class="project-focus">CI/CD pipeline and infrastructure as code</p>
+                </div>
+                <div class="project-card">
+                    <div class="project-header">
+                        <span class="project-name">documentation-site</span>
+                        <span class="session-count">1 sessions</span>
+                    </div>
+                    <div class="project-stats">Largest: 320 KB</div>
+                    <p class="project-focus">Technical documentation and API specs</p>
+                </div>
             </div>
         </section>
 
@@ -762,7 +897,7 @@
             <h2>🎯 Prompt Quality Analysis</h2>
             <div class="quality-section">
                 <div class="quality-score-display">
-                    <span class="quality-score-value">{{promptQuality.averageScore}}/100</span>
+                    <span class="quality-score-value">92/100</span>
                     <span class="quality-score-label">
                         Overall Session Quality
                         <span class="info-icon-container">
@@ -774,14 +909,14 @@
                             <div class="tooltip-content">
                                 <div class="tooltip-header">📐 How This Score Was Calculated</div>
                                 <div class="tooltip-body">
-                                    Each session is evaluated and scored (0-100) based on:
+                                    The quality score is derived from multiple factors:
                                     <ul class="tooltip-list">
-                                        <li><strong>Excellent (90-100)</strong> - Clear, specific requirements with examples</li>
-                                        <li><strong>Good (70-89)</strong> - Generally clear with minor gaps</li>
-                                        <li><strong>Fair (50-69)</strong> - Somewhat vague or missing context</li>
-                                        <li><strong>Poor (0-49)</strong> - Very vague or confusing requests</li>
+                                        <li><strong>Session depth</strong> - Larger sessions = more context provided</li>
+                                        <li><strong>Outcome achievement</strong> - Completed tasks vs attempts</li>
+                                        <li><strong>Iteration efficiency</strong> - Fewer back-and-forth exchanges</li>
+                                        <li><strong>Technical clarity</strong> - Specific requirements vs vague requests</li>
                                     </ul>
-                                    The final score is the average across all analyzed sessions, considering context provided, outcome achievement, and iteration efficiency.
+                                    Sessions are weighted by size and complexity for the final score.
                                 </div>
                             </div>
                         </span>
@@ -791,36 +926,36 @@
                 <div class="quality-breakdown">
                     <div class="quality-item">
                         <span class="quality-label excellent">Excellent</span>
-                        <span class="quality-value excellent">{{promptQuality.breakdown.excellent}}%</span>
+                        <span class="quality-value excellent">65%</span>
                     </div>
                     <div class="quality-item">
                         <span class="quality-label good">Good</span>
-                        <span class="quality-value good">{{promptQuality.breakdown.good}}%</span>
+                        <span class="quality-value good">25%</span>
                     </div>
                     <div class="quality-item">
                         <span class="quality-label fair">Fair</span>
-                        <span class="quality-value fair">{{promptQuality.breakdown.fair}}%</span>
+                        <span class="quality-value fair">8%</span>
                     </div>
                     <div class="quality-item">
                         <span class="quality-label poor">Poor</span>
-                        <span class="quality-value poor">{{promptQuality.breakdown.poor}}%</span>
+                        <span class="quality-value poor">2%</span>
                     </div>
                 </div>
 
-                <p>{{promptQuality.methodology}}</p>
-                <p>{{promptQuality.insights}}</p>
+                <p>Advanced analysis using context depth, technical sophistication, and outcome metrics</p>
+                <p>Exceptional prompt engineering with clear technical specifications and iterative refinement patterns</p>
             </div>
         </section>
 
         <!-- Timeline (if available) -->
-        {{timeline}}
+        
 
         <!-- Recommendations (if available) -->
-        {{recommendations}}
+        
 
         <!-- Footer -->
         <footer class="footer">
-            <p class="fade-in">Generated by Vibe-Log Analytics | {{metadata.generatedAt}}</p>
+            <p class="fade-in">Generated by Vibe-Log Analytics | December 5, 2024</p>
             <p class="fade-in">
                 Enable cloud sync for real-time insights • npx vibe-log-cli → Switch to cloud mode • 
                 <a href="https://vibe-log.dev">vibe-log.dev</a>
@@ -832,19 +967,19 @@
             <div class="stats-header">📊 Report Generation Stats</div>
             <div class="stats-grid">
                 <div class="stat-item">
-                    <div class="stat-value">{{reportGeneration.duration}}</div>
+                    <div class="stat-value">18m 30s</div>
                     <div class="stat-label">⏱️ Duration</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value">{{reportGeneration.apiTime}}</div>
+                    <div class="stat-value">19m 45s</div>
                     <div class="stat-label">🚀 API Time</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value">{{reportGeneration.turns}}</div>
+                    <div class="stat-value">48</div>
                     <div class="stat-label">🔄 Turns</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value">${{reportGeneration.estimatedCost}}</div>
+                    <div class="stat-value">$2.45</div>
                     <div class="stat-label">💰 Cost</div>
                 </div>
             </div>

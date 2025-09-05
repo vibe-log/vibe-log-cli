@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vibe-Log Analytics Report - {{metadata.dateRange}}</title>
+    <title>Vibe-Log Analytics Report - December 5, 2024</title>
     
     <style type="text/css">
       /* CSS Reset and Dark Theme Variables */
@@ -697,7 +697,7 @@
         <!-- Header Section -->
         <header class="header">
             <h1 class="fade-in">🔥 Vibe-Log Analytics Report</h1>
-            <p class="subtitle">{{metadata.dateRange}}</p>
+            <p class="subtitle">December 5, 2024</p>
         </header>
 
         <!-- CTA Banner -->
@@ -719,17 +719,17 @@
 
         <!-- Metadata Bar -->
         <p class="metadata-bar">
-            Total Sessions: {{metadata.totalSessions}} • 
-            Data Processed: {{metadata.dataProcessed}} • 
-            Active Development: {{metadata.activeDevelopment}} • 
-            Projects: {{metadata.projects}}
+            Total Sessions: 1 • 
+            Data Processed: 0.1 MB • 
+            Active Development: 15m • 
+            Projects: 1
         </p>
 
         <!-- Executive Summary -->
         <section class="section fade-in">
             <h2>📊 Executive Summary</h2>
             <ul class="bullet-list">
-                {{executiveSummary}}
+                                <li>Single exploratory session with minimal activity</li>
             </ul>
         </section>
 
@@ -737,7 +737,15 @@
         <section class="section fade-in">
             <h2>📈 Activity Distribution</h2>
             <div class="activity-distribution">
-                {{activityBars}}
+                                <div class="activity-item">
+                    <div class="activity-header">
+                        <span class="activity-name">Research</span>
+                        <span class="activity-percentage">100%</span>
+                    </div>
+                    <div class="activity-bar">
+                        <div class="activity-fill activity-research" style="width: 100%; background: #8b5cf6;"></div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -745,7 +753,7 @@
         <section class="section fade-in">
             <h2>🚀 Key Accomplishments</h2>
             <ul class="bullet-list">
-                {{keyAccomplishments}}
+                                <li>Initial project setup and environment configuration</li>
             </ul>
         </section>
 
@@ -753,7 +761,14 @@
         <section class="section fade-in">
             <h2>📁 Project Breakdown</h2>
             <div class="project-grid">
-                {{projectCards}}
+                                <div class="project-card">
+                    <div class="project-header">
+                        <span class="project-name">test-project</span>
+                        <span class="session-count">1 sessions</span>
+                    </div>
+                    <div class="project-stats">Largest: 100 KB</div>
+                    <p class="project-focus">Initial exploration</p>
+                </div>
             </div>
         </section>
 
@@ -762,7 +777,7 @@
             <h2>🎯 Prompt Quality Analysis</h2>
             <div class="quality-section">
                 <div class="quality-score-display">
-                    <span class="quality-score-value">{{promptQuality.averageScore}}/100</span>
+                    <span class="quality-score-value">50/100</span>
                     <span class="quality-score-label">
                         Overall Session Quality
                         <span class="info-icon-container">
@@ -774,14 +789,14 @@
                             <div class="tooltip-content">
                                 <div class="tooltip-header">📐 How This Score Was Calculated</div>
                                 <div class="tooltip-body">
-                                    Each session is evaluated and scored (0-100) based on:
+                                    The quality score is derived from multiple factors:
                                     <ul class="tooltip-list">
-                                        <li><strong>Excellent (90-100)</strong> - Clear, specific requirements with examples</li>
-                                        <li><strong>Good (70-89)</strong> - Generally clear with minor gaps</li>
-                                        <li><strong>Fair (50-69)</strong> - Somewhat vague or missing context</li>
-                                        <li><strong>Poor (0-49)</strong> - Very vague or confusing requests</li>
+                                        <li><strong>Session depth</strong> - Larger sessions = more context provided</li>
+                                        <li><strong>Outcome achievement</strong> - Completed tasks vs attempts</li>
+                                        <li><strong>Iteration efficiency</strong> - Fewer back-and-forth exchanges</li>
+                                        <li><strong>Technical clarity</strong> - Specific requirements vs vague requests</li>
                                     </ul>
-                                    The final score is the average across all analyzed sessions, considering context provided, outcome achievement, and iteration efficiency.
+                                    Sessions are weighted by size and complexity for the final score.
                                 </div>
                             </div>
                         </span>
@@ -791,36 +806,36 @@
                 <div class="quality-breakdown">
                     <div class="quality-item">
                         <span class="quality-label excellent">Excellent</span>
-                        <span class="quality-value excellent">{{promptQuality.breakdown.excellent}}%</span>
+                        <span class="quality-value excellent">0%</span>
                     </div>
                     <div class="quality-item">
                         <span class="quality-label good">Good</span>
-                        <span class="quality-value good">{{promptQuality.breakdown.good}}%</span>
+                        <span class="quality-value good">0%</span>
                     </div>
                     <div class="quality-item">
                         <span class="quality-label fair">Fair</span>
-                        <span class="quality-value fair">{{promptQuality.breakdown.fair}}%</span>
+                        <span class="quality-value fair">100%</span>
                     </div>
                     <div class="quality-item">
                         <span class="quality-label poor">Poor</span>
-                        <span class="quality-value poor">{{promptQuality.breakdown.poor}}%</span>
+                        <span class="quality-value poor">0%</span>
                     </div>
                 </div>
 
-                <p>{{promptQuality.methodology}}</p>
-                <p>{{promptQuality.insights}}</p>
+                <p>Limited data for comprehensive analysis</p>
+                <p>Insufficient data for meaningful quality assessment</p>
             </div>
         </section>
 
         <!-- Timeline (if available) -->
-        {{timeline}}
+        
 
         <!-- Recommendations (if available) -->
-        {{recommendations}}
+        
 
         <!-- Footer -->
         <footer class="footer">
-            <p class="fade-in">Generated by Vibe-Log Analytics | {{metadata.generatedAt}}</p>
+            <p class="fade-in">Generated by Vibe-Log Analytics | December 5, 2024</p>
             <p class="fade-in">
                 Enable cloud sync for real-time insights • npx vibe-log-cli → Switch to cloud mode • 
                 <a href="https://vibe-log.dev">vibe-log.dev</a>
@@ -832,19 +847,19 @@
             <div class="stats-header">📊 Report Generation Stats</div>
             <div class="stats-grid">
                 <div class="stat-item">
-                    <div class="stat-value">{{reportGeneration.duration}}</div>
+                    <div class="stat-value">1m 5s</div>
                     <div class="stat-label">⏱️ Duration</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value">{{reportGeneration.apiTime}}</div>
+                    <div class="stat-value">1m 10s</div>
                     <div class="stat-label">🚀 API Time</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value">{{reportGeneration.turns}}</div>
+                    <div class="stat-value">3</div>
                     <div class="stat-label">🔄 Turns</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value">${{reportGeneration.estimatedCost}}</div>
+                    <div class="stat-value">$0.05</div>
                     <div class="stat-label">💰 Cost</div>
                 </div>
             </div>

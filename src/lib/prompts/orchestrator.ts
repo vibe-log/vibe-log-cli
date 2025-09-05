@@ -33,10 +33,10 @@ BATCHING REQUIREMENTS:
 - RIGHT: 17 sessions = 2-3 agents ✓
 
 REPORT HANDLING:
-- Report generator will OUTPUT HTML between === REPORT START === and === REPORT END ===
-- You MUST capture this HTML and OUTPUT it again yourself (do NOT use Write tool)
-- Just OUTPUT the HTML exactly as you received it from the report generator
-- The system will handle saving it to a file
+- Report generator will output a JSON object with report data
+- You MUST capture this JSON and OUTPUT it yourself as a code block
+- The JSON will be automatically processed by the template engine
+- The system will handle converting JSON to HTML and saving it
 
 EXECUTION FLOW:
 1. Read manifest.json to discover session files
@@ -44,7 +44,7 @@ EXECUTION FLOW:
 3. Launch ALL batch analyzers in parallel (one message, multiple Task calls)
 4. Collect all analysis results
 5. Launch report generator with aggregated data
-6. When report generator outputs HTML, OUTPUT it again yourself (between the same markers)
+6. When report generator outputs JSON, OUTPUT it again yourself in a code block
 
 COMMUNICATION:
 - Announce batching strategy clearly
@@ -118,10 +118,18 @@ ACCOMPLISHMENTS:
 - Key decisions made
 
 PROMPT QUALITY:
-- Were prompts clear and specific?
-- Did user provide good context?
-- Any vague or unclear requests?
-- Suggestions for improvement
+- Rate each session: poor/fair/good/excellent
+- Assign numerical score (0-100):
+  * Excellent (90-100): Clear, specific, great context, examples provided
+  * Good (70-89): Generally clear with minor gaps
+  * Fair (50-69): Somewhat vague or missing context
+  * Poor (0-49): Very vague or confusing
+- Consider:
+  * Clarity of requirements
+  * Context provided (files, examples)
+  * Outcome achievement
+  * Number of clarifications needed
+- Provide specific insights about prompt patterns
 
 RETURN FORMAT (JSON array for your batch):
 [
@@ -133,6 +141,7 @@ RETURN FORMAT (JSON array for your batch):
     'activity_type': 'primary activity',
     'accomplishments': ['list', 'of', 'achievements'],
     'prompt_quality': 'poor/fair/good/excellent',
+    'prompt_score': number (0-100),
     'prompt_insights': 'specific observations',
     'notable_patterns': 'any interesting patterns'
   },
@@ -155,8 +164,8 @@ IMPORTANT:
 After collecting ALL session analysis results, launch the report generator:
 
 Task(subagent_type="vibe-log-report-generator",
-     description="Generate HTML report from session analyses",
-     prompt="Generate a comprehensive HTML report from the session analysis data.
+     description="Generate JSON report data from session analyses",
+     prompt="Generate comprehensive report data from the session analysis results.
 
 INPUT: You will receive arrays of session analysis results from the batch analyzers.
 STATUS LINE INSTALLED: ${context.statusLineInstalled ? 'Yes' : 'No'}
@@ -164,64 +173,55 @@ STATUS LINE INSTALLED: ${context.statusLineInstalled ? 'Yes' : 'No'}
 YOUR TASK:
 1. Flatten and aggregate all session data
 2. Calculate overall metrics and statistics
-3. OUTPUT a complete HTML report between the markers
+3. OUTPUT a JSON object with the report data
 
-CRITICAL: You MUST output the HTML between these exact markers:
-=== REPORT START ===
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Vibe-log Report</title>
-  <style>/* Include beautiful CSS styling */</style>
-</head>
-<body>
-  <!-- Executive Summary -->
-  <section>
-    <h2>Executive Summary</h2>
-    <ul>
-      <li>Total coding time: X hours across Y sessions</li>
-      <li>Most productive project: [project]</li>
-      <li>Primary activity: [most common activity type]</li>
-      <li>Prompt quality trend: [assessment]</li>
-    </ul>
-  </section>
-
-  <!-- Activity Breakdown Chart -->
-  <section>
-    <h2>Activity Distribution</h2>
-    <!-- Create horizontal bar chart from activity type counts -->
-    <!-- Use colors: Development (green), Debugging (orange), Refactoring (blue), etc. -->
-  </section>
-
-  <!-- Key Accomplishments -->
-  <section>
-    <h2>Key Accomplishments</h2>
-    <!-- List top 5-7 accomplishments from all sessions -->
-  </section>
-
-  <!-- Prompt Engineering Insights -->
-  <section>
-    <h2>Prompt Quality Analysis</h2>
-    <!-- Table with prompt patterns and recommendations -->
-  </section>
-
-  <!-- Project Summary -->
-  <section>
-    <h2>Project Breakdown</h2>
-    <!-- Summary for each project -->
-  </section>
-</body>
-</html>
-=== REPORT END ===
+You must return a JSON object with this structure:
+{
+  'metadata': {
+    'totalSessions': number,
+    'dataProcessed': 'size string',
+    'activeDevelopment': 'hours string',
+    'projects': number,
+    'generatedAt': 'ISO timestamp',
+    'dateRange': 'date range string'
+  },
+  'executiveSummary': ['3-4 key insights'],
+  'activityDistribution': {
+    'Development': percentage,
+    'Debugging': percentage,
+    'Testing': percentage,
+    // etc...
+  },
+  'keyAccomplishments': ['5-6 major accomplishments'],
+  'promptQuality': {
+    'methodology': 'how prompts were analyzed',
+    'breakdown': {
+      'excellent': percentage,
+      'good': percentage,
+      'fair': percentage,
+      'poor': percentage
+    },
+    'insights': 'key insight about prompt patterns',
+    'averageScore': number (0-100)
+  },
+  'projectBreakdown': [
+    {
+      'name': 'project name',
+      'sessions': count,
+      'largestSession': 'duration',
+      'focus': 'main activity'
+    }
+  ]
+}
 
 CRITICAL INSTRUCTIONS:
-- OUTPUT the complete HTML between the markers above
-- Do NOT use Write tool - just OUTPUT the text as plain text
-- Include ALL sections with real data
-- Make the HTML self-contained with inline CSS
-- Return the HTML to the orchestrator who will output it")
+- Return ONLY the JSON object
+- Do NOT use Write tool - just OUTPUT the JSON
+- Do NOT include HTML, markers, or explanations
+- Calculate prompt quality from session analyses
+- Return pure JSON to the orchestrator")
 
-IMPORTANT: The report generator OUTPUTS HTML to you. You then OUTPUT it again. Do NOT try to save it.
+IMPORTANT: The report generator outputs JSON to you. You then OUTPUT it again in a code block.
 
 ## Critical Performance Rules
 - Phase 1: Read manifest (3 seconds)
@@ -233,9 +233,9 @@ KEY POINTS:
 - Batch sessions to limit parallel agents (max 9)
 - All batch analyzers launch IN ONE MESSAGE with multiple Task calls
 - Each agent handles 5-10 sessions (not just one)
-- Report generator OUTPUTS HTML between markers
-- Orchestrator OUTPUTS the same HTML again (do NOT use Write tool)
-- The system automatically saves the HTML to a file`;
+- Report generator outputs JSON data
+- Orchestrator OUTPUTS the JSON again in a code block
+- The system automatically converts JSON to HTML and saves it`;
 
   // Build a shorter, more user-friendly command for display
   const displayCommand = `claude "Analyze my Claude Code sessions from ${timeframeDesc} using vibe-log sub-agents..."`;

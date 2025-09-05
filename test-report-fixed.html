@@ -1,0 +1,723 @@
+<!DOCTYPE html><html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe-Log Analytics Report - September 4, 2025</title>
+    
+<style type="text/css">
+      /* CSS Reset and Dark Theme Variables */
+      :root {
+        --bg-primary: #1a1a1a !important;
+        --bg-secondary: #0f0f0f !important;
+        --bg-card: #1a1b1e !important;
+        --bg-card-hover: #27272a !important;
+        --text-primary: #e5e5e5 !important;
+        --text-secondary: #9ca3af !important;
+        --text-muted: #6b7280 !important;
+        --text-dim: #4a5568 !important;
+        --accent-purple: #8b5cf6 !important;
+        --accent-green: #10b981 !important;
+        --accent-blue: #3b82f6 !important;
+        --accent-yellow: #eab308 !important;
+        --accent-red: #ef4444 !important;
+        --accent-orange: #f97316 !important;
+        --accent-cyan: #06b6d4 !important;
+        --accent-pink: #ec4899 !important;
+        --border-color: #374151 !important;
+        --border-subtle: #2a2a2a !important;
+        --shadow-color: rgba(0, 0, 0, 0.4) !important;
+      }
+
+      /* Global Styles */
+      * {
+        margin: 0 !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+      }
+
+      html {
+        scroll-behavior: smooth !important;
+      }
+
+      body {
+        background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%) !important;
+        color: var(--text-primary) !important;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+        line-height: 1.6 !important;
+        min-height: 100vh !important;
+        font-size: 16px !important;
+        overflow-x: hidden !important;
+        padding: 20px !important;
+      }
+
+      /* Container and Layout - FORCE CENTERING */
+      .container, .main-content, .content, .report-container {
+        max-width: 800px !important;
+        width: 100% !important;
+        margin: 0 auto !important;
+        padding: 20px !important;
+      }
+      
+      /* Ensure proper centering for all content */
+      body > *, body > div, body > section {
+        max-width: 800px !important;
+        width: 100% !important;
+        margin: 0 auto !important;
+      }
+      
+      /* Force centering on common wrapper elements */
+      div[class*="container"], div[class*="wrapper"], div[class*="main"] {
+        margin: 0 auto !important;
+        max-width: 800px !important;
+        width: 100% !important;
+      }
+
+      /* Typography Hierarchy */
+      h1, h2, h3, h4, h5, h6 {
+        color: var(--text-primary) !important;
+        font-weight: 600 !important;
+        margin: 24px 0 16px 0 !important;
+        line-height: 1.3 !important;
+      }
+
+      h1 {
+        font-size: 2.5rem !important;
+        font-weight: 700 !important;
+        margin: 32px 0 24px 0 !important;
+        color: white !important;
+        text-align: center !important;
+      }
+      
+      /* Override any gradient text on h1 */
+      h1, h1 * {
+        background: none !important;
+        -webkit-background-clip: initial !important;
+        background-clip: initial !important;
+        color: white !important;
+      }
+
+      h2 {
+        font-size: 1.875rem !important;
+        color: var(--accent-purple) !important;
+        border-bottom: 2px solid var(--border-subtle) !important;
+        padding-bottom: 8px !important;
+      }
+
+      h3 {
+        font-size: 1.5rem !important;
+        color: var(--accent-green) !important;
+      }
+
+      h4 {
+        font-size: 1.25rem !important;
+        color: var(--accent-blue) !important;
+      }
+
+      h5 {
+        font-size: 1.125rem !important;
+        color: var(--accent-yellow) !important;
+      }
+
+      h6 {
+        font-size: 1rem !important;
+        color: var(--text-secondary) !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+      }
+
+      /* Paragraphs and Text */
+      p {
+        color: var(--text-secondary) !important;
+        margin: 16px 0 !important;
+        line-height: 1.7 !important;
+      }
+
+      /* Lists */
+      ul, ol {
+        margin: 16px 0 !important;
+        padding-left: 24px !important;
+      }
+
+      li {
+        color: var(--text-secondary) !important;
+        margin: 8px 0 !important;
+        line-height: 1.6 !important;
+      }
+
+      li::marker {
+        color: var(--accent-purple) !important;
+      }
+
+      /* Cards and Sections */
+      .card, .section, .analysis-section, .metric-card, .breakdown-section {
+        background: var(--bg-card) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 12px !important;
+        padding: 24px !important;
+        margin: 24px 0 !important;
+        box-shadow: 0 4px 6px var(--shadow-color) !important;
+        transition: all 0.3s ease !important;
+      }
+
+      .card:hover {
+        background: var(--bg-card-hover) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 12px var(--shadow-color) !important;
+      }
+
+      /* Metrics and Statistics */
+      .metric, .stat, .score {
+        text-align: center !important;
+        padding: 20px !important;
+        background: var(--bg-secondary) !important;
+        border-radius: 8px !important;
+        border: 1px solid var(--border-subtle) !important;
+        margin: 12px 0 !important;
+      }
+
+      .metric-value, .stat-value, .score-value {
+        font-size: 2.5rem !important;
+        font-weight: 300 !important;
+        color: var(--accent-green) !important;
+        display: block !important;
+        margin-bottom: 8px !important;
+      }
+
+      .metric-label, .stat-label, .score-label {
+        font-size: 0.75rem !important;
+        color: var(--text-muted) !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.05em !important;
+        font-weight: 500 !important;
+      }
+
+      /* Activity Distribution Section - ENSURE VISIBILITY */
+      .activity-distribution, .activity-breakdown {
+        margin: 24px 0 !important;
+        padding: 20px !important;
+        background: var(--bg-card) !important;
+        border-radius: 12px !important;
+        border: 1px solid var(--border-color) !important;
+      }
+      
+      /* Activity Distribution Bars */
+      .activity-bar, .breakdown-bar, .progress-bar {
+        height: 8px !important;
+        background: var(--border-subtle) !important;
+        border-radius: 4px !important;
+        overflow: visible !important;
+        margin: 16px 0 !important;
+        display: flex !important;
+        position: relative !important;
+      }
+
+      .activity-segment {
+        height: 100% !important;
+        transition: all 0.3s ease !important;
+        display: inline-block !important;
+      }
+
+      /* Activity Colors - High Contrast */
+      .activity-debugging, [class*="debugging"] { background: #ef4444 !important; }
+      .activity-feature, [class*="feature"], [class*="development"] { background: #10b981 !important; }
+      .activity-refactoring, [class*="refactor"] { background: #3b82f6 !important; }
+      .activity-planning, [class*="planning"] { background: #eab308 !important; }
+      .activity-research, [class*="research"] { background: #8b5cf6 !important; }
+      .activity-learning, [class*="learning"] { background: #06b6d4 !important; }
+      .activity-testing, [class*="testing"] { background: #f97316 !important; }
+      .activity-review, [class*="review"] { background: #ec4899 !important; }
+      .activity-optimization, [class*="optimi"] { background: #10b981 !important; }
+      .activity-other, [class*="other"] { background: #6b7280 !important; }
+      
+      /* Stacked bar chart for Activity Distribution - ENHANCED */
+      .stacked-bar {
+        display: flex !important;
+        width: 100% !important;
+        height: 20px !important;
+        border-radius: 4px !important;
+        overflow: hidden !important;
+        margin: 16px 0 !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+        border: 1px solid var(--border-subtle) !important;
+      }
+      
+      .stacked-bar > div {
+        height: 100% !important;
+        position: relative !important;
+        transition: opacity 0.3s ease !important;
+      }
+      
+      .stacked-bar > div:hover {
+        opacity: 0.8 !important;
+      }
+      
+      /* Activity percentage visualization - make bars actually show percentages */
+      .activity-breakdown-container {
+        margin: 20px 0 !important;
+        padding: 16px !important;
+        background: var(--bg-card) !important;
+        border-radius: 8px !important;
+        border: 1px solid var(--border-color) !important;
+      }
+      
+      .activity-legend {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        margin-top: 12px !important;
+        justify-content: center !important;
+      }
+      
+      .activity-legend-item {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        font-size: 0.875rem !important;
+        padding: 4px 8px !important;
+        background: var(--bg-card-hover) !important;
+        border-radius: 4px !important;
+        border: 1px solid var(--border-subtle) !important;
+      }
+      
+      .activity-legend-color {
+        width: 12px !important;
+        height: 12px !important;
+        border-radius: 2px !important;
+        display: inline-block !important;
+      }
+
+      /* Labels and Tags */
+      .tag, .badge, .label {
+        display: inline-block !important;
+        padding: 4px 12px !important;
+        background: var(--bg-card-hover) !important;
+        color: var(--text-primary) !important;
+        border-radius: 6px !important;
+        font-size: 0.875rem !important;
+        font-weight: 500 !important;
+        margin: 4px 4px 4px 0 !important;
+        border: 1px solid var(--border-subtle) !important;
+      }
+      
+      /* Quality score colors */
+      .excellent, [class*="excellent"] { color: #10b981 !important; font-weight: 600 !important; }
+      .good, [class*="good"] { color: #eab308 !important; font-weight: 600 !important; }
+      .fair, [class*="fair"] { color: #f97316 !important; font-weight: 600 !important; }
+      .poor, [class*="poor"] { color: #ef4444 !important; font-weight: 600 !important; }
+
+      /* Tables */
+      table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin: 24px 0 !important;
+        background: var(--bg-card) !important;
+        border-radius: 8px !important;
+        overflow: hidden !important;
+        border: 1px solid var(--border-color) !important;
+      }
+
+      th {
+        background: var(--bg-secondary) !important;
+        color: var(--text-primary) !important;
+        font-weight: 600 !important;
+        padding: 16px !important;
+        text-align: left !important;
+        border-bottom: 1px solid var(--border-color) !important;
+      }
+
+      td {
+        padding: 16px !important;
+        border-bottom: 1px solid var(--border-subtle) !important;
+        color: var(--text-secondary) !important;
+      }
+
+      tr:hover {
+        background: var(--bg-card-hover) !important;
+      }
+
+      /* Code blocks */
+      code, pre {
+        font-family: 'Fira Code', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace !important;
+        background: var(--bg-secondary) !important;
+        color: var(--accent-green) !important;
+        border: 1px solid var(--border-subtle) !important;
+        border-radius: 4px !important;
+      }
+
+      code {
+        padding: 2px 6px !important;
+        font-size: 0.875rem !important;
+      }
+
+      pre {
+        padding: 16px !important;
+        overflow-x: auto !important;
+        margin: 16px 0 !important;
+      }
+
+      /* Links */
+      a {
+        color: var(--accent-purple) !important;
+        text-decoration: none !important;
+        transition: color 0.2s ease !important;
+      }
+
+      a:hover {
+        color: var(--accent-green) !important;
+        text-decoration: underline !important;
+      }
+
+      /* Buttons */
+      .button, button {
+        background: linear-gradient(135deg, var(--accent-purple), #7c3aed) !important;
+        color: white !important;
+        border: none !important;
+        padding: 12px 24px !important;
+        border-radius: 6px !important;
+        font-size: 0.875rem !important;
+        font-weight: 600 !important;
+        cursor: pointer !important;
+        transition: all 0.3s ease !important;
+        text-decoration: none !important;
+        display: inline-block !important;
+      }
+      
+      /* Green button override for <a href="https://vibe-log.dev" style="color: #10b981; text-decoration: none;">vibe-log.dev</a> links */
+      a[href*="<a href="https://vibe-log.dev" style="color: #10b981; text-decoration: none;">vibe-log.dev</a>"] {
+        background: linear-gradient(135deg, #10b981 0%, #34d399 100%) !important;
+        color: #000000 !important;
+        text-shadow: none !important;
+        font-weight: 600 !important;
+      }
+
+      .button:hover, button:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 8px var(--shadow-color) !important;
+      }
+      
+      a[href*="<a href="https://vibe-log.dev" style="color: #10b981; text-decoration: none;">vibe-log.dev</a>"]:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3) !important;
+      }
+
+      /* Special Elements */
+      .highlight, .important {
+        background: linear-gradient(135deg, var(--accent-purple), var(--accent-green)) !important;
+        -webkit-background-clip: text !important;
+        background-clip: text !important;
+        color: transparent !important;
+        font-weight: 600 !important;
+      }
+
+      .success {
+        color: var(--accent-green) !important;
+      }
+
+      .warning {
+        color: var(--accent-yellow) !important;
+      }
+
+      .error {
+        color: var(--accent-red) !important;
+      }
+
+      .info {
+        color: var(--accent-blue) !important;
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .container, .main-content, .content, .report-container {
+          padding: 16px !important;
+        }
+        
+        h1 {
+          font-size: 2rem !important;
+        }
+        
+        h2 {
+          font-size: 1.5rem !important;
+        }
+        
+        .metric-value, .stat-value, .score-value {
+          font-size: 2rem !important;
+        }
+      }
+
+      /* Animation Classes */
+      .fade-in {
+        animation: fadeIn 0.6s ease-in !important;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      /* Grid Layouts */
+      .grid-2 {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 24px !important;
+      }
+
+      .grid-3 {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 24px !important;
+      }
+
+      @media (max-width: 768px) {
+        .grid-2, .grid-3 {
+          grid-template-columns: 1fr !important;
+        }
+      }
+
+      /* Footer Styling */
+      .footer, .report-footer {
+        margin-top: 40px !important;
+        padding: 32px !important;
+        border-top: 1px solid var(--border-subtle) !important;
+        text-align: center !important;
+      }
+    </style><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body>
+    <div class="container breakdown-section" style="max-width: 800px; margin: 0px auto; width: 100%;">
+        <header class="header">
+            <h1 class="fade-in"><span style="color: white !important; text-align: center; display: block;">🔥 Vibe-Log Analytics Report</span></h1>
+            <p class="subtitle">24-Hour Development Sprint Analysis • September 3-4, 2025</p>
+        </header>
+
+        <p style="text-align: center; font-size: 1.1rem; color: var(--text-secondary); margin: 20px 0; padding: 16px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color);">Total Sessions: 26 • Data Processed: 13.36 MB • Active Development: 24h • Projects: 3</p>
+
+        <section class="section breakdown-section fade-in">
+            <h2 class="fade-in">Executive Summary</h2>
+            <ul class="bullet-list">
+                <li><strong>Exceptional productivity burst:</strong> 26 comprehensive sessions in 24 hours demonstrates intense, focused development</li>
+                <li><strong>Multi-project orchestration:</strong> Systematic development across all 3 vibe-log ecosystem components</li>
+                <li><strong>Deep engagement patterns:</strong> Average session size of 526KB indicates substantial, meaningful interactions</li>
+                <li><strong>Sustained momentum:</strong> Continuous activity from Sept 3 09:57 to Sept 4 09:34 with recent session completion</li>
+            </ul>
+        </section>
+
+        <section class="section breakdown-section fade-in">
+            <h2 class="fade-in">Activity Distribution</h2>
+            <div class="quality-meter grid-3">
+                <span>Feature Development</span>
+                <div class="quality-bar">
+                    <div class="quality-fill"></div>
+                </div>
+                <span class="quality-score">45%</span>
+            </div>
+            <div class="quality-meter grid-3">
+                <span>Architecture &amp; Planning</span>
+                <div class="quality-bar">
+                    <div class="quality-fill"></div>
+                </div>
+                <span class="quality-score">25%</span>
+            </div>
+            <div class="quality-meter grid-3">
+                <span>Integration &amp; Testing</span>
+                <div class="quality-bar">
+                    <div class="quality-fill"></div>
+                </div>
+                <span class="quality-score">20%</span>
+            </div>
+            <div class="quality-meter grid-3">
+                <span>Debugging &amp; Optimization</span>
+                <div class="quality-bar">
+                    <div class="quality-fill"></div>
+                </div>
+                <span class="quality-score">10%</span>
+            </div>
+        </section>
+
+        <section class="section fade-in">
+            <h2 class="fade-in">
+                <span class="icon">🚀</span>
+                Key Accomplishments
+            </h2>
+            <ul class="bullet-list">
+                <li><strong>CLI Enhancement Sprint:</strong> 12 intensive sessions focused on vibe-log-cli with complex feature implementation (largest session: 1.4MB)</li>
+                <li><strong>Landing Page Optimization:</strong> 9 strategic sessions on vibe-log-landing with substantial redesign work (largest session: 1.6MB)</li>
+                <li><strong>Core Platform Development:</strong> 5 foundational sessions on vibelog root project with major architecture decisions (largest session: 2.3MB)</li>
+            </ul>
+        </section>
+
+        <section class="section breakdown-section fade-in">
+            <h2 class="fade-in">⚡ 
+                📁
+                Project Breakdown
+            </h2>
+            <div class="project-grid">
+                <div class="project-card">
+                    <div class="project-header grid-2">
+                        <span class="project-name">vibe-log-cli</span>
+                        <span class="session-count">12 sessions</span>
+                    </div>
+                    <div class="project-stats">Largest: 1.4 MB • Most Active Project</div>
+                    <p class="fade-in">
+                        Heavy CLI development focus with complex feature implementation, hook system enhancement, and comprehensive testing framework
+                    </p>
+                    <div class="progress-bar">
+                        <div class="progress-fill"></div>
+                    </div>
+                </div>
+                
+                <div class="project-card">
+                    <div class="project-header grid-2">
+                        <span class="project-name">vibe-log-landing</span>
+                        <span class="session-count">9 sessions</span>
+                    </div>
+                    <div class="project-stats">Largest: 1.6 MB • UI/UX Focus</div>
+                    <p class="fade-in">
+                        Substantial landing page development with responsive design implementation, marketing optimization, and user experience enhancements
+                    </p>
+                    <div class="progress-bar">
+                        <div class="progress-fill"></div>
+                    </div>
+                </div>
+                
+                <div class="project-card">
+                    <div class="project-header grid-2">
+                        <span class="project-name">vibelog</span>
+                        <span class="session-count">5 sessions</span>
+                    </div>
+                    <div class="project-stats">Largest: 2.3 MB • Architecture Core</div>
+                    <p class="fade-in">
+                        Foundation-level development with major architectural decisions, core feature implementation, and system integration work
+                    </p>
+                    <div class="progress-bar">
+                        <div class="progress-fill"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section fade-in">
+            <h2 class="fade-in">🔍 
+                🎨
+                Prompt Quality Analysis
+            </h2>
+            <div class="quality-meter grid-3">
+                <span>Overall Session Quality</span>
+                <div class="quality-bar">
+                    <div class="quality-fill"></div>
+                </div>
+                <span class="quality-score">88/100</span>
+            </div>
+            <ul class="bullet-list">
+                <li><strong>Exceptional context depth:</strong> Large session sizes indicate comprehensive problem articulation</li>
+                <li><strong>Strategic project coordination:</strong> Multi-repository development shows systematic thinking</li>
+                <li><strong>Sustained engagement:</strong> 24-hour development window demonstrates focused execution</li>
+                <li><strong>Technical sophistication:</strong> Complex feature implementation across CLI, web, and landing components</li>
+            </ul>
+        </section>
+
+        <section class="section fade-in">
+            <h2 class="fade-in">📝 
+                ⏰
+                Timeline Overview
+            </h2>
+            <div class="timeline">
+                <div class="timeline-item grid-2">
+                    <span class="timeline-time">Sept 3, 09:57</span>
+                    <span class="timeline-activity">Development sprint initiated • Foundation work begins</span>
+                </div>
+                <div class="timeline-item grid-2">
+                    <span class="timeline-time">Morning</span>
+                    <span class="timeline-activity">Core vibelog architecture sessions • Major system design</span>
+                </div>
+                <div class="timeline-item grid-2">
+                    <span class="timeline-time">Midday</span>
+                    <span class="timeline-activity">CLI enhancement focus • Hook system development</span>
+                </div>
+                <div class="timeline-item grid-2">
+                    <span class="timeline-time">Afternoon</span>
+                    <span class="timeline-activity">Landing page optimization • UI/UX improvements</span>
+                </div>
+                <div class="timeline-item grid-2">
+                    <span class="timeline-time">Evening</span>
+                    <span class="timeline-activity">Cross-project integration • System testing</span>
+                </div>
+                <div class="timeline-item grid-2">
+                    <span class="timeline-time">Sept 4, 09:34</span>
+                    <span class="timeline-activity">Latest session completed • Momentum maintained</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="section fade-in">
+            <h2 class="fade-in">
+                <span class="icon">💡</span>
+                Recommendations
+            </h2>
+            <div class="recommendations grid-2">
+                <h3 class="fade-in">Continue This Momentum</h3>
+                <ul class="bullet-list">
+                    <li><strong>Maintain sprint pace:</strong> Your 24-hour development window produced exceptional results</li>
+                    <li><strong>Document architectural decisions:</strong> With 2.3MB sessions, capture key design patterns for future reference</li>
+                    <li><strong>Leverage multi-project coordination:</strong> Your systematic approach across CLI, web, and landing creates powerful synergies</li>
+                </ul>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <p class="fade-in">Generated by Vibe-Log Analytics | September 4, 2025</p>
+            <p class="fade-in">
+                Enable cloud sync for real-time insights • npx vibe-log-cli → Switch to cloud mode • <a href="https://vibe-log.dev" style="color: #10b981; text-decoration: none;"><a href="https://vibe-log.dev" style="color: #10b981; text-decoration: none;">vibe-log.dev</a></a></a>
+            </p>
+        </footer>
+    </div>
+
+
+    <div style="background: #1a1b1e; 
+                margin: 40px auto 20px; 
+                max-width: 800px; 
+                width: calc(100% - 40px);
+                padding: 25px; 
+                border-radius: 12px; 
+                border: 1px solid #374151;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                text-align: center;">
+      <div style="font-size: 16px; color: #e5e7eb; margin-bottom: 20px; font-weight: 600;">
+        📊 Report Generation Stats
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;">
+        <div style="text-align: center; background: #0a0b0d; padding: 15px; border-radius: 8px; border: 1px solid #374151;">
+          <div style="font-size: 24px; font-weight: bold; color: #10b981;">14m 42s</div>
+          <div style="font-size: 12px; color: #6b7280; margin-top: 5px; font-weight: 500;">⏱️ Duration</div>
+        </div>
+        <div style="text-align: center; background: #0a0b0d; padding: 15px; border-radius: 8px; border: 1px solid #374151;">
+          <div style="font-size: 24px; font-weight: bold; color: #10b981;">16m 8s</div>
+          <div style="font-size: 12px; color: #6b7280; margin-top: 5px; font-weight: 500;">🚀 API Time</div>
+        </div>
+        <div style="text-align: center; background: #0a0b0d; padding: 15px; border-radius: 8px; border: 1px solid #374151;">
+          <div style="font-size: 24px; font-weight: bold; color: #10b981;">35</div>
+          <div style="font-size: 12px; color: #6b7280; margin-top: 5px; font-weight: 500;">🔄 Turns</div>
+        </div>
+        <div style="text-align: center; background: #0a0b0d; padding: 15px; border-radius: 8px; border: 1px solid #374151;">
+          <div style="font-size: 24px; font-weight: bold; color: #10b981;">$1.83</div>
+          <div style="font-size: 12px; color: #6b7280; margin-top: 5px; font-weight: 500;">💰 Cost</div>
+        </div>
+      </div>
+      <div style="text-align: center; padding-top: 20px; border-top: 1px solid #374151;">
+        <div style="font-size: 14px; color: #9ca3af; margin-bottom: 12px; font-weight: 500;">
+          💡 Get instant reports without using your Claude Code subscription
+        </div>
+        <a href="https://vibe-log.dev" style="display: inline-block; 
+           background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+           color: #000000 !important; 
+           text-decoration: none; 
+           padding: 12px 28px; 
+           border-radius: 6px; 
+           font-size: 14px;
+           font-weight: 600;
+           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+           transition: transform 0.2s, box-shadow 0.2s;
+           text-shadow: none !important;">
+          Visit vibe-log.dev →
+        </a>
+      </div>
+    </div>
+</body></html>
