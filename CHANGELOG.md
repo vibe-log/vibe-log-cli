@@ -5,17 +5,7 @@ All notable changes to the vibe-log-cli project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.5.4] - 2025-09-05
-
-### Added
-- **install-auto-sync command**: New shortcut command for quick access to auto-sync configuration
-- **Documentation link**: Added link to auto-sync documentation in the menu
-
-### Improved
-- **Auto-sync menu text**: Simplified educational text for better clarity and readability
-- **Help text**: Updated to show the new install-auto-sync command
-
-## [0.6.0] - 2025-09-04
+## [0.6.0] - 2025-09-05
 
 ### Added
 - **Template-Based Report Generation**: Complete replacement of direct HTML generation with JSON→Template system
@@ -38,6 +28,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Report Generation Flow**: Claude provides data, template provides structure (separation of concerns)
 - **Error Messages**: More descriptive feedback during report generation process
+
+### Improved
+- **Report Generation Output**: Tool failures are now hidden during report generation
+  - "Tool failed" messages no longer shown for expected errors (file not found, etc.)
+  - Cleaner, less intimidating output during analysis
+  - Error messages still visible in debug mode (VIBELOG_DEBUG=1)
+  - Reduces user anxiety during the 4-5 minute generation process
+- **Auto-sync menu**: Simplified educational text for better clarity
+  - Added shortcut command `install-auto-sync` for quick access
+  - Added documentation link in the menu
+  - Updated help text to show the new command
 
 ## [0.5.3] - 2025-08-31
 

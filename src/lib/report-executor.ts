@@ -82,7 +82,11 @@ export async function executeClaudePrompt(
               const isError = content.is_error || false;
               
               if (isError) {
-                console.log(colors.dim(formatTimestamp(now)) + ' ❌ ' + colors.error('Tool failed'));
+                // Don't show tool failures - they're usually expected (file not found, etc.)
+                // Only show in debug mode
+                if (process.env.VIBELOG_DEBUG) {
+                  console.log(colors.dim(formatTimestamp(now)) + ' ❌ ' + colors.error('Tool failed'));
+                }
               } else {
                 console.log(colors.dim(formatTimestamp(now)) + ' ✓ ' + colors.success('Tool completed'));
                 

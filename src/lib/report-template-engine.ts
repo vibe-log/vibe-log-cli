@@ -31,14 +31,16 @@ export class ReportTemplateEngine {
   async loadTemplate(): Promise<void> {
     // Look for template in multiple locations to support both development and NPX usage
     const possiblePaths = [
-      // NPX package - template is in dist/templates
+      // NPX package - template is now directly in dist/
+      join(__dirname, '..', 'report-template.html'),
+      // NPX package - old location for compatibility
       join(__dirname, '..', 'templates', 'report-template.html'),
       // Development - template is in src/templates
       join(process.cwd(), 'src', 'templates', 'report-template.html'),
       join(process.cwd(), 'vibe-log-cli', 'src', 'templates', 'report-template.html'),
       // Fallback paths
       join(__dirname, '..', '..', 'src', 'templates', 'report-template.html'),
-      join(__dirname, '..', '..', 'dist', 'templates', 'report-template.html'),
+      join(__dirname, '..', '..', 'dist', 'report-template.html'),
     ];
     
     let templatePath: string | null = null;

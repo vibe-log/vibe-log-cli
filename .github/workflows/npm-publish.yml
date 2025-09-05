@@ -60,10 +60,14 @@ jobs:
           fi
           echo "Build output verified ✓"
           
-      - name: Generate build checksums
+      - name: Verify build checksums
         run: |
-          echo "Generating SHA256 checksums..."
-          sha256sum dist/* > dist/checksums.sha256
+          echo "Verifying checksums were generated during build..."
+          if [ ! -f dist/checksums.sha256 ]; then
+            echo "Error: dist/checksums.sha256 not found"
+            exit 1
+          fi
+          echo "Checksums file contents:"
           cat dist/checksums.sha256
           
       - name: Upload build artifacts

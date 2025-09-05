@@ -18,42 +18,23 @@ function generateChecksum(filePath) {
   });
 }
 
-/**
- * Get all files in a directory recursively
- */
-function getAllFiles(dirPath, arrayOfFiles = []) {
-  const files = fs.readdirSync(dirPath);
-  
-  files.forEach(file => {
-    const filePath = path.join(dirPath, file);
-    if (fs.statSync(filePath).isDirectory()) {
-      arrayOfFiles = getAllFiles(filePath, arrayOfFiles);
-    } else {
-      arrayOfFiles.push(filePath);
-    }
-  });
-  
-  return arrayOfFiles;
-}
-
 async function main() {
   try {
     const distPath = path.join(process.cwd(), 'dist');
     const checksums = [];
     
-    // Get all files in dist directory (including subdirectories)
-    const allFiles = getAllFiles(distPath);
-    
-    // Filter out checksums.sha256 if it exists and sort for consistent output
-    const filesToChecksum = allFiles
-      .filter(file => !file.endsWith('checksums.sha256'))
+    // Get all files in dist directory (only files, not directories)
+    const files = fs.readdirSync(distPath)
+      .filter(file => {
+        const filePath = path.join(distPath, file);
+        return fs.statSync(filePath).isFile() && file !== 'checksums.sha256';
+      })
       .sort();
     
-    for (const filePath of filesToChecksum) {
+    for (const file of files) {
+      const filePath = path.join(distPath, file);
       const checksum = await generateChecksum(filePath);
-      // Get relative path from dist directory for the checksum file
-      const relativePath = path.relative(distPath, filePath).replace(/\\/g, '/');
-      checksums.push(`${checksum}  ${relativePath}`);
+      checksums.push(`${checksum}  ${file}`);
     }
     
     // Write checksums file
