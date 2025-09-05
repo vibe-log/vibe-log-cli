@@ -161,24 +161,17 @@ export async function showHooksManagementMenu(guidedMode: boolean = false): Prom
 async function displayEducationalHeader(mode: HookMode, status: HooksStatus, stats: any): Promise<void> {
   console.log(colors.accent('\n🔧 Auto-sync Configuration\n'));
   
-  // Educational section
-  console.log(colors.subdued('Claude Code Hooks allow vibe-log to automatically sync your coding sessions.\n'));
+  console.log(colors.subdued('Claude Code hooks allow Vibe-Log to automatically sync your Claude Code sessions.\n'));
   
-  console.log(colors.info('What are Claude Code Hooks?'));
-  console.log(colors.subdued('  • Small commands that run at specific moments in Claude Code'));
-  console.log(colors.subdued('  • They work silently in the background (you won\'t notice them)'));
-  console.log(colors.subdued('  • They ensure complete session sync without manual effort\n'));
-  
-  console.log(colors.info('Which hooks do we use?'));
-  console.log('  📍 ' + colors.accent('SessionStart') + colors.subdued(' - Syncs previous session when you start/resume work'));
-  console.log(colors.subdued('     (Triggers: startup, resume, clear commands)\n'));
-  console.log('  📦 ' + colors.accent('PreCompact') + colors.subdued(' - Syncs full session before context compression'));
-  console.log(colors.subdued('     (Triggers: manual or automatic context cleanup)\n'));
-  
-  console.log(colors.info('Why we recommend both:'));
-  console.log(colors.success('  ✓ SessionStart ensures nothing is lost between sessions'));
-  console.log(colors.success('  ✓ PreCompact syncs everything before Claude compresses context'));
+  console.log(colors.info('We use the following hooks:'));
+  console.log('  📍 ' + colors.accent('SessionStart') + colors.subdued(' - Ensures nothing is lost between sessions'));
+  console.log('  📦 ' + colors.accent('PreCompact') + colors.subdued(' - Syncs everything before Claude compresses context'));
   console.log(colors.success('  ✓ Together they provide complete coverage without duplicates\n'));
+  
+  const docsUrl = "https://github.com/vibe-log/vibe-log-cli/tree/main?tab=readme-ov-file#auto-sync";
+  const linkStart = `\u001b]8;;${docsUrl}\u001b\\`;
+  const linkEnd = `\u001b]8;;\u001b\\`;
+  console.log(colors.subdued(`Want to learn more about how hooks and auto-sync work → ${linkStart}check our docs${linkEnd}\n`));
   
   // Current status display
   console.log(box.horizontal.repeat(60));

@@ -7,6 +7,7 @@ import { privacy } from './commands/privacy';
 import { createAnalyzePromptCommand } from './commands/analyze-prompt';
 import { createStatuslineCommand } from './commands/statusline';
 import { createTestPersonalityCommand } from './commands/test-personality';
+import { installAutoSync } from './commands/install-auto-sync';
 import { showLogo } from './lib/ui';
 import { handleError } from './utils/errors';
 import { logger } from './utils/logger';
@@ -173,6 +174,18 @@ program.addCommand(createStatuslineCommand());
 // Add test-personality command (hidden - for debugging)
 program.addCommand(createTestPersonalityCommand());
 
+// Add install-auto-sync command for direct access to auto-sync configuration
+program
+  .command('install-auto-sync')
+  .description('Configure automatic session sync (Claude Code hooks)')
+  .action(async () => {
+    try {
+      await installAutoSync();
+    } catch (error) {
+      handleError(error);
+    }
+  });
+
 // Custom help function
 function showHelp(): void {
   console.log('');
@@ -184,9 +197,10 @@ function showHelp(): void {
   console.log('  npx vibe-log-cli              Interactive menu (recommended)');
   console.log('');
   console.log('Quick actions:');
-  console.log('  npx vibe-log-cli auth         Sign in to enable cloud sync & web dashboard');
-  console.log('  npx vibe-log-cli send         Manually sync sessions to cloud');
-  console.log('  npx vibe-log-cli privacy      Preview what data gets sent (privacy first!)');
+  console.log('  npx vibe-log-cli auth               Sign in to enable cloud sync & web dashboard');
+  console.log('  npx vibe-log-cli install-auto-sync  Configure automatic session sync');
+  console.log('  npx vibe-log-cli send               Manually sync sessions to cloud');
+  console.log('  npx vibe-log-cli privacy            Preview what data gets sent (privacy first!)');
   console.log('');
   console.log('For hooks (automatic sync):');
   console.log('  npx vibe-log-cli send --silent    Used by Claude Code hooks');
