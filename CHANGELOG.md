@@ -5,6 +5,40 @@ All notable changes to the vibe-log-cli project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.4] - 2025-09-05
+
+### Added
+- **install-auto-sync command**: New shortcut command for quick access to auto-sync configuration
+- **Documentation link**: Added link to auto-sync documentation in the menu
+
+### Improved
+- **Auto-sync menu text**: Simplified educational text for better clarity and readability
+- **Help text**: Updated to show the new install-auto-sync command
+
+## [0.6.0] - 2025-09-04
+
+### Added
+- **Template-Based Report Generation**: Complete replacement of direct HTML generation with JSON→Template system
+  - Claude now returns only structured JSON data
+  - Fixed HTML template guarantees consistent report structure
+  - All sections always appear in the correct order
+  - No more missing "Prompt Quality Analysis" sections
+  - Clean section titles without emojis
+  - Simple stats line instead of grid cards
+  - Template is the single source of truth for HTML structure
+- **Version Indicators**: Clear console output showing template-based system v0.6.0 is running
+- **Type Safety**: Full TypeScript interfaces for report data structure
+
+### Fixed
+- **Report Consistency**: Solved all 8 formatting issues identified in previous versions
+- **Section Ordering**: Executive Summary, Activity Distribution, Key Accomplishments, Prompt Quality Analysis, Project Breakdown always appear
+- **Styling Issues**: CSS is now predefined in template, not dynamically generated
+- **Footer Problems**: No unwanted footer elements in reports
+
+### Changed
+- **Report Generation Flow**: Claude provides data, template provides structure (separation of concerns)
+- **Error Messages**: More descriptive feedback during report generation process
+
 ## [0.5.3] - 2025-08-31
 
 ### Fixed
