@@ -264,6 +264,17 @@ async function handleMenuAction(
           });
           break;
           
+        case 'time-based':
+          // Send sessions from time-based selection
+          console.log(colors.info(`\nSyncing ${syncOption.sessions.length} sessions from the last ${syncOption.days} days...`));
+          console.log(colors.dim('Preparing sessions for privacy-safe upload...'));
+          
+          await sendWithTimeout({ 
+            selectedSessions: syncOption.sessions,
+            fromMenu: true
+          });
+          break;
+          
         case 'projects': {
           // Send selected projects
           // Read sessions from selected projects
