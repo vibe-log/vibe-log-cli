@@ -5,6 +5,28 @@ All notable changes to the vibe-log-cli project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.2] - 2025-09-10
+
+### Added
+- **Git Branch Information**: Sessions now capture and send the current git branch name to the API
+  - Automatically extracts branch from Claude Code session directory
+  - Provides better context for development activity tracking
+  - Enhances analytics with branch-level insights
+
+### Improved
+- **Time-Based Sync Options**: Enhanced sync menu with convenient time-range options
+  - Added "Last 7 days" quick sync option
+  - Added "Last 14 days" quick sync option
+  - Simplified workflow for regular syncing patterns
+  - Better user experience for common sync scenarios
+
+## [0.6.1] - 2025-09-09
+
+### Fixed
+- **Hotfix**: Resolved critical issue preventing users from generating local reports in certain scenarios
+  - Fixed template path resolution for NPM package distribution
+  - Ensured proper access to report templates in all environments
+
 ## [0.6.0] - 2025-09-05
 
 ### Added
