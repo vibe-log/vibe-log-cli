@@ -161,6 +161,7 @@ export class SendOrchestrator {
         const messages: any[] = [];
         let metadata: any = null;
         const editedFiles = new Set<string>();
+        let gitBranch: string | undefined;
         
         // Model tracking variables
         const modelStats: Record<string, number> = {};
@@ -172,6 +173,11 @@ export class SendOrchestrator {
           
           try {
             const data = JSON.parse(line);
+            
+            // Extract git branch from the first entry that has it
+            if (!gitBranch && data.gitBranch) {
+              gitBranch = data.gitBranch;
+            }
             
             if (!metadata && data.sessionId && data.cwd && data.timestamp) {
               metadata = {
@@ -250,6 +256,7 @@ export class SendOrchestrator {
               languages: languages,
             },
             modelInfo,
+            gitBranch,  // Include git branch
           });
         }
       } catch (error) {
@@ -297,6 +304,7 @@ export class SendOrchestrator {
             languages: session.metadata?.languages || [],
             models: session.modelInfo?.models,
             primaryModel: session.modelInfo?.primaryModel || undefined,
+            gitBranch: session.gitBranch,  // Include git branch from JSONL
             // Planning mode metadata
             hasPlanningMode: session.planningModeInfo?.hasPlanningMode || false,
             planningCycles: session.planningModeInfo?.planningCycles || 0,

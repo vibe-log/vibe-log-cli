@@ -34,6 +34,7 @@ export interface SessionData extends SessionMetadata {
   };
   modelInfo?: ModelUsageStats;  // Model usage information
   planningModeInfo?: PlanningModeInfo;  // Planning mode tracking
+  gitBranch?: string;  // Git branch from JSONL
   // Source file information for re-reading if needed
   sourceFile?: {
     claudeProjectPath: string;  // e.g., ~/.claude/projects/-home-user-vibe-log

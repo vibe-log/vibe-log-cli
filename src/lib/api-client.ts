@@ -21,6 +21,7 @@ export interface Session {
       languages: string[];
       models?: string[];         // All models used in session
       primaryModel?: string;     // Most frequently used model
+      gitBranch?: string;        // Git branch from JSONL
       // Planning mode metadata
       hasPlanningMode?: boolean;        // Whether planning mode was used
       planningCycles?: number;          // Number of planning cycles

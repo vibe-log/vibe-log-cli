@@ -20,6 +20,7 @@ interface ClaudeLogEntry {
   message?: ClaudeMessage;
   type?: string;
   files?: string[];
+  gitBranch?: string;  // Git branch from JSONL
   toolUseResult?: {
     type: string;
     filePath?: string;
@@ -169,12 +170,20 @@ async function parseSessionFile(filePath: string): Promise<SessionData | null> {
     
     // Planning mode tracking variables
     const exitPlanTimestamps: Date[] = [];
+    
+    // Git branch tracking
+    let gitBranch: string | undefined;
 
     for (const line of lines) {
       if (!line.trim()) continue;
       
       try {
         const data: ClaudeLogEntry = JSON.parse(line);
+
+        // Extract git branch from the first entry that has it
+        if (!gitBranch && data.gitBranch) {
+          gitBranch = data.gitBranch;
+        }
 
         // Extract session metadata from first valid entry
         if (!metadata && data.sessionId && data.cwd && data.timestamp) {
@@ -275,6 +284,7 @@ async function parseSessionFile(filePath: string): Promise<SessionData | null> {
       },
       modelInfo,
       planningModeInfo,
+      gitBranch,
     };
   } catch (error) {
     console.error(`Error parsing session file ${filePath}:`, error);
