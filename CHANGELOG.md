@@ -21,6 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Status displays show SessionEnd installation and statistics
   - Test menu includes SessionEnd hook testing option
 
+## [0.6.3] - 2025-09-12
+
+### Improved
+- **Message Length Capture**: Claude Code sessions now capture full message content instead of truncating at 5K characters
+  - Ensures complete context preservation for analysis
+  - Better analytics and insights from comprehensive session data
+  - No more data loss from longer development conversations
+
 ## [0.6.2] - 2025-09-10
 
 ### Added

@@ -447,7 +447,7 @@ class SecureApiClient {
         projectName: session.data?.projectName || '', // Project name is already sanitized in send.ts
         // Message content is already sanitized at this point
         // Just ensure the summary doesn't contain sensitive data
-        messageSummary: session.data?.messageSummary ? session.data.messageSummary.slice(0, 5000) : '',
+        messageSummary: session.data?.messageSummary || '',
       },
     };
   }
