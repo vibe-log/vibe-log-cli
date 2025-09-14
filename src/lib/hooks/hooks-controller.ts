@@ -17,6 +17,7 @@ import {
 export interface HookSelection {
   sessionStartHook: boolean;
   preCompactHook: boolean;
+  sessionEndHook: boolean;
 }
 
 /**
@@ -54,6 +55,7 @@ export interface HookStatusInfo {
 export interface HooksStatus {
   sessionStartHook: HookStatusInfo;
   preCompactHook: HookStatusInfo;
+  sessionEndHook: HookStatusInfo;
   settingsPath: string;
   cliPath: string;
   trackedProjects?: string[];  // List of project paths being tracked
@@ -70,7 +72,8 @@ const HOOKS_VERSION = '1.0.0';
 // Hook matcher configurations
 const HOOK_MATCHERS = {
   SessionStart: 'startup|clear',  // Capture on startup and clear (not resume)
-  PreCompact: 'auto'              // Only automatic compression (not manual)
+  PreCompact: 'auto',             // Only automatic compression (not manual)
+  SessionEnd: 'clear|logout|prompt_input_exit|other'  // Capture on session end events
 } as const;
 
 /**
@@ -146,26 +149,29 @@ export async function getHooksStatus(): Promise<HooksStatus> {
   const settings = await readSettings();
   const settingsPath = getGlobalSettingsPath();
   const cliPath = getCliPath();
-  
+
   const sessionStartHook = getHookStatusInfo(settings?.hooks?.SessionStart);
   const preCompactHook = getHookStatusInfo(settings?.hooks?.PreCompact);
-  
+  const sessionEndHook = getHookStatusInfo(settings?.hooks?.SessionEnd);
+
   // Get file stats for last modified
   try {
     const stats = await fs.stat(settingsPath);
     sessionStartHook.lastModified = stats.mtime;
     preCompactHook.lastModified = stats.mtime;
+    sessionEndHook.lastModified = stats.mtime;
   } catch (error) {
     logger.debug('Could not get settings file stats:', error);
   }
-  
+
   // Get tracked projects from claude-settings-reader
   const mode = await getHookModeFromReader();
   const trackedProjects = mode === 'selected' ? await getTrackedProjectsFromReader() : undefined;
-  
+
   return {
     sessionStartHook,
     preCompactHook,
+    sessionEndHook,
     settingsPath,
     cliPath,
     trackedProjects
@@ -176,8 +182,8 @@ export async function getHooksStatus(): Promise<HooksStatus> {
  * Build hook command string with given trigger type
  */
 export function buildHookCommand(
-  cliPath: string, 
-  hookTrigger: 'sessionstart' | 'precompact',
+  cliPath: string,
+  hookTrigger: 'sessionstart' | 'precompact' | 'sessionend',
   mode?: 'all' | 'selected'
 ): string {
   // For global mode (track all), use --all flag instead of --claude-project-dir
@@ -193,7 +199,7 @@ export function buildHookCommand(
  * Hook definition for configuration
  */
 interface HookDefinition {
-  type: 'SessionStart' | 'PreCompact';
+  type: 'SessionStart' | 'PreCompact' | 'SessionEnd';
   enabled: boolean;
 }
 
@@ -201,11 +207,12 @@ interface HookDefinition {
  * Build hook configuration for a specific hook type
  */
 function buildHookConfiguration(
-  hookType: 'SessionStart' | 'PreCompact',
+  hookType: 'SessionStart' | 'PreCompact' | 'SessionEnd',
   cliPath: string,
   mode?: 'all' | 'selected'
 ): HookConfigWithMatcher[] {
-  const triggerType = hookType === 'SessionStart' ? 'sessionstart' : 'precompact';
+  const triggerType = hookType === 'SessionStart' ? 'sessionstart' :
+                      hookType === 'PreCompact' ? 'precompact' : 'sessionend';
   return [{
     matcher: HOOK_MATCHERS[hookType],
     hooks: [{
@@ -287,7 +294,8 @@ async function installHooksToSettings(
 export async function installSelectedHooks(selection: HookSelection): Promise<void> {
   const hooks: HookDefinition[] = [
     { type: 'SessionStart', enabled: selection.sessionStartHook },
-    { type: 'PreCompact', enabled: selection.preCompactHook }
+    { type: 'PreCompact', enabled: selection.preCompactHook },
+    { type: 'SessionEnd', enabled: selection.sessionEndHook }
   ];
   
   await installHooksToSettings(
@@ -303,13 +311,14 @@ export async function installSelectedHooks(selection: HookSelection): Promise<vo
 /**
  * Enable or disable a specific hook
  */
-export async function toggleHook(hookType: 'sessionstart' | 'precompact', enable: boolean): Promise<void> {
+export async function toggleHook(hookType: 'sessionstart' | 'precompact' | 'sessionend', enable: boolean): Promise<void> {
   const settings = await readSettings();
   if (!settings || !settings.hooks) {
     throw new Error('No hooks installed');
   }
-  
-  const hookKey = hookType === 'sessionstart' ? 'SessionStart' : 'PreCompact';
+
+  const hookKey = hookType === 'sessionstart' ? 'SessionStart' :
+                  hookType === 'precompact' ? 'PreCompact' : 'SessionEnd';
   const hookConfig = settings.hooks[hookKey];
   
   if (!hookConfig || !hookConfig[0]?.hooks?.[0]) {
@@ -348,10 +357,16 @@ export async function uninstallAllHooks(): Promise<{ removedCount: number }> {
       delete globalSettings.hooks.SessionStart;
       globalRemoved++;
     }
-    
+
     // Remove PreCompact hook
     if (globalSettings.hooks.PreCompact) {
       delete globalSettings.hooks.PreCompact;
+      globalRemoved++;
+    }
+
+    // Remove SessionEnd hook
+    if (globalSettings.hooks.SessionEnd) {
+      delete globalSettings.hooks.SessionEnd;
       globalRemoved++;
     }
     
@@ -401,9 +416,14 @@ export async function uninstallAllHooks(): Promise<{ removedCount: number }> {
           delete localSettings.hooks.SessionStart;
           projectRemoved++;
         }
-        
+
         if (localSettings.hooks.PreCompact && isVibeLogHook(localSettings.hooks.PreCompact)) {
           delete localSettings.hooks.PreCompact;
+          projectRemoved++;
+        }
+
+        if (localSettings.hooks.SessionEnd && isVibeLogHook(localSettings.hooks.SessionEnd)) {
+          delete localSettings.hooks.SessionEnd;
           projectRemoved++;
         }
         
@@ -458,15 +478,16 @@ async function readSettingsFile(path: string): Promise<ClaudeSettings | null> {
  * Update hook configuration (timeout, debug mode, etc.)
  */
 export async function updateHookConfig(
-  hookType: 'sessionstart' | 'precompact',
+  hookType: 'sessionstart' | 'precompact' | 'sessionend',
   config: { timeout?: number }
 ): Promise<void> {
   const settings = await readSettings();
   if (!settings || !settings.hooks) {
     throw new Error('No hooks installed');
   }
-  
-  const hookKey = hookType === 'sessionstart' ? 'SessionStart' : 'PreCompact';
+
+  const hookKey = hookType === 'sessionstart' ? 'SessionStart' :
+                  hookType === 'precompact' ? 'PreCompact' : 'SessionEnd';
   const hookConfig = settings.hooks[hookKey];
   
   if (!hookConfig || !hookConfig[0]?.hooks?.[0]) {
@@ -489,11 +510,14 @@ export async function updateHookConfig(
  */
 export async function checkForHookUpdates(): Promise<{ needsUpdate: boolean; currentVersion: string; latestVersion: string }> {
   const status = await getHooksStatus();
-  
+
   const sessionStartVersion = status.sessionStartHook.installed ? status.sessionStartHook.version : '0.0.0';
   const preCompactVersion = status.preCompactHook.installed ? status.preCompactHook.version : '0.0.0';
-  
-  const currentVersion = sessionStartVersion > preCompactVersion ? sessionStartVersion : preCompactVersion;
+  const sessionEndVersion = status.sessionEndHook.installed ? status.sessionEndHook.version : '0.0.0';
+
+  // Compare versions and get the highest one
+  const versions = [sessionStartVersion, preCompactVersion, sessionEndVersion];
+  const currentVersion = versions.reduce((max, version) => version > max ? version : max, '0.0.0');
   const needsUpdate = currentVersion < HOOKS_VERSION;
   
   return {
@@ -516,7 +540,8 @@ export async function getHookMode() {
 export async function installGlobalHooks(): Promise<void> {
   const hooks: HookDefinition[] = [
     { type: 'SessionStart', enabled: true },
-    { type: 'PreCompact', enabled: true }
+    { type: 'PreCompact', enabled: true },
+    { type: 'SessionEnd', enabled: true }
   ];
   
   await installHooksToSettings(
@@ -535,7 +560,8 @@ export async function installGlobalHooks(): Promise<void> {
 export async function installProjectHooks(projects: Array<{ path: string; name: string; actualPath?: string }>): Promise<void> {
   const hooks: HookDefinition[] = [
     { type: 'SessionStart', enabled: true },
-    { type: 'PreCompact', enabled: true }
+    { type: 'PreCompact', enabled: true },
+    { type: 'SessionEnd', enabled: true }
   ];
   
   const cliPath = getCliPath();
@@ -585,6 +611,7 @@ export interface ProjectHookConfig {
   name: string;
   sessionStart: boolean;
   preCompact: boolean;
+  sessionEnd: boolean;
 }
 
 /**
@@ -606,7 +633,8 @@ export async function installSelectiveProjectHooks(projectConfigs: ProjectHookCo
       
       const hooks: HookDefinition[] = [
         { type: 'SessionStart', enabled: config.sessionStart },
-        { type: 'PreCompact', enabled: config.preCompact }
+        { type: 'PreCompact', enabled: config.preCompact },
+        { type: 'SessionEnd', enabled: config.sessionEnd }
       ];
       
       const localSettingsPath = getProjectLocalSettingsPath(projectPath);
@@ -671,9 +699,14 @@ export async function removeProjectHooks(projects: Array<{ path: string; name: s
           delete localSettings.hooks.SessionStart;
           removed = true;
         }
-        
+
         if (localSettings.hooks.PreCompact && isVibeLogHook(localSettings.hooks.PreCompact)) {
           delete localSettings.hooks.PreCompact;
+          removed = true;
+        }
+
+        if (localSettings.hooks.SessionEnd && isVibeLogHook(localSettings.hooks.SessionEnd)) {
+          delete localSettings.hooks.SessionEnd;
           removed = true;
         }
         
