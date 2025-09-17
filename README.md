@@ -47,8 +47,15 @@ Strategic product advisor in Claude Code. Your prompts are analyzed locally (via
 ### 2. 📊 Claude Code Productivity Report Generation (Local) 
 Generate comprehensive productivity reports using Claude Code's sub-agents to analyze your sessions in parallel. No data leaves your machine.
 
-### 3. 📈 Web Dashboard - Cloud Sync (Optional)
+### 3. 📈 Web Dashboard - Cloud Sync & Daily Shippers Club (Optional)
 Sync sanitized session data to the Vibe-Log dashboard for web-based analytics and deep insights across sessions and projects.
+
+**NEW: 🏆 Daily Shippers Club** - Earn points for consistent daily shipping:
+- 🔥 **Streak Points**: Exponential rewards (2^day) for consecutive days of coding (max 128/day)
+- 📊 **Volume Bonus**: 1 point per session uploaded (max 30/day)
+- 🏅 **Instant Feedback**: See points earned immediately after CLI uploads
+- 📈 **Leaderboard**: Compete with other builders in the community
+- 🎁 **Web Platform Extras**: Share sessions on the dashboard for bonus points
 
 ## Status Line - Claude Strategic Co-pilot / Advisor (Safe & Reversible)
 

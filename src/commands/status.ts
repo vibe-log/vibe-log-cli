@@ -36,9 +36,17 @@ export async function status(): Promise<void> {
     // Longest streak
     console.log(chalk.cyan(`🏆 Longest Streak: ${chalk.bold(streak.longestStreak || 0)} days`));
     
-    // Points
+    // Points and Daily Shippers Club info
     console.log(chalk.magenta(`⭐ Total Points: ${chalk.bold(streak.points || 0)}`));
-    
+
+    // Calculate and display next day's potential points
+    if (streak.current >= 0 && streak.current < 7) {
+      const nextDayPoints = Math.pow(2, streak.current + 1);
+      console.log(chalk.dim(`   Upload tomorrow for ${nextDayPoints} streak points!`));
+    } else if (streak.current >= 7) {
+      console.log(chalk.bold.green(`   🏆 Maximum streak points achieved! (128/day)`));
+    }
+
     // Total sessions
     console.log(chalk.cyan(`📝 Total Sessions: ${chalk.bold(streak.totalSessions || 0)}`));
     
