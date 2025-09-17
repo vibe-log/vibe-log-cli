@@ -38,11 +38,23 @@ export interface StreakInfo {
   todaySessions: number;
 }
 
+export interface PointsEarned {
+  streak: number;      // Exponential streak points (2^day)
+  volume: number;      // Session volume bonus (1 per session, max 30/day)
+  share: number;       // Social share bonus (web platform only, included in total)
+  total: number;       // Total points earned (streak + volume + share)
+  message?: string;    // Optional celebratory message from server
+}
+
 export interface UploadResult {
   success: boolean;
   sessionsProcessed: number;
   analysisPreview?: string;
   streak?: StreakInfo;
+  pointsEarned?: PointsEarned;  // Points earned from this upload
+  created?: number;              // Number of new sessions created
+  duplicates?: number;           // Number of duplicate sessions
+  batchId?: string;              // Batch ID for tracking
 }
 
 // Request ID for tracking
@@ -457,8 +469,22 @@ class SecureApiClient {
     return crypto.createHash('sha256').update(json).digest('hex');
   }
 
-  private mergeResults(results: any[]): any {
+  private mergeResults(results: any[]): UploadResult {
     // Merge chunked upload results - properly handle created and duplicates counts
+    // Aggregate points from all batches
+    const pointsEarned = results
+      .filter(r => r.pointsEarned)
+      .reduce((acc, r) => {
+        if (!acc) return r.pointsEarned;
+        return {
+          streak: Math.max(acc.streak || 0, r.pointsEarned.streak || 0),  // Use highest streak points
+          volume: (acc.volume || 0) + (r.pointsEarned.volume || 0),       // Sum volume bonuses
+          share: Math.max(acc.share || 0, r.pointsEarned.share || 0),     // Use highest share bonus
+          total: (acc.total || 0) + (r.pointsEarned.total || 0),          // Sum total points
+          message: r.pointsEarned.message || acc.message                  // Use latest message
+        };
+      }, null as PointsEarned | null);
+
     return {
       success: results.every(r => r.success),
       created: results.reduce((sum, r) => sum + (r.created || 0), 0),
@@ -466,6 +492,7 @@ class SecureApiClient {
       sessionsProcessed: results.reduce((sum, r) => sum + ((r.created || 0) + (r.duplicates || 0)), 0),
       analysisPreview: results[0]?.analysisPreview,
       streak: results[results.length - 1]?.streak,
+      pointsEarned: pointsEarned || undefined,
       batchId: results.find(r => r.batchId)?.batchId,
     };
   }

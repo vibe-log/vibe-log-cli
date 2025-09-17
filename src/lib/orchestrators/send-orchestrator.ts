@@ -415,7 +415,15 @@ export class SendOrchestrator {
 
   private logResults(results: any, options: SendOptions): void {
     if (options.silent) {
-      logger.info('Sessions uploaded successfully');
+      // Log success with points info if available
+      if (results.pointsEarned?.total) {
+        logger.info(
+          `Sessions uploaded successfully! Points earned: ${results.pointsEarned.total} ` +
+          `(🔥 ${results.pointsEarned.streak} streak + 📊 ${results.pointsEarned.volume} session${results.pointsEarned.volume !== 1 ? 's' : ''})`
+        );
+      } else {
+        logger.info('Sessions uploaded successfully');
+      }
     } else {
       logger.debug('Upload completed', { results });
     }

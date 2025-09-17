@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import ora from 'ora';
-import { StreakInfo } from './api-client';
+import { StreakInfo, UploadResult } from './api-client';
+import { PointsDisplayUI } from './ui/points-display';
 
 export async function showLogo(version?: string): Promise<void> {
   // Helper to display version line
@@ -76,7 +77,7 @@ export function formatDate(date: Date): string {
   });
 }
 
-export function showUploadResults(results: any): void {
+export function showUploadResults(results: UploadResult): void {
   // Show upload summary with created and duplicate counts
   if (results.created !== undefined && results.duplicates !== undefined) {
     console.log('');
@@ -90,13 +91,26 @@ export function showUploadResults(results: any): void {
       console.log(chalk.gray('No sessions were uploaded'));
     }
   }
-  
+
+  // Display points earned if available
+  if (results.pointsEarned) {
+    const pointsDisplay = new PointsDisplayUI(false);
+    pointsDisplay.displayPointsEarned(results.pointsEarned);
+
+    // Show streak status for context
+    if (results.streak?.current !== undefined) {
+      const nextDayPoints = Math.min(128, Math.pow(2, results.streak.current + 1));
+      pointsDisplay.displayStreakStatus(results.streak.current, nextDayPoints);
+    }
+  }
+
   if (results.analysisPreview) {
     console.log(chalk.cyan('\n📊 Analysis Preview:'));
     console.log(chalk.gray(results.analysisPreview));
   }
-  
-  if (results.streak) {
+
+  // Show streak update only if no points (backward compatibility)
+  if (results.streak && !results.pointsEarned) {
     showStreakUpdate(results.streak);
   }
 }

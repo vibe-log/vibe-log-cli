@@ -22,9 +22,18 @@ export function showHelpContent(): void {
   console.log('  • ' + colors.success('Cloud Mode (Recommended)') + ' - Automatic tracking & insights');
   console.log('    └─ Dashboard with trends, patterns, and productivity metrics');
   console.log('    └─ Zero setup, GitHub auth, no tokens needed');
+  console.log('    └─ ' + colors.highlight('NEW: Daily Shippers Club') + ' - Earn points for consistency!');
   console.log('  • ' + colors.info('Local Mode') + ' - Self-hosted analysis on your machine');
   console.log('    └─ Generate AI reports using Claude Code sub-agents');
   console.log('    └─ 100% offline, uses your Claude tokens');
+  console.log('');
+  console.log(colors.accent('🏆 Daily Shippers Club - Points System:'));
+  console.log('  • ' + colors.highlight('🔥 Streak Points') + ' - Exponential rewards for daily consistency');
+  console.log('    └─ Day 1: 2 pts, Day 2: 4 pts... Day 7+: 128 pts max');
+  console.log('  • ' + colors.highlight('📊 Volume Bonus') + ' - 1 point per session uploaded (max 30/day)');
+  console.log('  • ' + colors.highlight('🏅 Instant Feedback') + ' - See points earned after CLI uploads');
+  console.log('  • ' + colors.highlight('📈 Compete') + ' - Check leaderboard at app.vibe-log.dev');
+  console.log('  • ' + colors.subdued('Note: Share sessions on the web for extra points'));
   console.log('');
   console.log(colors.accent('⚡ Getting Started:'));
   console.log('  1. Run ' + colors.primary('npx vibe-log-cli') + ' to open this menu');
