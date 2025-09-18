@@ -56,7 +56,7 @@ export async function showHooksManagementMenu(guidedMode: boolean = false): Prom
     ];
     
     // Add test option if hooks are installed
-    if (status.sessionStartHook.installed || status.preCompactHook.installed) {
+    if (status.sessionStartHook.installed || status.preCompactHook.installed || status.sessionEndHook.installed) {
       choices.push({
         name: `[4] Test hooks`,
         value: 'test'
@@ -166,6 +166,7 @@ async function displayEducationalHeader(mode: HookMode, status: HooksStatus, sta
   console.log(colors.info('We use the following hooks:'));
   console.log('  📍 ' + colors.accent('SessionStart') + colors.subdued(' - Ensures nothing is lost between sessions'));
   console.log('  📦 ' + colors.accent('PreCompact') + colors.subdued(' - Syncs everything before Claude compresses context'));
+  console.log('  🔚 ' + colors.accent('SessionEnd') + colors.subdued(' - Captures final state when ending a session'));
   console.log(colors.success('  ✓ Together they provide complete coverage without duplicates\n'));
   
   const docsUrl = "https://github.com/vibe-log/vibe-log-cli/tree/main?tab=readme-ov-file#auto-sync";
@@ -230,15 +231,20 @@ async function configureTrackAll(): Promise<void> {
       name: 'selectedHooks',
       message: 'Choose hooks to enable:',
       choices: [
-        { 
-          name: 'SessionStart - Sync on startup/resume/clear', 
+        {
+          name: 'SessionStart - Sync on startup/resume/clear',
           value: 'sessionStart',
-          checked: true 
+          checked: true
         },
-        { 
-          name: 'PreCompact - Sync before compression', 
+        {
+          name: 'PreCompact - Sync before compression',
           value: 'preCompact',
-          checked: true 
+          checked: true
+        },
+        {
+          name: 'SessionEnd - Sync on session end',
+          value: 'sessionEnd',
+          checked: true
         }
       ]
     }
@@ -259,6 +265,9 @@ async function configureTrackAll(): Promise<void> {
   }
   if (selectedHooks.includes('preCompact')) {
     console.log('  ✓ PreCompact hook');
+  }
+  if (selectedHooks.includes('sessionEnd')) {
+    console.log('  ✓ SessionEnd hook');
   }
   
   const { confirm } = await inquirer.prompt([
@@ -285,9 +294,9 @@ async function configureTrackAll(): Promise<void> {
     const selection = {
       sessionStartHook: selectedHooks.includes('sessionStart'),
       preCompactHook: selectedHooks.includes('preCompact'),
-      timeout: 30000
+      sessionEndHook: selectedHooks.includes('sessionEnd')
     };
-    
+
     await installSelectedHooks(selection);
     spinner.succeed('Global hooks configured successfully!');
     
@@ -297,6 +306,9 @@ async function configureTrackAll(): Promise<void> {
     }
     if (selection.preCompactHook) {
       showSuccess('✅ PreCompact hook installed');
+    }
+    if (selection.sessionEndHook) {
+      showSuccess('✅ SessionEnd hook installed');
     }
     
     console.log('');
@@ -368,7 +380,8 @@ async function configureTrackSelected(): Promise<void> {
     
     console.log(colors.info('Choose which hooks to enable for each project:'));
     console.log(colors.subdued('SessionStart: Syncs when starting/resuming work'));
-    console.log(colors.subdued('PreCompact: Syncs before context compression\n'));
+    console.log(colors.subdued('PreCompact: Syncs before context compression'));
+    console.log(colors.subdued('SessionEnd: Syncs when ending a session\n'));
     
     for (const project of selectedProjects) {
       console.log(colors.accent(`\n${project.name}:`));
@@ -380,7 +393,8 @@ async function configureTrackSelected(): Promise<void> {
           message: 'Select hooks to enable:',
           choices: [
             { name: 'SessionStart - Sync on startup/resume', value: 'sessionStart', checked: true },
-            { name: 'PreCompact - Sync before compression', value: 'preCompact', checked: true }
+            { name: 'PreCompact - Sync before compression', value: 'preCompact', checked: true },
+            { name: 'SessionEnd - Sync on session end', value: 'sessionEnd', checked: true }
           ]
         }
       ]);
@@ -391,6 +405,7 @@ async function configureTrackSelected(): Promise<void> {
           name: project.name,
           sessionStart: hooks.includes('sessionStart'),
           preCompact: hooks.includes('preCompact'),
+          sessionEnd: hooks.includes('sessionEnd'),
           actualPath: (project as any).actualPath // Pass through the actual path for local settings
         } as any);
       }
@@ -421,6 +436,7 @@ async function configureTrackSelected(): Promise<void> {
         const hooks = [];
         if (config.sessionStart) hooks.push('SessionStart');
         if (config.preCompact) hooks.push('PreCompact');
+        if (config.sessionEnd) hooks.push('SessionEnd');
         console.log(`  • ${config.name}: ${hooks.join(', ')}`);
       });
     }
@@ -594,9 +610,15 @@ async function showDetailedStatus(status: HooksStatus, stats: any): Promise<void
     console.log(`    Version: ${status.preCompactHook.version}`);
     console.log(`    Timeout: ${(status.preCompactHook.timeout || 30000) / 1000}s`);
   }
+
+  console.log(`  SessionEnd: ${status.sessionEndHook.installed ? colors.success('✅ Installed') : colors.muted('❌ Not Installed')}`);
+  if (status.sessionEndHook.installed) {
+    console.log(`    Version: ${status.sessionEndHook.version}`);
+    console.log(`    Timeout: ${(status.sessionEndHook.timeout || 30000) / 1000}s`);
+  }
   
   // Statistics
-  if (stats.sessionStartHook?.total > 0 || stats.preCompactHook?.total > 0) {
+  if (stats.sessionStartHook?.total > 0 || stats.preCompactHook?.total > 0 || stats.sessionEndHook?.total > 0) {
     console.log('\n' + colors.info('Activity (Last 7 Days):'));
     
     if (stats.sessionStartHook?.total > 0) {
@@ -619,6 +641,18 @@ async function showDetailedStatus(status: HooksStatus, stats: any): Promise<void
       console.log(`    Failed: ${stats.preCompactHook.failed}`);
       if (stats.preCompactHook.lastSuccess) {
         const lastSuccess = new Date(stats.preCompactHook.lastSuccess);
+        console.log(`    Last success: ${lastSuccess.toLocaleString()}`);
+      }
+    }
+
+    if (stats.sessionEndHook?.total > 0) {
+      console.log('\n  SessionEnd Hook:');
+      console.log(`    Total executions: ${stats.sessionEndHook.total}`);
+      console.log(`    Success rate: ${stats.sessionEndHook.successRate.toFixed(1)}%`);
+      console.log(`    Successful: ${stats.sessionEndHook.successful}`);
+      console.log(`    Failed: ${stats.sessionEndHook.failed}`);
+      if (stats.sessionEndHook.lastSuccess) {
+        const lastSuccess = new Date(stats.sessionEndHook.lastSuccess);
         console.log(`    Last success: ${lastSuccess.toLocaleString()}`);
       }
     }
@@ -653,6 +687,7 @@ async function testHooksMenu(): Promise<void> {
       choices: [
         { name: '🚀 Test SessionStart Hook', value: 'sessionstart' },
         { name: '📦 Test PreCompact Hook', value: 'precompact' },
+        { name: '🔚 Test SessionEnd Hook', value: 'sessionend' },
         { name: '🎯 Test All Hooks', value: 'all' }
       ]
     }

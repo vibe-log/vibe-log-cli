@@ -100,7 +100,7 @@ program
   .option('-a, --all', 'Send sessions from all projects (default: current project only)')
   .option('--silent', 'Run in silent mode (for hook execution)')
   .option('--background', 'Run upload in background (for hooks)')
-  .option('--hook-trigger <type>', 'Hook that triggered this command (stop, precompact)')
+  .option('--hook-trigger <type>', 'Hook that triggered this command (sessionstart, precompact, sessionend)')
   .option('--hook-version <version>', 'Hook version (for tracking hook updates)')
   .option('--test', 'Test mode for hook validation (exits without processing)')
   .option('--claude-project-dir <dir>', 'Claude project directory from $CLAUDE_PROJECT_DIR')

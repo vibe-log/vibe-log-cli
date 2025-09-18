@@ -5,6 +5,22 @@ All notable changes to the vibe-log-cli project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.4] - 2025-01-14
+
+### Added
+- **SessionEnd Hook Support**: New hook type for capturing sessions when Claude Code terminates
+  - Captures sessions on clear, logout, prompt_input_exit, and other termination events
+  - Full integration with existing hook management system
+  - Statistics tracking for SessionEnd executions
+  - Available in both global and project-specific modes
+  - Testing framework support with individual and batch testing
+
+### Improved
+- **Hook Management UI**: Enhanced interface to include SessionEnd configuration
+  - SessionEnd appears in all hook selection menus
+  - Status displays show SessionEnd installation and statistics
+  - Test menu includes SessionEnd hook testing option
+
 ## [0.6.3] - 2025-09-12
 
 ### Improved

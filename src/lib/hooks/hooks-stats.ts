@@ -24,6 +24,7 @@ export interface HooksStatsData {
   version: string;
   sessionStartHook: HookStats;
   preCompactHook: HookStats;
+  sessionEndHook: HookStats;
   stopHook?: HookStats; // Keep for backward compatibility
   lastUpdated: Date;
 }
@@ -32,7 +33,7 @@ export interface HooksStatsData {
  * Hook execution record
  */
 export interface HookExecution {
-  hookType: 'sessionstart' | 'precompact' | 'stop'; // Keep 'stop' for backward compat
+  hookType: 'sessionstart' | 'precompact' | 'sessionend' | 'stop'; // Keep 'stop' for backward compat
   timestamp: Date;
   success: boolean;
   duration: number;
@@ -96,14 +97,25 @@ export async function loadHookStats(): Promise<HooksStatsData> {
       if (parsed.preCompactHook.lastFailure) parsed.preCompactHook.lastFailure = new Date(parsed.preCompactHook.lastFailure);
       parsed.preCompactHook.projects = new Map(Object.entries(parsed.preCompactHook.projects || {}));
     }
+
+    // Convert dates and maps for sessionEndHook
+    if (parsed.sessionEndHook) {
+      if (parsed.sessionEndHook.lastExecution) parsed.sessionEndHook.lastExecution = new Date(parsed.sessionEndHook.lastExecution);
+      if (parsed.sessionEndHook.lastSuccess) parsed.sessionEndHook.lastSuccess = new Date(parsed.sessionEndHook.lastSuccess);
+      if (parsed.sessionEndHook.lastFailure) parsed.sessionEndHook.lastFailure = new Date(parsed.sessionEndHook.lastFailure);
+      parsed.sessionEndHook.projects = new Map(Object.entries(parsed.sessionEndHook.projects || {}));
+    }
     
     if (parsed.lastUpdated) parsed.lastUpdated = new Date(parsed.lastUpdated);
     
-    // Ensure sessionStartHook exists
+    // Ensure all hooks exist
     if (!parsed.sessionStartHook) {
       parsed.sessionStartHook = createEmptyStats();
     }
-    
+    if (!parsed.sessionEndHook) {
+      parsed.sessionEndHook = createEmptyStats();
+    }
+
     return parsed;
   } catch (error) {
     logger.debug('No existing stats file, creating new one');
@@ -111,6 +123,7 @@ export async function loadHookStats(): Promise<HooksStatsData> {
       version: '2.0.0',
       sessionStartHook: createEmptyStats(),
       preCompactHook: createEmptyStats(),
+      sessionEndHook: createEmptyStats(),
       lastUpdated: new Date()
     };
   }
@@ -137,6 +150,10 @@ export async function saveHookStats(stats: HooksStatsData): Promise<void> {
       ...stats.preCompactHook,
       projects: Object.fromEntries(stats.preCompactHook.projects)
     },
+    sessionEndHook: {
+      ...stats.sessionEndHook,
+      projects: Object.fromEntries(stats.sessionEndHook.projects)
+    },
     lastUpdated: new Date()
   };
   
@@ -159,7 +176,9 @@ export async function recordHookExecution(execution: HookExecution): Promise<voi
   
   // Map 'stop' to 'sessionstart' for backward compatibility
   const hookType = execution.hookType === 'stop' ? 'sessionstart' : execution.hookType;
-  const hookStats = hookType === 'sessionstart' ? stats.sessionStartHook : stats.preCompactHook;
+  const hookStats = hookType === 'sessionstart' ? stats.sessionStartHook :
+                    hookType === 'precompact' ? stats.preCompactHook :
+                    stats.sessionEndHook;
   
   // Update counts
   hookStats.totalExecutions++;
@@ -201,6 +220,7 @@ export async function recordHookExecution(execution: HookExecution): Promise<voi
 export async function getRecentStats(days: number = 7): Promise<{
   sessionStartHook: { total: number; success: number; failure: number; successRate: number };
   preCompactHook: { total: number; success: number; failure: number; successRate: number };
+  sessionEndHook: { total: number; success: number; failure: number; successRate: number };
 }> {
   const stats = await loadHookStats();
   const cutoffDate = new Date();
@@ -214,7 +234,11 @@ export async function getRecentStats(days: number = 7): Promise<{
   const preCompactSuccessRate = stats.preCompactHook.totalExecutions > 0
     ? (stats.preCompactHook.successCount / stats.preCompactHook.totalExecutions) * 100
     : 0;
-  
+
+  const sessionEndSuccessRate = stats.sessionEndHook.totalExecutions > 0
+    ? (stats.sessionEndHook.successCount / stats.sessionEndHook.totalExecutions) * 100
+    : 0;
+
   return {
     sessionStartHook: {
       total: stats.sessionStartHook.totalExecutions,
@@ -227,6 +251,12 @@ export async function getRecentStats(days: number = 7): Promise<{
       success: stats.preCompactHook.successCount,
       failure: stats.preCompactHook.failureCount,
       successRate: preCompactSuccessRate
+    },
+    sessionEndHook: {
+      total: stats.sessionEndHook.totalExecutions,
+      success: stats.sessionEndHook.successCount,
+      failure: stats.sessionEndHook.failureCount,
+      successRate: sessionEndSuccessRate
     }
   };
 }

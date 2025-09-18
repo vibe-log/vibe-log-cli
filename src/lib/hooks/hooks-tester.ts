@@ -13,7 +13,7 @@ const execAsync = promisify(exec);
  * Test result for a single hook
  */
 export interface HookTestResult {
-  hookType: 'sessionstart' | 'precompact';
+  hookType: 'sessionstart' | 'precompact' | 'sessionend';
   success: boolean;
   duration: number;
   output?: string;
@@ -35,7 +35,7 @@ export interface TestStep {
  * Test a specific hook
  */
 export async function testHook(
-  hookType: 'sessionstart' | 'precompact',
+  hookType: 'sessionstart' | 'precompact' | 'sessionend',
   options: { verbose?: boolean; record?: boolean } = {}
 ): Promise<HookTestResult> {
   const startTime = Date.now();
@@ -46,7 +46,9 @@ export async function testHook(
     // Step 1: Check if hook is installed
     const stepStart = Date.now();
     const status = await getHooksStatus();
-    const hookStatus = hookType === 'sessionstart' ? status.sessionStartHook : status.preCompactHook;
+    const hookStatus = hookType === 'sessionstart' ? status.sessionStartHook :
+                       hookType === 'precompact' ? status.preCompactHook :
+                       status.sessionEndHook;
     
     if (!hookStatus.installed) {
       steps.push({
@@ -253,7 +255,20 @@ export async function testAllHooks(
     }
     const result = await testHook('precompact', options);
     results.push(result);
-    
+
+    if (options.verbose) {
+      displayTestResult(result);
+    }
+  }
+
+  // Test SessionEnd hook if installed
+  if (status.sessionEndHook.installed) {
+    if (options.verbose) {
+      console.log(chalk.cyan('\nTesting SessionEnd Hook...'));
+    }
+    const result = await testHook('sessionend', options);
+    results.push(result);
+
     if (options.verbose) {
       displayTestResult(result);
     }
@@ -270,7 +285,9 @@ export async function testAllHooks(
  * Display a test result with formatting
  */
 export function displayTestResult(result: HookTestResult): void {
-  const hookName = result.hookType === 'sessionstart' ? 'SessionStart Hook' : 'PreCompact Hook';
+  const hookName = result.hookType === 'sessionstart' ? 'SessionStart Hook' :
+                   result.hookType === 'precompact' ? 'PreCompact Hook' :
+                   'SessionEnd Hook';
   
   console.log('');
   if (result.success) {
@@ -314,7 +331,7 @@ export function displayTestResult(result: HookTestResult): void {
  * Simulate a hook trigger for testing
  */
 export async function simulateHookTrigger(
-  hookType: 'sessionstart' | 'precompact',
+  hookType: 'sessionstart' | 'precompact' | 'sessionend',
   projectPath?: string
 ): Promise<{ success: boolean; output?: string; error?: string }> {
   try {
