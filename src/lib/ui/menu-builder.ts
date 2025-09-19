@@ -146,6 +146,13 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
     });
 
     items.push({
+      id: 'standup',
+      label: `📋 Prep me for my daily meeting`,
+      description: 'Get a summary of yesterday\'s work and today\'s focus',
+      action: 'standup'
+    });
+
+    items.push({
       id: 'manual-sync',
       label: `📤 Manual sync (upload) coding sessions to cloud`,
       action: 'manual-sync'
