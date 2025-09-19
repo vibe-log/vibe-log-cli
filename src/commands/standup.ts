@@ -151,6 +151,9 @@ function extractAccomplishments(sessions: SessionData[]): Map<string, ProjectWor
   for (const session of sessions) {
     logger.debug(`Session: ${session.projectName || 'Unknown'}, duration: ${session.duration}s`);
 
+    // Log the entire session structure to understand what we have
+    logger.debug('Full session object:', JSON.stringify(session, null, 2));
+
     // Skip very short sessions (less than 5 minutes)
     if (session.duration < 300) {
       logger.debug(`  Skipping session (too short: ${session.duration}s < 300s)`);
@@ -197,7 +200,8 @@ function parseAccomplishments(sessionData: SessionData): string[] {
   logger.debug(`Parsing accomplishments for session:`, {
     hasData: !!sessionData?.data,
     dataType: typeof sessionData?.data,
-    dataKeys: sessionData?.data ? Object.keys(sessionData.data) : []
+    dataKeys: sessionData?.data ? Object.keys(sessionData.data) : [],
+    dataValue: typeof sessionData?.data === 'string' ? (sessionData.data as string).substring(0, 200) : sessionData?.data
   });
 
   // Parse the data object which contains messageSummary
@@ -205,9 +209,14 @@ function parseAccomplishments(sessionData: SessionData): string[] {
     try {
       let summaryData: any = sessionData.data;
 
-      // If data has a messageSummary field, parse it
+      // If data is a string, it's likely a JSON string from the database
       if (typeof sessionData.data === 'string') {
-        summaryData = JSON.parse(sessionData.data);
+        try {
+          summaryData = JSON.parse(sessionData.data);
+          logger.debug('Parsed data from string:', Object.keys(summaryData));
+        } catch (e) {
+          logger.debug('Failed to parse data as JSON:', e);
+        }
       } else if (typeof sessionData.data === 'object') {
         summaryData = sessionData.data;
       }
@@ -215,16 +224,21 @@ function parseAccomplishments(sessionData: SessionData): string[] {
       // Try to parse messageSummary if it's a string
       let messageSummary: any = {};
       if (summaryData.messageSummary) {
+        logger.debug('Found messageSummary, type:', typeof summaryData.messageSummary);
         if (typeof summaryData.messageSummary === 'string') {
           try {
             messageSummary = JSON.parse(summaryData.messageSummary);
+            logger.debug('Parsed messageSummary:', messageSummary);
           } catch {
             // messageSummary might not be JSON
             logger.debug('messageSummary is not JSON:', summaryData.messageSummary);
           }
         } else {
           messageSummary = summaryData.messageSummary;
+          logger.debug('messageSummary object:', messageSummary);
         }
+      } else {
+        logger.debug('No messageSummary field found in data');
       }
 
       // Extract from messageSummary
@@ -245,9 +259,12 @@ function parseAccomplishments(sessionData: SessionData): string[] {
       // Extract from metadata if available
       if (summaryData.metadata) {
         const metadata = summaryData.metadata;
+        logger.debug('Found metadata:', metadata);
 
         if (metadata.files_edited && metadata.files_edited > 10) {
           accomplishments.push('Major code changes across multiple files');
+        } else if (metadata.files_edited > 0) {
+          accomplishments.push(`Worked on ${metadata.files_edited} file${metadata.files_edited > 1 ? 's' : ''}`);
         }
 
         if (metadata.languages && Array.isArray(metadata.languages) && metadata.languages.length > 0) {
@@ -274,11 +291,24 @@ function parseAccomplishments(sessionData: SessionData): string[] {
 
       // Add message activity insights
       if (summaryData.messageCount) {
+        logger.debug('Found messageCount:', summaryData.messageCount);
         if (summaryData.messageCount > 50) {
           accomplishments.push(`Intensive development (${summaryData.messageCount} interactions)`);
         } else if (summaryData.messageCount > 20) {
           accomplishments.push(`Active development session (${summaryData.messageCount} interactions)`);
+        } else if (summaryData.messageCount > 10) {
+          accomplishments.push(`${summaryData.messageCount} code interactions`);
         }
+      } else {
+        logger.debug('No messageCount field found');
+      }
+
+      // Log all available fields for debugging
+      logger.debug('All summaryData fields:', Object.keys(summaryData));
+
+      // Check for projectName field
+      if (summaryData.projectName) {
+        logger.debug('Project from data:', summaryData.projectName);
       }
 
       // Duration-based accomplishments
