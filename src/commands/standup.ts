@@ -192,21 +192,29 @@ export async function standup(): Promise<void> {
 async function fallbackAnalysis(sessions: SessionData[], targetDate: Date): Promise<StandupData> {
   // Enhanced fallback analysis when Claude isn't available
   const yesterday = targetDate.toISOString().split('T')[0];
-  const yesterdaySessions = sessions.filter(s =>
+  const today = new Date().toISOString().split('T')[0];
+
+  // CRITICAL: Filter out today's sessions to avoid showing current work
+  const pastSessions = sessions.filter(s => {
+    const sessionDate = s.timestamp.toISOString().split('T')[0];
+    return sessionDate !== today;  // Exclude today's sessions
+  });
+
+  const yesterdaySessions = pastSessions.filter(s =>
     s.timestamp.toISOString().split('T')[0] === yesterday
   );
 
-  // If no work yesterday, find the most recent work
+  // If no work yesterday, find the most recent PAST work (not today)
   let recentSessions = yesterdaySessions;
   let actualDate = targetDate;
 
   if (yesterdaySessions.length === 0) {
-    // Find the most recent day with work
-    const sortedSessions = sessions.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    // Find the most recent day with work (excluding today)
+    const sortedSessions = pastSessions.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
     if (sortedSessions.length > 0) {
       actualDate = sortedSessions[0].timestamp;
       const recentDay = actualDate.toISOString().split('T')[0];
-      recentSessions = sessions.filter(s =>
+      recentSessions = pastSessions.filter(s =>
         s.timestamp.toISOString().split('T')[0] === recentDay
       );
     }

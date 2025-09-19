@@ -86,7 +86,8 @@ CRITICAL RULES TO PREVENT HALLUCINATION:
 Task:
 1. Read ${tempDir}/standup-manifest.json to see available sessions
 2. Read the JSONL session files, focusing on sessions from ${dateStr}
-3. Extract ONLY work that is ACTUALLY DESCRIBED in the messages
+3. IMPORTANT: Ignore any sessions from today - only report on PAST work
+4. Extract ONLY work that is ACTUALLY DESCRIBED in the messages
 
 When reading messages, look for:
 - File paths that indicate what was worked on (e.g., "editing login.tsx" → "Worked on login functionality")

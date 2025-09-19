@@ -37,9 +37,18 @@ export class StandupTempManager {
     // Group sessions by project
     const sessionsByProject = groupSessionsByProject(sessions);
 
-    // Create manifest
+    // Log date info for debugging
+    logger.debug(`Preparing standup for target date: ${targetDate.toISOString()}`);
+    logger.debug(`Today's date: ${new Date().toISOString()}`);
+
+    // Create manifest - targetDate should be yesterday's working day
     const manifest = {
       targetDate: targetDate.toISOString(),
+      targetDateDisplay: targetDate.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric'
+      }),
       dayOfWeek: getDayName(targetDate),
       totalSessions: sessions.length,
       projects: Object.keys(sessionsByProject),
