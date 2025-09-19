@@ -1,6 +1,7 @@
 import inquirer from 'inquirer';
 import { colors } from './styles';
 import chalk from 'chalk';
+import { InteractiveMenu, MenuOption } from './interactive-menu';
 
 export type WelcomeChoice = 'standup' | 'local' | 'cloud' | 'statusline' | 'exit';
 
@@ -30,22 +31,70 @@ const optionDetails: Record<string, string[]> = {
   ]
 };
 
-
 /**
  * Display the first-time welcome screen with setup options
  * Returns the user's choice without implementing any setup logic
  */
 export async function showFirstTimeWelcome(): Promise<WelcomeChoice> {
+  // Try to use the custom interactive menu if TTY is available
+  if (process.stdin.isTTY && process.stdout.isTTY) {
+    // Build menu options
+    const menuOptions: MenuOption[] = [
+      {
+        title: '📋 Prepare for standup (2 min) - NEW!',
+        value: 'standup',
+        details: optionDetails['standup']
+      },
+      {
+        title: '📊 Generate Local Reports',
+        value: 'local',
+        details: optionDetails['local']
+      },
+      {
+        title: '☁️ Set up Cloud Dashboard',
+        value: 'cloud',
+        details: optionDetails['cloud']
+      },
+      {
+        title: '💬 Install CC Co-Pilot Statline',
+        value: 'statusline',
+        details: optionDetails['statusline']
+      },
+      {
+        title: 'Exit',
+        value: 'exit',
+        details: []
+      }
+    ];
 
-  // Header with new branding message
+    try {
+      const menu = new InteractiveMenu(menuOptions);
+      const choice = await menu.show();
+
+      if (choice === null || choice === 'exit') {
+        return 'exit';
+      }
+
+      // Clear screen after selection
+      console.clear();
+      console.log();
+      console.log(chalk.green.bold('Focus. Discover. Grow.\nShip Daily.'));
+      console.log();
+
+      return choice as WelcomeChoice;
+    } catch (error) {
+      // If interactive menu fails, fall back to inquirer
+      console.log(colors.warning('Interactive menu failed, using fallback...'));
+    }
+  }
+
+  // Fallback to inquirer for non-TTY environments or if custom menu fails
   console.log();
   console.log(chalk.green.bold('Focus. Discover. Grow.\nShip Daily.'));
   console.log();
   console.log(colors.muted('Setup options:'));
   console.log();
 
-  // Since inquirer doesn't support true dynamic updates during navigation,
-  // we'll show the first option with its details expanded by default
   const menuChoices = [
     {
       name: '📋 Prepare for standup (2 min) - NEW!',
@@ -69,7 +118,7 @@ export async function showFirstTimeWelcome(): Promise<WelcomeChoice> {
     }
   ];
 
-  // Build initial choices with first item expanded
+  // Build formatted choices with first item's details shown
   const buildFormattedChoices = () => {
     return menuChoices.map((choice, index) => {
       // Show details for first item by default (it starts selected)
@@ -102,27 +151,11 @@ export async function showFirstTimeWelcome(): Promise<WelcomeChoice> {
     }
   ]);
 
-  // Clear and show confirmation
+  // Clear after selection
   console.clear();
   console.log();
   console.log(chalk.green.bold('Focus. Discover. Grow.\nShip Daily.'));
   console.log();
-
-  if (choice !== 'exit') {
-    const selectedChoice = menuChoices.find(c => c.value === choice);
-    console.log(colors.success(`✓ Selected: ${selectedChoice?.name}`));
-
-    // Show the details of what they selected
-    const details = optionDetails[choice];
-    if (details) {
-      console.log();
-      console.log(colors.muted('This option includes:'));
-      details.forEach(detail => {
-        console.log(colors.muted(`  • ${detail}`));
-      });
-    }
-    console.log();
-  }
 
   return choice;
 }
