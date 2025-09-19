@@ -110,67 +110,66 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
     });
   }
   
-  // For CLOUD states
+  // For CLOUD states - simplified menu
   if (context.state === 'CLOUD_AUTO' || context.state === 'CLOUD_MANUAL' || context.state === 'CLOUD_ONLY') {
-    // Local features first 
+    // Primary actions
     items.push({
-      id: 'status-line',
-      label: MENU_LABELS.STRATEGIC_COPILOT,
-      description: MENU_LABELS.STRATEGIC_COPILOT_DESC,
-      action: 'status-line'
+      id: 'standup',
+      label: `📋 Today's standup`,
+      action: 'standup'
     });
-    
+
     items.push({ separator: true } as MenuItem);
-    
-    // Local analysis tools
-    items.push({
-      id: 'report',
-      label: `${icons.chart} Generate local report (using Claude sub-agents)`,
-      action: 'report'
-    });
-    
-    items.push({
-      id: 'install-agents',
-      label: getAgentManageLabel(context.agentCount, context.totalAgents),
-      action: 'install-agents'
-    });
-    
-    // Separator between local and cloud features
-    items.push({ separator: true } as MenuItem);
-    
-    // Cloud sync features
+
+    // Cloud features
     items.push({
       id: 'dashboard',
-      label: `${icons.sparkles} Open Vibe-Log web dashboard`,
+      label: `🌐 Open dashboard`,
       action: 'dashboard'
     });
 
     items.push({
-      id: 'standup',
-      label: `📋 Prep me for my daily meeting`,
-      description: 'Get a summary of yesterday\'s work and today\'s focus',
-      action: 'standup'
+      id: 'manual-sync',
+      label: `🔄 Sync sessions manually`,
+      action: 'manual-sync'
     });
 
     items.push({
-      id: 'manual-sync',
-      label: `📤 Manual sync (upload) coding sessions to cloud`,
-      action: 'manual-sync'
-    });
-    
-    items.push({
       id: 'manage-hooks',
-      label: `${icons.refresh} Configure auto-sync (Claude Code hooks)`,
-      description: context.hasHooks ? 'Configure Claude Code hooks' : 'Install and configure hooks',
+      label: `⚙️ Configure auto-sync (Claude Code hooks)`,
       action: 'manage-hooks'
     });
-    
+
+    items.push({ separator: true } as MenuItem);
+
+    // Enhancement tools
+    items.push({
+      id: 'status-line',
+      label: `💬 Install CC Co-Pilot (enhance your prompts)`,
+      action: 'status-line'
+    });
+
+    items.push({
+      id: 'report',
+      label: `📊 Generate local report`,
+      action: 'report'
+    });
+
+    // Only show sub-agent management if they're installed
+    if (context.agentCount && context.agentCount > 0) {
+      items.push({
+        id: 'install-agents',
+        label: `🤖 Manage sub-agents`,
+        action: 'install-agents'
+      });
+    }
+
     // Separator before logout
     items.push({ separator: true } as MenuItem);
-    
+
     items.push({
       id: 'logout',
-      label: `${icons.unlock} Logout`,
+      label: `🚪 Logout`,
       action: 'logout'
     });
   }

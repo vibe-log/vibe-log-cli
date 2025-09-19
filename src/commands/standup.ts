@@ -415,13 +415,47 @@ function enrichWithLocalDurations(
     s.timestamp.toISOString().split('T')[0] === targetDateStr
   );
 
-  // Group sessions by project and calculate durations
-  const projectDurations = new Map<string, number>();
+  // Group sessions by project and handle parallel sessions
+  const projectSessions = new Map<string, SessionData[]>();
 
   for (const session of targetSessions) {
     const projectName = extractProjectName(session.projectPath);
-    const currentDuration = projectDurations.get(projectName) || 0;
-    projectDurations.set(projectName, currentDuration + (session.duration || 0));
+    if (!projectSessions.has(projectName)) {
+      projectSessions.set(projectName, []);
+    }
+    projectSessions.get(projectName)!.push(session);
+  }
+
+  // Calculate durations with parallel session detection
+  const projectDurations = new Map<string, number>();
+
+  for (const [projectName, sessions] of projectSessions.entries()) {
+    // Sort sessions by start time
+    const sortedSessions = sessions.sort((a, b) =>
+      a.timestamp.getTime() - b.timestamp.getTime()
+    );
+
+    let totalDuration = 0;
+    let lastEndTime = 0;
+
+    for (const session of sortedSessions) {
+      const sessionStart = session.timestamp.getTime();
+      const sessionEnd = sessionStart + (session.duration || 0) * 1000;
+
+      if (sessionStart < lastEndTime) {
+        // Sessions overlap - only count non-overlapping time
+        const overlap = lastEndTime - sessionStart;
+        const actualDuration = Math.max(0, (session.duration || 0) * 1000 - overlap);
+        totalDuration += actualDuration / 1000;
+        lastEndTime = Math.max(lastEndTime, sessionEnd);
+      } else {
+        // No overlap - count full duration
+        totalDuration += session.duration || 0;
+        lastEndTime = sessionEnd;
+      }
+    }
+
+    projectDurations.set(projectName, totalDuration);
   }
 
   // Update the standup data with calculated durations

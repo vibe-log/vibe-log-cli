@@ -1,7 +1,7 @@
 import inquirer from 'inquirer';
 import { colors } from './styles';
 
-export type WelcomeChoice = 'local' | 'cloud' | 'statusline' | 'help' | 'exit';
+export type WelcomeChoice = 'standup' | 'local' | 'cloud' | 'statusline' | 'help' | 'exit';
 
 /**
  * Display the first-time welcome screen with setup options
@@ -16,35 +16,41 @@ export async function showFirstTimeWelcome(): Promise<WelcomeChoice> {
   console.log(colors.muted('Setup:'));
   console.log();
   
-  // Menu choices formatted exactly as in cli-flows.md
+  // Menu choices formatted with standup as first option
   const choices = [
     {
-      name: `💬 ${colors.accent('Status Line - Prompt feedback in Claude Code')} ${colors.success('(Recommended)')}
-    ${colors.success('└─ 📊 Analyzes your prompts and provides strategic guidance')}
-    ${colors.success('└─ 💡 Shows feedback in your Claude Code status line')}
-    ${colors.success('└─ 🎭 Choose from multiple coach personalities')}
-    ${colors.muted('└─ ⚡ Uses your Claude Code locally for prompt analysis')}`,
-      value: 'statusline' as const,
-      short: 'Status line'
+      name: `📋 ${colors.accent('Prepare for standup (2 min) - NEW!')}
+    ${colors.success('└─ 🤖 AI-generated standup summary from your sessions')}
+    ${colors.success('└─ ✨ Ready for your daily meeting in minutes')}
+    ${colors.success('└─ 📝 Uses Claude Code locally')}`,
+      value: 'standup' as const,
+      short: 'Standup'
     },
     {
-      name: `${colors.primary('Local Productivity Reports (Claude Code with sub-agents)')}
+      name: `📊 ${colors.primary('Generate Local Reports')}
     ${colors.muted('└─ Using your Claude Code')}
-    ${colors.muted('└─ Uses ~10k-50k tokens per analysis')}
     ${colors.muted('└─ 4-10 minute generation')}
     ${colors.muted('└─ Local HTML reports')}`,
       value: 'local' as const,
-      short: 'Local mode'
+      short: 'Local reports'
     },
     {
-      name: `${colors.accent('Cloud Dashboard (Automatic Sync)')} ${colors.success('- FREE FOREVER')}
+      name: `☁️ ${colors.accent('Set up - Cloud Dashboard')}
     ${colors.success('└─ ✓ Uses 0 tokens (our infrastructure)')}
-    ${colors.success('└─ ✓ Auto-analyzes after each session')}
-    ${colors.success('└─ ✓ Interactive dashboard')}
-    ${colors.success('└─ ✓ Community insights')}
-    ${colors.warning('└─ ℹ️  Shares anonymized metrics')}`,
+    ${colors.success('└─ 📧 Daily standup emails')}
+    ${colors.success('└─ 📊 Weekly summary every Monday')}
+    ${colors.success('└─ 🎯 Interactive dashboard and detailed coaching plans')}`,
       value: 'cloud' as const,
       short: 'Cloud mode'
+    },
+    {
+      name: `💬 ${colors.primary('Install CC Co-Pilot Statline')}
+    ${colors.muted('└─ 📊 Analyzes your prompts')}
+    ${colors.muted('└─ 💡 Shows feedback in Claude Code')}
+    ${colors.muted('└─ 🧠 Personalized Guidance')}
+    ${colors.muted('└─ 🤝 Keeps You & Claude focused')}`,
+      value: 'statusline' as const,
+      short: 'Status line'
     },
     {
       name: `${colors.primary('Help')}

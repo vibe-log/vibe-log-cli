@@ -131,28 +131,138 @@ function toSelectableProjects(
 /**
  * Main interactive function for generating local reports
  */
+/**
+ * Show sub-agents management menu
+ */
+async function showSubAgentsManagement(): Promise<void> {
+  const { installSubAgents, removeAllSubAgents } = await import('../sub-agents/manager');
+  const { installSubAgentsInteractive } = await import('./sub-agents-installer');
+
+  console.log('🤖 Sub-Agents Management');
+  console.log('Current status: ✓ Installed\n');
+
+  const { action } = await inquirer.prompt([{
+    type: 'list',
+    name: 'action',
+    message: 'What would you like to do?',
+    choices: [
+      'Update sub-agents',
+      'Reinstall sub-agents',
+      'Uninstall sub-agents',
+      '← Back'
+    ]
+  }]);
+
+  // Handle management actions
+  switch(action) {
+    case 'Update sub-agents':
+      console.log(colors.info('\nUpdating sub-agents...'));
+      // Update is essentially reinstall with force
+      await installSubAgents({ force: true });
+      console.log(colors.success('Sub-agents updated successfully!'));
+      break;
+
+    case 'Reinstall sub-agents':
+      console.log(colors.info('\nReinstalling sub-agents...'));
+      // First remove all, then install
+      await removeAllSubAgents();
+      await installSubAgentsInteractive();
+      console.log(colors.success('Sub-agents reinstalled successfully!'));
+      break;
+
+    case 'Uninstall sub-agents':
+      const { confirmUninstall } = await inquirer.prompt([{
+        type: 'confirm',
+        name: 'confirmUninstall',
+        message: colors.warning('Are you sure you want to uninstall all sub-agents?'),
+        default: false
+      }]);
+
+      if (confirmUninstall) {
+        console.log(colors.info('\nUninstalling sub-agents...'));
+        await removeAllSubAgents();
+        console.log(colors.success('Sub-agents uninstalled successfully!'));
+      }
+      break;
+  }
+}
+
 export async function generateLocalReportInteractive(): Promise<void> {
-  // Safety check: Ensure sub-agents are installed
+  // Check if sub-agents are installed
   const { checkInstalledSubAgents } = await import('../sub-agents/manager');
   const subAgentStatus = await checkInstalledSubAgents();
-  
+
   if (subAgentStatus.missing.length > 0) {
+    // Sub-agents are missing, prompt to install
     console.clear();
-    console.log(colors.error('\n❌ Sub-agents Not Installed'));
-    console.log(colors.muted('Local report generation requires all vibe-log sub-agents to be installed.'));
-    console.log();
-    console.log(colors.warning(`Missing ${subAgentStatus.missing.length} of ${subAgentStatus.total} sub-agents:`));
-    subAgentStatus.missing.forEach(agent => {
-      console.log(colors.muted(`  • ${agent}`));
-    });
-    console.log();
-    console.log(colors.info('Please install sub-agents from the main menu:'));
-    console.log(colors.accent('  📦 Manage local sub-agents'));
-    console.log();
-    console.log(colors.muted('Press Enter to return to menu...'));
-    
-    await inquirer.prompt([{ type: 'input', name: 'continue', message: '' }]);
-    return;
+    console.log('📊 Generate Local Report\n');
+    console.log('This feature requires vibe-log sub-agents to be installed.');
+    console.log('Sub-agents are local AI components that analyze your sessions.\n');
+    console.log('Current status: Not installed\n');
+    console.log('This is a one-time installation (~2 minutes).\n');
+
+    const { install } = await inquirer.prompt([{
+      type: 'confirm',
+      name: 'install',
+      message: 'Install sub-agents and continue?',
+      default: true
+    }]);
+
+    if (install) {
+      const { installSubAgentsInteractive } = await import('./sub-agents-installer');
+      await installSubAgentsInteractive();
+
+      // Check if installation was successful
+      const newStatus = await checkInstalledSubAgents();
+      if (newStatus.missing.length === 0) {
+        console.log();
+        const { continueReport } = await inquirer.prompt([{
+          type: 'confirm',
+          name: 'continueReport',
+          message: 'Sub-agents installed! Would you like to generate your report now?',
+          default: true
+        }]);
+
+        if (!continueReport) {
+          return;
+        }
+      } else {
+        console.log(colors.warning('\nSub-agent installation was incomplete. Please try again.'));
+        return;
+      }
+    } else {
+      return;
+    }
+  } else {
+    // Sub-agents are installed, offer management option
+    console.clear();
+    console.log('📊 Generate Local Report\n');
+    console.log(colors.success('✓ Sub-agents installed\n'));
+
+    const { action } = await inquirer.prompt([{
+      type: 'list',
+      name: 'action',
+      message: 'Select an option:',
+      choices: [
+        'Continue to report generation',
+        new inquirer.Separator('───────────────────'),
+        'Manage sub-agents',
+        '← Back to main menu'
+      ]
+    }]);
+
+    switch(action) {
+      case 'Manage sub-agents':
+        await showSubAgentsManagement();
+        // Show the menu again after management
+        await generateLocalReportInteractive();
+        return;
+
+      case '← Back to main menu':
+        return;
+
+      // Continue to report generation is handled by falling through
+    }
   }
   
   // Show explanation

@@ -83,10 +83,12 @@ CRITICAL RULES TO PREVENT HALLUCINATION:
 3. If you cannot find specific evidence of work in the messages, use generic but accurate descriptions
 4. NEVER make up features or work that isn't explicitly in the data
 
+IMPORTANT: Do NOT use sub-agents or Task tools. Read files directly using the Read tool.
+
 Task:
 1. Read ${tempDir}/standup-manifest.json to see available sessions
 2. IMPORTANT: Analyze ALL projects listed in the manifest, not just a sample
-3. Read the JSONL session files for ALL projects from ${dateStr}
+3. Read the JSONL session files DIRECTLY from ${tempDir}/ (they are in the current directory)
 4. CRITICAL: Ignore any sessions from today - only report on PAST work
 5. Extract ONLY work that is ACTUALLY DESCRIBED in the messages
 6. Include EVERY project that had work on ${dateStr} in your response

@@ -62,6 +62,31 @@ export async function showMainMenu(
     const choice = await showFirstTimeWelcome();
     
     switch (choice) {
+      case 'standup': {
+        // Run standup command directly
+        const { standup } = await import('../../commands/standup');
+        await standup();
+
+        // After standup completes, offer cloud setup if not authenticated
+        const { isAuthenticated } = await import('../auth/token');
+        if (!await isAuthenticated()) {
+          console.log(); // Add spacing
+          const { setupCloud } = await inquirer.prompt([{
+            type: 'confirm',
+            name: 'setupCloud',
+            message: 'Enable cloud for daily email summaries?',
+            default: true
+          }]);
+
+          if (setupCloud) {
+            showSetupMessage('cloud');
+            const { guidedCloudSetup } = await import('./cloud-setup-wizard');
+            await guidedCloudSetup();
+          }
+        }
+        break;
+      }
+
       case 'local': {
         showSetupMessage('local');
         // Track that this is first-time setup
