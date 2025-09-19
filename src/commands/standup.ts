@@ -38,8 +38,26 @@ export async function standup(): Promise<void> {
 
     // Get recent sessions (last 50 should cover several days)
     logger.debug('Fetching recent sessions from API...');
-    const sessions = await apiClient.getRecentSessions(50);
-    logger.debug(`Received ${sessions?.length || 0} sessions from API`);
+    const response = await apiClient.getRecentSessions(50);
+    logger.debug('API Response type:', typeof response);
+    logger.debug('API Response:', JSON.stringify(response, null, 2).substring(0, 500));
+
+    // Handle both array and object responses
+    let sessions: SessionData[];
+    if (Array.isArray(response)) {
+      sessions = response;
+    } else if (response && typeof response === 'object' && 'sessions' in response) {
+      sessions = (response as any).sessions;
+    } else if (response && typeof response === 'object' && 'data' in response) {
+      sessions = (response as any).data;
+    } else {
+      logger.error('Unexpected API response structure:', response);
+      spinner.fail('Invalid response from API');
+      console.log(chalk.red('\nReceived unexpected data structure from API. Please try again.'));
+      return;
+    }
+
+    logger.debug(`Extracted ${sessions?.length || 0} sessions from API response`);
 
     if (!sessions || sessions.length === 0) {
       spinner.fail('No sessions found');
