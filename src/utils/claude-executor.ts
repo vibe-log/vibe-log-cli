@@ -132,9 +132,27 @@ export async function executeClaude(
     if (isWindows) {
       // Windows: Use PowerShell to pipe the file content to Claude
       // This avoids command line length limits and batch file issues
-      
-      // Write prompt to a temporary file
-      const tempDir = os.tmpdir();
+
+      // Write prompt to a temporary file in .vibe-log folder for consistency
+      const tempDir = path.join(os.homedir(), '.vibe-log', 'temp-prompts');
+      await fs.mkdir(tempDir, { recursive: true });
+
+      // Clean up old prompt files (older than 1 hour)
+      try {
+        const files = await fs.readdir(tempDir);
+        const oneHourAgo = Date.now() - (60 * 60 * 1000);
+        for (const file of files) {
+          if (file.startsWith('claude-prompt-')) {
+            const timestamp = parseInt(file.replace('claude-prompt-', '').replace('.txt', ''), 10);
+            if (!isNaN(timestamp) && timestamp < oneHourAgo) {
+              await fs.unlink(path.join(tempDir, file)).catch(() => {});
+            }
+          }
+        }
+      } catch {
+        // Ignore cleanup errors
+      }
+
       tempPromptFile = path.join(tempDir, `claude-prompt-${Date.now()}.txt`);
       await fs.writeFile(tempPromptFile, prompt, 'utf8');
       logger.debug(`Windows: Wrote prompt to temp file: ${tempPromptFile}`);

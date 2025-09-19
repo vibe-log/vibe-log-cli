@@ -85,9 +85,11 @@ CRITICAL RULES TO PREVENT HALLUCINATION:
 
 Task:
 1. Read ${tempDir}/standup-manifest.json to see available sessions
-2. Read the JSONL session files, focusing on sessions from ${dateStr}
-3. IMPORTANT: Ignore any sessions from today - only report on PAST work
-4. Extract ONLY work that is ACTUALLY DESCRIBED in the messages
+2. IMPORTANT: Analyze ALL projects listed in the manifest, not just a sample
+3. Read the JSONL session files for ALL projects from ${dateStr}
+4. CRITICAL: Ignore any sessions from today - only report on PAST work
+5. Extract ONLY work that is ACTUALLY DESCRIBED in the messages
+6. Include EVERY project that had work on ${dateStr} in your response
 
 When reading messages, look for:
 - File paths that indicate what was worked on (e.g., "editing login.tsx" → "Worked on login functionality")
@@ -119,20 +121,26 @@ For "todayFocus", base suggestions on:
 - Logical next steps based on what was actually built
 </think_hard>
 
-Your response must be ONLY this JSON structure:
+Your response must be ONLY this JSON structure (include ALL projects):
 {
   "yesterday": {
     "date": "${dateStr}",
     "projects": [
       {
-        "name": "project-name",
+        "name": "project-1-name",
         "accomplishments": [
           "User-facing feature or business value delivered",
           "Bug fix or improvement that affects users",
           "Integration or functionality users care about"
         ],
         "duration": "X.X hours"
+      },
+      {
+        "name": "project-2-name",
+        "accomplishments": ["List accomplishments for EVERY project"],
+        "duration": "Y.Y hours"
       }
+      // Include ALL projects that had activity, not just a selection
     ]
   },
   "todayFocus": [
