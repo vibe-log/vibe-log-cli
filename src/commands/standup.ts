@@ -7,6 +7,7 @@ import { readClaudeSessions } from '../lib/readers/claude';
 import { SessionData } from '../lib/readers/types';
 import { executeClaude, checkClaudeInstalled } from '../utils/claude-executor';
 import { extractProjectName } from '../lib/claude-project-parser';
+import { getYesterdayWorkingDay, getDayName, groupSessionsByProject, formatDuration } from '../lib/standup-utils';
 import path from 'path';
 import fs from 'fs/promises';
 import os from 'os';
@@ -227,40 +228,7 @@ export async function standup(): Promise<void> {
   }
 }
 
-function getYesterdayWorkingDay(): Date {
-  const today = new Date();
-  const dayOfWeek = today.getDay();
-  const yesterday = new Date(today);
-
-  if (dayOfWeek === 1) { // Monday
-    yesterday.setDate(today.getDate() - 3); // Get Friday
-  } else if (dayOfWeek === 0) { // Sunday
-    yesterday.setDate(today.getDate() - 2); // Get Friday
-  } else {
-    yesterday.setDate(today.getDate() - 1); // Get yesterday
-  }
-
-  return yesterday;
-}
-
-function getDayName(date: Date): string {
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  return days[date.getDay()];
-}
-
-function groupSessionsByProject(sessions: SessionData[]): Record<string, SessionData[]> {
-  const grouped: Record<string, SessionData[]> = {};
-
-  for (const session of sessions) {
-    const project = extractProjectName(session.projectPath);
-    if (!grouped[project]) {
-      grouped[project] = [];
-    }
-    grouped[project].push(session);
-  }
-
-  return grouped;
-}
+// Helper functions moved to ../lib/standup-utils.ts
 
 function buildStandupPrompt(tempDir: string, targetDate: Date): string {
   const dateStr = targetDate.toLocaleDateString('en-US', {
@@ -408,10 +376,7 @@ async function fallbackAnalysis(sessions: SessionData[], targetDate: Date): Prom
       uniqueAccomplishments.push(`Development work on ${name}`);
     }
 
-    const hours = work.duration / 3600;
-    const durationStr = hours >= 1
-      ? `${hours.toFixed(1)} hours`
-      : `${Math.round(work.duration / 60)} minutes`;
+    const durationStr = formatDuration(work.duration);
 
     return {
       name,
