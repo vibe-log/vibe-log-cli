@@ -11,6 +11,7 @@ import { showUploadResults } from '../lib/ui';
 import { VibelogError } from '../utils/errors';
 import { logger } from '../utils/logger';
 import { isNetworkError, createNetworkError } from '../lib/errors/network-errors';
+import { checkForUpdate, shouldSpawnLatestForHook, spawnLatestVersion } from '../utils/version-check';
 import chalk from 'chalk';
 
 /**
@@ -34,6 +35,56 @@ export async function send(options: SendOptions): Promise<void> {
   logger.debug('Send options received:', options);
 
   try {
+    // Check for version updates when triggered by hooks
+    // Skip if we're already running from @latest spawn to prevent infinite loops
+    if (options.hookTrigger && !process.env.VIBE_LOG_SPAWNED_LATEST) {
+      const currentVersion = process.env.SIMULATE_OLD_VERSION || require('../../package.json').version;
+      logger.debug(`Checking version update: hookTrigger=${options.hookTrigger}, currentVersion=${currentVersion}`);
+      const versionCheck = await checkForUpdate(currentVersion);
+      logger.debug(`Version check result:`, versionCheck);
+
+      if (shouldSpawnLatestForHook(versionCheck, options.hookTrigger)) {
+        logger.debug(`Spawning latest version: current=${versionCheck.currentVersion}, latest=${versionCheck.latestVersion}`);
+
+        // Build args for the latest version spawn
+        const args = ['send'];
+
+        // Add all the original options
+        if (options.silent) args.push('--silent');
+        if (options.background) args.push('--background');
+        if (options.dry) args.push('--dry');
+        if (options.all) args.push('--all');
+        if (options.hookTrigger) args.push(`--hook-trigger=${options.hookTrigger}`);
+        if (options.hookVersion) args.push(`--hook-version=${options.hookVersion}`);
+        if (options.claudeProjectDir) args.push(`--claude-project-dir=${options.claudeProjectDir}`);
+        if (options.test) args.push('--test');
+
+        // For background mode, spawn detached
+        if (options.background) {
+          await spawnLatestVersion(args, {
+            detached: true,
+            silent: true,
+            env: {
+              ...process.env,
+              VIBE_LOG_SPAWNED_LATEST: '1' // Prevent infinite loops
+            }
+          });
+          return;
+        } else {
+          // For non-background hook execution, spawn and wait
+          await spawnLatestVersion(args, {
+            detached: false,
+            silent: options.silent,
+            env: {
+              ...process.env,
+              VIBE_LOG_SPAWNED_LATEST: '1' // Prevent infinite loops
+            }
+          });
+          return;
+        }
+      }
+    }
+
     // Route to appropriate orchestrator based on mode
     if (options.background && options.hookTrigger) {
       const orchestrator = new BackgroundSendOrchestrator();
