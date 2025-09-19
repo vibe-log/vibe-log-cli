@@ -1,6 +1,11 @@
 /**
  * Manages temporary directory for standup analysis
  * Handles creation, file copying, and cleanup
+ *
+ * IMPORTANT: Cross-platform compatible
+ * - Uses path.join() for all path operations
+ * - Uses os.homedir() for user home directory
+ * - Stores in ~/.vibe-log/temp-standup for consistency
  */
 
 import { SessionData } from './readers/types';
@@ -12,6 +17,7 @@ import { getDayName, groupSessionsByProject } from './standup-utils';
 
 export class StandupTempManager {
   private tempDir: string | null = null;
+  private readonly baseDir = path.join(os.homedir(), '.vibe-log', 'temp-standup');
 
   /**
    * Create temp directory and prepare session files
@@ -20,8 +26,12 @@ export class StandupTempManager {
     sessions: SessionData[],
     targetDate: Date
   ): Promise<string> {
-    // Create temp directory
-    this.tempDir = path.join(os.tmpdir(), `.vibe-log-standup-${Date.now()}`);
+    // Ensure base directory exists
+    await fs.mkdir(this.baseDir, { recursive: true });
+
+    // Create timestamped subdirectory within .vibe-log/temp-standup
+    const timestamp = Date.now();
+    this.tempDir = path.join(this.baseDir, `session-${timestamp}`);
     await fs.mkdir(this.tempDir, { recursive: true });
 
     // Group sessions by project
@@ -90,6 +100,39 @@ export class StandupTempManager {
         logger.debug(`Could not clean up temp directory: ${err}`);
       }
       this.tempDir = null;
+    }
+
+    // Clean up old temp directories (older than 1 hour)
+    await this.cleanupOldTempDirs();
+  }
+
+  /**
+   * Clean up old temp directories to prevent buildup
+   * Removes directories older than 1 hour
+   */
+  private async cleanupOldTempDirs(): Promise<void> {
+    try {
+      const files = await fs.readdir(this.baseDir);
+      const oneHourAgo = Date.now() - (60 * 60 * 1000);
+
+      for (const file of files) {
+        if (file.startsWith('session-')) {
+          // Extract timestamp from directory name
+          const timestamp = parseInt(file.replace('session-', ''), 10);
+          if (!isNaN(timestamp) && timestamp < oneHourAgo) {
+            const dirPath = path.join(this.baseDir, file);
+            try {
+              await fs.rm(dirPath, { recursive: true, force: true });
+              logger.debug(`Cleaned up old temp directory: ${dirPath}`);
+            } catch (err) {
+              logger.debug(`Could not clean up old directory ${dirPath}: ${err}`);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      // Ignore errors - cleanup is best effort
+      logger.debug(`Could not clean up old temp directories: ${err}`);
     }
   }
 

@@ -8,6 +8,7 @@ import os from 'os';
 export const TEMP_DIRECTORIES = {
   PROMPT_ANALYSIS: 'temp-prompt-analysis',
   PRODUCTIVITY_REPORT: 'temp-productivity-report',
+  STANDUP_ANALYSIS: 'temp-standup',
 } as const;
 
 /**
