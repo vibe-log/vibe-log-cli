@@ -130,7 +130,7 @@ export async function standup(): Promise<void> {
 
     try {
       await executeClaude(standupPrompt, {
-        systemPrompt: 'You are a developer standup meeting assistant. Extract REAL USER-FACING FEATURES and BUSINESS VALUE from coding sessions. Focus on what developers actually discuss in standups: features built, bugs fixed, integrations completed, performance improvements. AVOID technical implementation details about agents, tools, or internal systems. Return ONLY valid JSON.',
+        systemPrompt: 'You are a developer standup meeting assistant. CRITICAL: Only extract work that is EXPLICITLY mentioned in the session messages. Never hallucinate or make up features. Look for file names, error messages, and actual descriptions of work done. Translate technical details into standup-appropriate language. If unsure, use generic but accurate descriptions. Return ONLY valid JSON.',
         cwd: tempDir,  // Use temp directory for execution
         claudePath: claudeCheck.path,  // Use the found Claude path
         onStreamEvent: (event) => {
@@ -272,42 +272,41 @@ function buildStandupPrompt(tempDir: string, targetDate: Date): string {
   return `<think_hard>
 You are analyzing coding sessions to extract ACTUAL DEVELOPER ACCOMPLISHMENTS for a daily standup meeting.
 
-CRITICAL: Focus on USER-FACING FEATURES and BUSINESS VALUE, not internal technical details or agent systems.
+CRITICAL RULES TO PREVENT HALLUCINATION:
+1. ONLY extract accomplishments that are DIRECTLY mentioned in the session messages
+2. Look for SPECIFIC file names, function names, or clear descriptions of work done
+3. If you cannot find specific evidence of work in the messages, use generic but accurate descriptions
+4. NEVER make up features or work that isn't explicitly in the data
 
 Task:
 1. Read ${tempDir}/standup-manifest.json to see available sessions
 2. Read the JSONL session files, focusing on sessions from ${dateStr}
-3. Extract REAL FEATURE WORK that developers discuss in standups
+3. Extract ONLY work that is ACTUALLY DESCRIBED in the messages
 
-GOOD accomplishments (what we want):
-- "Implemented user authentication with Google SSO"
-- "Fixed bug in payment processing that caused duplicate charges"
-- "Built leaderboard feature with point scoring system"
-- "Added user profile page with avatar upload"
-- "Optimized database queries reducing load time by 50%"
-- "Created responsive design for mobile checkout flow"
-- "Integrated Stripe payment gateway"
-- "Fixed critical security vulnerability in login system"
+When reading messages, look for:
+- File paths that indicate what was worked on (e.g., "editing login.tsx" → "Worked on login functionality")
+- Error messages that were fixed (e.g., "fixed TypeError in payment.js" → "Fixed payment processing bug")
+- Feature names mentioned in conversations (e.g., "implementing leaderboard" → "Implemented leaderboard feature")
+- Database/API work (e.g., "created users table" → "Set up user data storage")
+- UI components created (e.g., "added ProfileCard component" → "Built user profile UI")
 
-BAD accomplishments (avoid these):
-- "Created agent system" (too technical/internal)
-- "Implemented TodoWrite functionality" (tool-specific)
-- "Enhanced microcopy-writer agent" (agent details)
-- "Built orchestration with parallel execution" (technical jargon)
+TRANSLATION EXAMPLES (from technical to standup-appropriate):
+- "Modified auth.ts and login.tsx" → "Worked on authentication system"
+- "Fixed null pointer in checkout" → "Fixed checkout process bug"
+- "Created D1 migrations" → "Updated database schema"
+- "Added API endpoint /users" → "Built user management API"
+- "Styled navbar component" → "Improved navigation UI"
 
-Look for patterns in the messages that indicate:
-- What USER-FACING features were built
-- What customer problems were solved
-- What bugs affected users were fixed
-- What performance improvements were made
-- What integrations were completed
-- What UI/UX improvements were shipped
+If work is unclear from messages, use SAFE generic descriptions:
+- "Refactored [project] codebase"
+- "Fixed bugs in [project]"
+- "Improved [project] performance"
+- "Updated [project] dependencies"
 
-For "todayFocus", identify:
-- Unfinished features from yesterday (look for work that started but didn't complete)
-- Logical next steps based on what was accomplished
-- Issues or bugs that were discovered but not fixed
-- Features that were partially implemented
+For "todayFocus", base suggestions on:
+- Actual unfinished work visible in the sessions
+- Common patterns (if testing was done, suggest deployment)
+- Logical next steps based on what was actually built
 </think_hard>
 
 Your response must be ONLY this JSON structure:
