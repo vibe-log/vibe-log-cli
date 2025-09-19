@@ -194,110 +194,249 @@ function extractAccomplishments(sessions: SessionData[]): Map<string, ProjectWor
 function parseAccomplishments(sessionData: SessionData): string[] {
   const accomplishments: string[] = [];
 
-  // Parse the messageSummary JSON if it exists
-  if (sessionData?.data?.messageSummary) {
+  logger.debug(`Parsing accomplishments for session:`, {
+    hasData: !!sessionData?.data,
+    dataType: typeof sessionData?.data,
+    dataKeys: sessionData?.data ? Object.keys(sessionData.data) : []
+  });
+
+  // Parse the data object which contains messageSummary
+  if (sessionData?.data) {
     try {
-      let summary: any;
+      let summaryData: any = sessionData.data;
 
-      // Handle both string and object formats
-      if (typeof sessionData.data.messageSummary === 'string') {
-        summary = JSON.parse(sessionData.data.messageSummary);
-      } else {
-        summary = sessionData.data.messageSummary;
+      // If data has a messageSummary field, parse it
+      if (typeof sessionData.data === 'string') {
+        summaryData = JSON.parse(sessionData.data);
+      } else if (typeof sessionData.data === 'object') {
+        summaryData = sessionData.data;
       }
 
-      // Extract meaningful activities from the summary
-      if (summary.filesEdited && summary.filesEdited > 3) {
-        accomplishments.push(`Modified ${summary.filesEdited} files`);
+      // Try to parse messageSummary if it's a string
+      let messageSummary: any = {};
+      if (summaryData.messageSummary) {
+        if (typeof summaryData.messageSummary === 'string') {
+          try {
+            messageSummary = JSON.parse(summaryData.messageSummary);
+          } catch {
+            // messageSummary might not be JSON
+            logger.debug('messageSummary is not JSON:', summaryData.messageSummary);
+          }
+        } else {
+          messageSummary = summaryData.messageSummary;
+        }
       }
 
-      if (summary.filesCreated && summary.filesCreated > 0) {
-        accomplishments.push(`Created ${summary.filesCreated} new files`);
+      // Extract from messageSummary
+      if (messageSummary.filesEdited && messageSummary.filesEdited > 5) {
+        accomplishments.push(`Edited ${messageSummary.filesEdited} files`);
+      } else if (messageSummary.filesEdited > 0) {
+        accomplishments.push(`Modified ${messageSummary.filesEdited} files`);
       }
 
-      if (summary.testsRun && summary.testsRun > 0) {
-        accomplishments.push(`Ran ${summary.testsRun} tests`);
+      if (messageSummary.filesCreated && messageSummary.filesCreated > 0) {
+        accomplishments.push(`Created ${messageSummary.filesCreated} new files`);
       }
 
-      if (summary.commitsMade && summary.commitsMade > 0) {
-        accomplishments.push(`Made ${summary.commitsMade} commits`);
+      if (messageSummary.commandsRun && messageSummary.commandsRun > 5) {
+        accomplishments.push(`Executed ${messageSummary.commandsRun} commands`);
       }
 
-      // Check metadata for additional insights
-      const metadata = sessionData.data.metadata;
-      if (metadata) {
+      // Extract from metadata if available
+      if (summaryData.metadata) {
+        const metadata = summaryData.metadata;
+
         if (metadata.files_edited && metadata.files_edited > 10) {
-          accomplishments.push('Significant code refactoring');
+          accomplishments.push('Major code changes across multiple files');
         }
 
-        if (metadata.tests_run && metadata.tests_run > 0) {
-          accomplishments.push('Test suite execution');
+        if (metadata.languages && Array.isArray(metadata.languages) && metadata.languages.length > 0) {
+          const langs = metadata.languages.slice(0, 3).join(', ');
+          accomplishments.push(`Worked with ${langs}`);
         }
 
-        if (metadata.commits_made && metadata.commits_made > 2) {
-          accomplishments.push('Multiple feature commits');
+        if (metadata.primaryModel) {
+          // Track model usage for notable sessions
+          if (sessionData.duration > 3600) { // More than 1 hour
+            accomplishments.push(`Extended session with ${metadata.primaryModel}`);
+          }
+        }
+
+        if (metadata.gitBranch && metadata.gitBranch !== 'main' && metadata.gitBranch !== 'master') {
+          accomplishments.push(`Working on branch: ${metadata.gitBranch}`);
+        }
+
+        // Planning mode usage
+        if (metadata.hasPlanningMode) {
+          accomplishments.push(`Used planning mode (${metadata.planningCycles || 1} cycle${metadata.planningCycles > 1 ? 's' : ''})`);
         }
       }
 
-      // Look for significant session duration
-      if (sessionData.duration > 7200) { // More than 2 hours
-        accomplishments.push('Extended coding session');
+      // Add message activity insights
+      if (summaryData.messageCount) {
+        if (summaryData.messageCount > 50) {
+          accomplishments.push(`Intensive development (${summaryData.messageCount} interactions)`);
+        } else if (summaryData.messageCount > 20) {
+          accomplishments.push(`Active development session (${summaryData.messageCount} interactions)`);
+        }
+      }
+
+      // Duration-based accomplishments
+      if (sessionData.duration > 10800) { // More than 3 hours
+        accomplishments.push('Marathon coding session (3+ hours)');
+      } else if (sessionData.duration > 7200) { // More than 2 hours
+        accomplishments.push('Extended focus session (2+ hours)');
+      } else if (sessionData.duration > 3600) { // More than 1 hour
+        accomplishments.push('Deep work session (1+ hour)');
       }
 
     } catch (e) {
-      // If parsing fails, add basic info based on duration
-      if (sessionData.duration > 1800) { // More than 30 minutes
+      logger.debug('Error parsing session data:', e);
+      // Fallback to basic info
+      if (sessionData.duration > 1800) {
         accomplishments.push('Development work');
       }
     }
+  }
+
+  // If we have no accomplishments but significant duration, add a note
+  if (accomplishments.length === 0 && sessionData.duration > 900) {
+    const minutes = Math.round(sessionData.duration / 60);
+    accomplishments.push(`${minutes} minutes of focused work`);
   }
 
   return accomplishments;
 }
 
 function identifyOpenWork(sessions: SessionData[]): string[] {
-  const openItems: string[] = [];
-  const projectActivity = new Map<string, { lastWorked: Date; shortSessions: number }>();
+  const projectInfo = new Map<string, {
+    lastWorked: Date;
+    totalSessions: number;
+    shortSessions: number;
+    longSessions: number;
+    totalDuration: number;
+    recentBranch?: string;
+    recentLanguages?: string[];
+    hadPlanningMode?: boolean;
+  }>();
 
-  // Track recent project activity
+  // Analyze all sessions to build project context
   for (const session of sessions) {
     const project = session.projectName || 'Unnamed Project';
     const sessionDate = new Date(session.timestamp);
 
-    if (!projectActivity.has(project)) {
-      projectActivity.set(project, { lastWorked: sessionDate, shortSessions: 0 });
-    } else {
-      const activity = projectActivity.get(project)!;
-      if (sessionDate > activity.lastWorked) {
-        activity.lastWorked = sessionDate;
-      }
+    if (!projectInfo.has(project)) {
+      projectInfo.set(project, {
+        lastWorked: sessionDate,
+        totalSessions: 0,
+        shortSessions: 0,
+        longSessions: 0,
+        totalDuration: 0
+      });
     }
 
-    // Track short sessions that might indicate interrupted work
+    const info = projectInfo.get(project)!;
+    info.totalSessions++;
+    info.totalDuration += session.duration;
+
+    if (sessionDate > info.lastWorked) {
+      info.lastWorked = sessionDate;
+    }
+
+    // Track session patterns
     if (session.duration < 1800 && session.duration > 300) { // 5-30 minutes
-      projectActivity.get(project)!.shortSessions++;
+      info.shortSessions++;
+    } else if (session.duration > 3600) { // Over 1 hour
+      info.longSessions++;
+    }
+
+    // Extract context from session data
+    if (session.data && typeof session.data === 'object') {
+      const data = typeof session.data === 'string' ? JSON.parse(session.data) : session.data;
+
+      if (data.metadata) {
+        if (data.metadata.gitBranch && data.metadata.gitBranch !== 'main' && data.metadata.gitBranch !== 'master') {
+          info.recentBranch = data.metadata.gitBranch;
+        }
+
+        if (data.metadata.languages && Array.isArray(data.metadata.languages)) {
+          info.recentLanguages = data.metadata.languages;
+        }
+
+        if (data.metadata.hasPlanningMode) {
+          info.hadPlanningMode = true;
+        }
+      }
     }
   }
 
-  // Generate suggestions based on activity patterns
+  // Generate intelligent suggestions based on patterns
   const today = new Date();
-  projectActivity.forEach((activity, project) => {
-    const daysSince = Math.floor((today.getTime() - activity.lastWorked.getTime()) / (1000 * 60 * 60 * 24));
+  const suggestions: Array<{ priority: number; text: string }> = [];
 
-    if (daysSince === 0) {
-      // Today's work - check if there were interruptions
-      if (activity.shortSessions > 0) {
-        openItems.push(`Continue ${project} (had ${activity.shortSessions} short session${activity.shortSessions > 1 ? 's' : ''} today)`);
+  projectInfo.forEach((info, project) => {
+    const hoursSince = Math.floor((today.getTime() - info.lastWorked.getTime()) / (1000 * 60 * 60));
+    const daysSince = Math.floor(hoursSince / 24);
+
+    // Priority 1: Projects with interrupted work (many short sessions)
+    if (info.shortSessions > 2) {
+      const avgDuration = Math.round(info.totalDuration / info.totalSessions / 60);
+      suggestions.push({
+        priority: 1,
+        text: `🔴 Resume ${project} - Multiple interrupted sessions (avg ${avgDuration} min) suggest unfinished work`
+      });
+    }
+    // Priority 2: Active branches need continuation
+    else if (info.recentBranch && daysSince <= 1) {
+      suggestions.push({
+        priority: 2,
+        text: `🟡 Continue ${project} on branch "${info.recentBranch}" (active yesterday)`
+      });
+    }
+    // Priority 3: Projects with planning mode that need execution
+    else if (info.hadPlanningMode && daysSince <= 2) {
+      suggestions.push({
+        priority: 3,
+        text: `🟢 Execute planned work in ${project} (had planning session ${daysSince === 0 ? 'today' : daysSince === 1 ? 'yesterday' : `${daysSince} days ago`})`
+      });
+    }
+    // Priority 4: Recently active projects
+    else if (hoursSince < 24) {
+      if (info.longSessions > 0) {
+        suggestions.push({
+          priority: 4,
+          text: `Continue deep work on ${project} (had ${info.longSessions} extended session${info.longSessions > 1 ? 's' : ''} recently)`
+        });
+      } else {
+        suggestions.push({
+          priority: 4,
+          text: `Follow up on ${project} (worked ${hoursSince < 1 ? 'just now' : `${hoursSince} hours ago`})`
+        });
       }
-    } else if (daysSince === 1) {
-      openItems.push(`${project} (worked on yesterday)`);
-    } else if (daysSince <= 3) {
-      openItems.push(`${project} (last worked ${daysSince} days ago)`);
+    }
+    // Priority 5: Projects that might need attention
+    else if (daysSince === 1) {
+      const totalHours = Math.round(info.totalDuration / 3600 * 10) / 10;
+      suggestions.push({
+        priority: 5,
+        text: `Review progress on ${project} (${totalHours}h invested yesterday)`
+      });
+    }
+    // Priority 6: Stale projects that had significant investment
+    else if (daysSince <= 3 && info.totalDuration > 7200) { // Over 2 hours total
+      const totalHours = Math.round(info.totalDuration / 3600);
+      suggestions.push({
+        priority: 6,
+        text: `Consider resuming ${project} (${totalHours}h invested, last worked ${daysSince} days ago)`
+      });
     }
   });
 
-  // Sort by recency and remove duplicates
-  return [...new Set(openItems)];
+  // Sort by priority and take top suggestions
+  suggestions.sort((a, b) => a.priority - b.priority);
+
+  // Return top 5 most relevant suggestions
+  return suggestions.slice(0, 5).map(s => s.text);
 }
 
 function formatDuration(seconds: number): string {
