@@ -78,21 +78,14 @@ export async function showFirstTimeWelcome(): Promise<WelcomeChoice> {
       // Clear screen after selection
       console.clear();
 
-      // Show logo and centered slogan
+      // Show logo and slogan
       const { showLogo } = await import('../ui');
       const pkg = require('../../../package.json');
       const version = process.env.SIMULATE_OLD_VERSION || pkg.version;
       await showLogo(version);
 
-      const slogan1 = 'Focus. Discover. Grow.';
-      const slogan2 = 'Ship Daily.';
-      const terminalWidth = process.stdout.columns || 80;
-      const padding1 = Math.floor((terminalWidth - slogan1.length) / 2);
-      const padding2 = Math.floor((terminalWidth - slogan2.length) / 2);
-
       console.log();
-      console.log(' '.repeat(padding1) + chalk.green.bold(slogan1));
-      console.log(' '.repeat(padding2) + chalk.green.bold(slogan2));
+      console.log(chalk.green.bold('Focus. Discover. Grow. Ship Daily.'));
       console.log();
 
       return choice as WelcomeChoice;
@@ -103,15 +96,8 @@ export async function showFirstTimeWelcome(): Promise<WelcomeChoice> {
   }
 
   // Fallback to inquirer for non-TTY environments or if custom menu fails
-  const slogan1 = 'Focus. Discover. Grow.';
-  const slogan2 = 'Ship Daily.';
-  const terminalWidth = process.stdout.columns || 80;
-  const padding1 = Math.floor((terminalWidth - slogan1.length) / 2);
-  const padding2 = Math.floor((terminalWidth - slogan2.length) / 2);
-
   console.log();
-  console.log(' '.repeat(padding1) + chalk.green.bold(slogan1));
-  console.log(' '.repeat(padding2) + chalk.green.bold(slogan2));
+  console.log(chalk.green.bold('Focus. Discover. Grow. Ship Daily.'));
   console.log();
   console.log(colors.muted('Setup options:'));
   console.log();
@@ -175,8 +161,7 @@ export async function showFirstTimeWelcome(): Promise<WelcomeChoice> {
   // Clear after selection
   console.clear();
   console.log();
-  console.log(' '.repeat(padding1) + chalk.green.bold(slogan1));
-  console.log(' '.repeat(padding2) + chalk.green.bold(slogan2));
+  console.log(chalk.green.bold('Focus. Discover. Grow. Ship Daily.'));
   console.log();
 
   return choice;

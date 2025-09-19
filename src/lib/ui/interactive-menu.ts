@@ -43,18 +43,9 @@ export class InteractiveMenu {
     const version = process.env.SIMULATE_OLD_VERSION || pkg.version;
     await showLogo(version);
 
-    // Center the slogan under the version
-    const slogan1 = 'Focus. Discover. Grow.';
-    const slogan2 = 'Ship Daily.';
-    const terminalWidth = process.stdout.columns || 80;
-
-    // Calculate padding to center the text
-    const padding1 = Math.floor((terminalWidth - slogan1.length) / 2);
-    const padding2 = Math.floor((terminalWidth - slogan2.length) / 2);
-
+    // Slogan as single line, left-aligned
     console.log();
-    console.log(' '.repeat(padding1) + chalk.green.bold(slogan1));
-    console.log(' '.repeat(padding2) + chalk.green.bold(slogan2));
+    console.log(chalk.green.bold('Focus. Discover. Grow. Ship Daily.'));
     console.log();
     console.log(colors.muted('Setup options:'));
     console.log();
