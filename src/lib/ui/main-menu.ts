@@ -63,9 +63,9 @@ export async function showMainMenu(
     
     switch (choice) {
       case 'standup': {
-        // Run standup command directly
+        // Run standup command directly, skipping auth for first-time users
         const { standup } = await import('../../commands/standup');
-        await standup();
+        await standup({ skipAuth: true });
 
         // After standup completes, offer cloud setup if not authenticated
         const { isAuthenticated } = await import('../auth/token');
@@ -122,13 +122,6 @@ export async function showMainMenu(
         return;
       }
       
-      case 'help':
-        showHelp();
-        console.log('Press Enter to continue...');
-        await inquirer.prompt([{ type: 'input', name: 'continue', message: '' }]);
-        // Show welcome again after help
-        await showMainMenu(state, packageUpdateInfo);
-        return;
       
       case 'exit':
         console.log(colors.muted('\nGoodbye! 👋\n'));

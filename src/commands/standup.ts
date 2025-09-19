@@ -31,8 +31,11 @@ interface StandupData {
   blockers?: string[];
 }
 
-export async function standup(): Promise<void> {
-  await requireAuth();
+export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
+  // Skip auth check if explicitly requested (for first-time onboarding)
+  if (!options?.skipAuth) {
+    await requireAuth();
+  }
 
   const spinner = createSpinner('Reading your local Claude Code sessions...').start();
 
@@ -60,10 +63,28 @@ export async function standup(): Promise<void> {
     // Prepare temp directory with session data
     const tempManager = new StandupTempManager();
     const yesterday = getYesterdayWorkingDay();
-    const tempDir = await tempManager.prepareTempDirectory(claudeSessions, yesterday);
 
-    // Create the standup analysis prompt
-    const standupPrompt = buildStandupPrompt(tempDir, yesterday);
+    // Find actual date with sessions (might not be yesterday)
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdaySessions = claudeSessions.filter(s =>
+      s.timestamp.toISOString().split('T')[0] === yesterdayStr
+    );
+
+    let actualTargetDate = yesterday;
+    if (yesterdaySessions.length === 0) {
+      // No sessions yesterday, find most recent day with sessions
+      const sortedSessions = claudeSessions.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      if (sortedSessions.length > 0) {
+        actualTargetDate = new Date(sortedSessions[0].timestamp);
+        // Set to start of day to match date comparison
+        actualTargetDate.setHours(0, 0, 0, 0);
+      }
+    }
+
+    const tempDir = await tempManager.prepareTempDirectory(claudeSessions, actualTargetDate);
+
+    // Create the standup analysis prompt with actual date
+    const standupPrompt = buildStandupPrompt(tempDir, actualTargetDate);
 
     // Check for Claude Code installation
     const claudeCheck = await checkClaudeInstalled();
@@ -82,27 +103,14 @@ export async function standup(): Promise<void> {
     console.log();
     console.log(chalk.cyan('🤖 Analyzing your work with Claude Code...'));
 
-    // Filter sessions for yesterday to show accurate count
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
-    const yesterdaySessions = claudeSessions.filter(s =>
-      s.timestamp.toISOString().split('T')[0] === yesterdayStr
+    // Show accurate count for actual target date
+    const actualDateStr = actualTargetDate.toISOString().split('T')[0];
+    const actualSessions = claudeSessions.filter(s =>
+      s.timestamp.toISOString().split('T')[0] === actualDateStr
     );
 
-    // If no yesterday sessions, find the most recent day
-    let targetSessions = yesterdaySessions;
-    let targetDateStr = yesterdayStr;
-    if (yesterdaySessions.length === 0) {
-      const sortedSessions = claudeSessions.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-      if (sortedSessions.length > 0) {
-        targetDateStr = sortedSessions[0].timestamp.toISOString().split('T')[0];
-        targetSessions = claudeSessions.filter(s =>
-          s.timestamp.toISOString().split('T')[0] === targetDateStr
-        );
-      }
-    }
-
-    const targetSessionsByProject = groupSessionsByProject(targetSessions);
-    console.log(chalk.gray(`📁 Analyzing ${targetSessions.length} sessions from ${Object.keys(targetSessionsByProject).length} projects (${new Date(targetDateStr).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })})`));
+    const actualSessionsByProject = groupSessionsByProject(actualSessions);
+    console.log(chalk.gray(`📁 Analyzing ${actualSessions.length} sessions from ${Object.keys(actualSessionsByProject).length} projects (${actualTargetDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })})`));
     console.log(chalk.gray('This will take about 2-4 minutes'));
     console.log();
 
@@ -177,10 +185,10 @@ export async function standup(): Promise<void> {
     // If no standup data was generated, use fallback
     if (!standupData) {
       logger.debug('No standup data generated, using fallback');
-      standupData = await fallbackAnalysis(claudeSessions, yesterday);
+      standupData = await fallbackAnalysis(claudeSessions, actualTargetDate);
     } else {
       // Calculate durations locally for consistency
-      standupData = enrichWithLocalDurations(standupData, claudeSessions, yesterday);
+      standupData = enrichWithLocalDurations(standupData, claudeSessions, actualTargetDate);
     }
 
     // Clean up temp directory
