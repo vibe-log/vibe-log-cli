@@ -81,9 +81,29 @@ export async function standup(): Promise<void> {
     // Show analysis is starting
     console.log();
     console.log(chalk.cyan('🤖 Analyzing your work with Claude Code...'));
-    const sessionsByProject = groupSessionsByProject(claudeSessions);
-    console.log(chalk.gray(`📁 Found ${claudeSessions.length} sessions from ${Object.keys(sessionsByProject).length} projects`));
-    console.log(chalk.gray('This will take about 30-45 seconds'));
+
+    // Filter sessions for yesterday to show accurate count
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdaySessions = claudeSessions.filter(s =>
+      s.timestamp.toISOString().split('T')[0] === yesterdayStr
+    );
+
+    // If no yesterday sessions, find the most recent day
+    let targetSessions = yesterdaySessions;
+    let targetDateStr = yesterdayStr;
+    if (yesterdaySessions.length === 0) {
+      const sortedSessions = claudeSessions.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      if (sortedSessions.length > 0) {
+        targetDateStr = sortedSessions[0].timestamp.toISOString().split('T')[0];
+        targetSessions = claudeSessions.filter(s =>
+          s.timestamp.toISOString().split('T')[0] === targetDateStr
+        );
+      }
+    }
+
+    const targetSessionsByProject = groupSessionsByProject(targetSessions);
+    console.log(chalk.gray(`📁 Analyzing ${targetSessions.length} sessions from ${Object.keys(targetSessionsByProject).length} projects (${new Date(targetDateStr).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })})`));
+    console.log(chalk.gray('This will take about 2-4 minutes'));
     console.log();
 
     // Execute Claude to analyze the sessions

@@ -298,6 +298,18 @@ function calculateDuration(messages: Message[]): number {
   const firstTimestamp = messages[0].timestamp.getTime();
   const lastTimestamp = messages[messages.length - 1].timestamp.getTime();
 
-  // Ensure duration is never negative (can happen if timestamps are out of order)
-  return Math.max(0, Math.floor((lastTimestamp - firstTimestamp) / 1000)); // Convert to seconds
+  // Calculate raw duration
+  let duration = Math.max(0, Math.floor((lastTimestamp - firstTimestamp) / 1000)); // Convert to seconds
+
+  // Cap duration at 8 hours (28800 seconds) to handle overnight sessions
+  // If someone worked more than 8 hours straight, it's likely they left it open
+  const MAX_REASONABLE_DURATION = 8 * 60 * 60; // 8 hours in seconds
+  if (duration > MAX_REASONABLE_DURATION) {
+    // For very long sessions, estimate based on message count
+    // Assume average of 2 minutes per message interaction
+    const estimatedDuration = messages.length * 120; // 2 minutes per message
+    duration = Math.min(estimatedDuration, MAX_REASONABLE_DURATION);
+  }
+
+  return duration;
 }
