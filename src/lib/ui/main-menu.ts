@@ -356,8 +356,18 @@ async function handleMenuAction(
         await open(state.cloudUrl);
       }
       break;
-      
-      
+
+    case 'standup':
+      try {
+        const { standup } = await import('../../commands/standup');
+        await standup();
+        await waitForEnter();
+      } catch (error) {
+        displayError(error);
+        await waitForEnter();
+      }
+      break;
+
     case 'report':
       try {
         // Check if sub-agents are installed first

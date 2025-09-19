@@ -502,14 +502,24 @@ class SecureApiClient {
     return response.data;
   }
 
-  async getRecentSessions(limit: number = 10): Promise<any[]> {
+  async getRecentSessions(limit: number = 10, startDate?: Date, endDate?: Date): Promise<any[]> {
     // Validate limit
     const safeLimit = Math.min(Math.max(1, limit), 100);
-    
+
+    const params: any = { limit: safeLimit };
+
+    if (startDate) {
+      params.start = startDate.toISOString();
+    }
+
+    if (endDate) {
+      params.end = endDate.toISOString();
+    }
+
     const response = await this.client.get('/api/sessions/recent', {
-      params: { limit: safeLimit },
+      params,
     });
-    
+
     return response.data;
   }
   
