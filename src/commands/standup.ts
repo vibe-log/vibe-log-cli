@@ -158,6 +158,9 @@ export async function standup(): Promise<void> {
     if (!standupData) {
       logger.debug('No standup data generated, using fallback');
       standupData = await fallbackAnalysis(claudeSessions, yesterday);
+    } else {
+      // Calculate durations locally for consistency
+      standupData = enrichWithLocalDurations(standupData, claudeSessions, yesterday);
     }
 
     // Clean up temp directory
@@ -375,4 +378,39 @@ function displayStandupSummary(data: StandupData): void {
   console.log(chalk.yellow('\n💡 Tip: Stop wasting tokens and time!'));
   console.log(chalk.cyan('   Switch to Cloud Mode for automated daily summaries!'));
   console.log();
+}
+
+/**
+ * Enrich standup data with locally calculated durations
+ * This ensures consistent time reporting across runs
+ */
+function enrichWithLocalDurations(
+  standupData: StandupData,
+  sessions: SessionData[],
+  targetDate: Date
+): StandupData {
+  // Filter sessions for the target date
+  const targetDateStr = targetDate.toISOString().split('T')[0];
+  const targetSessions = sessions.filter(s =>
+    s.timestamp.toISOString().split('T')[0] === targetDateStr
+  );
+
+  // Group sessions by project and calculate durations
+  const projectDurations = new Map<string, number>();
+
+  for (const session of targetSessions) {
+    const projectName = extractProjectName(session.projectPath);
+    const currentDuration = projectDurations.get(projectName) || 0;
+    projectDurations.set(projectName, currentDuration + (session.duration || 0));
+  }
+
+  // Update the standup data with calculated durations
+  if (standupData.yesterday && standupData.yesterday.projects) {
+    for (const project of standupData.yesterday.projects) {
+      const totalSeconds = projectDurations.get(project.name) || 0;
+      project.duration = formatDuration(totalSeconds);
+    }
+  }
+
+  return standupData;
 }

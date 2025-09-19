@@ -132,13 +132,11 @@ Your response must be ONLY this JSON structure (include ALL projects):
           "User-facing feature or business value delivered",
           "Bug fix or improvement that affects users",
           "Integration or functionality users care about"
-        ],
-        "duration": "X.X hours"
+        ]
       },
       {
         "name": "project-2-name",
-        "accomplishments": ["List accomplishments for EVERY project"],
-        "duration": "Y.Y hours"
+        "accomplishments": ["List accomplishments for EVERY project"]
       }
       // Include ALL projects that had activity, not just a selection
     ]
