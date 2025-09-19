@@ -130,7 +130,7 @@ export async function standup(): Promise<void> {
 
     try {
       await executeClaude(standupPrompt, {
-        systemPrompt: 'You are a developer standup meeting assistant. CRITICAL: Only extract work that is EXPLICITLY mentioned in the session messages. Never hallucinate or make up features. Look for file names, error messages, and actual descriptions of work done. Translate technical details into standup-appropriate language. If unsure, use generic but accurate descriptions. Return ONLY valid JSON.',
+        systemPrompt: 'You are a developer standup meeting assistant. Extract REAL USER-FACING FEATURES and BUSINESS VALUE from coding sessions. Focus on what developers actually discuss in standups: features built, bugs fixed, integrations completed, performance improvements. AVOID technical implementation details about agents, tools, or internal systems. CRITICAL: Only extract work that is EXPLICITLY mentioned in the session messages - never hallucinate or make up features. Translate technical details into business value. Return ONLY valid JSON.',
         cwd: tempDir,  // Use temp directory for execution
         claudePath: claudeCheck.path,  // Use the found Claude path
         onStreamEvent: (event) => {
@@ -290,18 +290,22 @@ When reading messages, look for:
 - Database/API work (e.g., "created users table" → "Set up user data storage")
 - UI components created (e.g., "added ProfileCard component" → "Built user profile UI")
 
-TRANSLATION EXAMPLES (from technical to standup-appropriate):
-- "Modified auth.ts and login.tsx" → "Worked on authentication system"
-- "Fixed null pointer in checkout" → "Fixed checkout process bug"
-- "Created D1 migrations" → "Updated database schema"
-- "Added API endpoint /users" → "Built user management API"
-- "Styled navbar component" → "Improved navigation UI"
+TRANSLATION EXAMPLES (from technical to user-facing business value):
+- "Modified auth.ts and login.tsx" → "Improved user authentication flow"
+- "Fixed null pointer in checkout" → "Fixed checkout bug affecting customer purchases"
+- "Created D1 migrations" → "Enhanced data storage for better performance"
+- "Added API endpoint /users" → "Built user profile management feature"
+- "Styled navbar component" → "Improved site navigation experience"
+- "Fixed leaderboard query" → "Fixed leaderboard loading issues for users"
+- "Added OAuth provider" → "Enabled Google/GitHub login for users"
+- "Optimized database queries" → "Reduced page load times by 50%"
 
-If work is unclear from messages, use SAFE generic descriptions:
-- "Refactored [project] codebase"
-- "Fixed bugs in [project]"
-- "Improved [project] performance"
-- "Updated [project] dependencies"
+If work is unclear from messages, use SAFE business-focused descriptions:
+- "Improved [project] stability and reliability"
+- "Fixed user-reported issues in [project]"
+- "Enhanced [project] performance for better user experience"
+- "Updated [project] security and dependencies"
+- "Refined [project] features based on requirements"
 
 For "todayFocus", base suggestions on:
 - Actual unfinished work visible in the sessions
