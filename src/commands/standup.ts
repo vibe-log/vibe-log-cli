@@ -130,7 +130,7 @@ export async function standup(): Promise<void> {
 
     try {
       await executeClaude(standupPrompt, {
-        systemPrompt: 'You are a standup data extractor. Extract accomplishments from coding sessions and return ONLY valid JSON. No explanations, no markdown, just the JSON object.',
+        systemPrompt: 'You are a developer standup meeting assistant. Extract REAL USER-FACING FEATURES and BUSINESS VALUE from coding sessions. Focus on what developers actually discuss in standups: features built, bugs fixed, integrations completed, performance improvements. AVOID technical implementation details about agents, tools, or internal systems. Return ONLY valid JSON.',
         cwd: tempDir,  // Use temp directory for execution
         claudePath: claudeCheck.path,  // Use the found Claude path
         onStreamEvent: (event) => {
@@ -269,21 +269,46 @@ function buildStandupPrompt(tempDir: string, targetDate: Date): string {
     day: 'numeric'
   });
 
-  return `You are analyzing coding sessions to extract accomplishments for a daily standup.
+  return `<think_hard>
+You are analyzing coding sessions to extract ACTUAL DEVELOPER ACCOMPLISHMENTS for a daily standup meeting.
+
+CRITICAL: Focus on USER-FACING FEATURES and BUSINESS VALUE, not internal technical details or agent systems.
 
 Task:
 1. Read ${tempDir}/standup-manifest.json to see available sessions
 2. Read the JSONL session files, focusing on sessions from ${dateStr}
-3. Extract real accomplishments from the actual work done
-4. Return ONLY a valid JSON object (no markdown, no explanation)
+3. Extract REAL FEATURE WORK that developers discuss in standups
 
-Look for these in the session messages:
-- Files created or modified
-- Features implemented
-- Bugs fixed
-- Tests written
-- Configurations updated
-- Documentation added
+GOOD accomplishments (what we want):
+- "Implemented user authentication with Google SSO"
+- "Fixed bug in payment processing that caused duplicate charges"
+- "Built leaderboard feature with point scoring system"
+- "Added user profile page with avatar upload"
+- "Optimized database queries reducing load time by 50%"
+- "Created responsive design for mobile checkout flow"
+- "Integrated Stripe payment gateway"
+- "Fixed critical security vulnerability in login system"
+
+BAD accomplishments (avoid these):
+- "Created agent system" (too technical/internal)
+- "Implemented TodoWrite functionality" (tool-specific)
+- "Enhanced microcopy-writer agent" (agent details)
+- "Built orchestration with parallel execution" (technical jargon)
+
+Look for patterns in the messages that indicate:
+- What USER-FACING features were built
+- What customer problems were solved
+- What bugs affected users were fixed
+- What performance improvements were made
+- What integrations were completed
+- What UI/UX improvements were shipped
+
+For "todayFocus", identify:
+- Unfinished features from yesterday (look for work that started but didn't complete)
+- Logical next steps based on what was accomplished
+- Issues or bugs that were discovered but not fixed
+- Features that were partially implemented
+</think_hard>
 
 Your response must be ONLY this JSON structure:
 {
@@ -291,20 +316,20 @@ Your response must be ONLY this JSON structure:
     "date": "${dateStr}",
     "projects": [
       {
-        "name": "project-name-here",
+        "name": "project-name",
         "accomplishments": [
-          "Specific accomplishment from the sessions",
-          "Another accomplishment",
-          "Third accomplishment"
+          "User-facing feature or business value delivered",
+          "Bug fix or improvement that affects users",
+          "Integration or functionality users care about"
         ],
         "duration": "X.X hours"
       }
     ]
   },
   "todayFocus": [
-    "Continue work on specific feature",
-    "Review and test recent changes",
-    "Address pending issues"
+    "Complete [unfinished feature from yesterday]",
+    "Fix [issue discovered yesterday]",
+    "Continue [partially implemented feature]"
   ],
   "blockers": []
 }
@@ -467,7 +492,7 @@ function displayStandupSummary(data: StandupData): void {
   }
 
   // Today's focus
-  console.log(chalk.yellow('\n\nWHAT I\'M WORKING ON TODAY'));
+  console.log(chalk.yellow('\n\nSUGGESTED FOCUS FOR TODAY'));
   console.log(chalk.gray('─────────────────────────────'));
 
   if (data.todayFocus.length === 0) {
@@ -490,7 +515,7 @@ function displayStandupSummary(data: StandupData): void {
   }
 
   console.log(chalk.gray('\n═══════════════════════════════'));
-  console.log(chalk.dim('\n💡 Tip: Stop wasting tokens and time!'));
+  console.log(chalk.yellow('\n💡 Tip: Stop wasting tokens and time!'));
   console.log(chalk.cyan('   Switch to Cloud Mode for automated daily summaries!'));
   console.log();
 }
