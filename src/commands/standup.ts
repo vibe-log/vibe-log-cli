@@ -9,15 +9,14 @@ import { executeClaude, checkClaudeInstalled } from '../utils/claude-executor';
 import { extractProjectName } from '../lib/claude-project-parser';
 import {
   getYesterdayWorkingDay,
-  getDayName,
-  groupSessionsByProject,
   formatDuration,
   buildStandupPrompt,
-  getClaudeSystemPrompt
+  getClaudeSystemPrompt,
+  groupSessionsByProject
 } from '../lib/standup-utils';
+import { StandupTempManager } from '../lib/standup-temp-manager';
 import path from 'path';
 import fs from 'fs/promises';
-import os from 'os';
 
 interface StandupData {
   yesterday: {
@@ -58,51 +57,10 @@ export async function standup(): Promise<void> {
     spinner.succeed(`Found ${claudeSessions.length} sessions from the last 3 days`);
     logger.debug(`Found ${claudeSessions.length} Claude sessions`);
 
-    // Prepare sessions for Claude analysis by creating temp directory with session data
-    const tempDir = path.join(os.tmpdir(), `.vibe-log-standup-${Date.now()}`);
-    await fs.mkdir(tempDir, { recursive: true });
-
-    // Write sessions to temp directory for Claude to analyze
+    // Prepare temp directory with session data
+    const tempManager = new StandupTempManager();
     const yesterday = getYesterdayWorkingDay();
-    const sessionsByProject = groupSessionsByProject(claudeSessions);
-
-    // Create manifest for Claude
-    const manifest = {
-      targetDate: yesterday.toISOString(),
-      dayOfWeek: getDayName(yesterday),
-      totalSessions: claudeSessions.length,
-      projects: Object.keys(sessionsByProject),
-      sessionsPerProject: Object.entries(sessionsByProject).map(([project, sessions]) => ({
-        project,
-        count: sessions.length,
-        files: sessions.map(s => `${s.id}.jsonl`)
-      }))
-    };
-
-    await fs.writeFile(
-      path.join(tempDir, 'standup-manifest.json'),
-      JSON.stringify(manifest, null, 2)
-    );
-
-    // Copy relevant session files to temp directory
-    let copiedCount = 0;
-    for (const session of claudeSessions) {
-      // Use the sourceFile info if available, otherwise fall back to id
-      const filename = (session as any).sourceFile?.sessionFile || `${session.id}.jsonl`;
-      const projectPath = (session as any).sourceFile?.claudeProjectPath || session.projectPath;
-
-      const sourcePath = path.join(projectPath, filename);
-      const destPath = path.join(tempDir, filename);
-
-      try {
-        await fs.copyFile(sourcePath, destPath);
-        copiedCount++;
-      } catch (err) {
-        logger.debug(`Could not copy session file ${filename}: ${err}`);
-      }
-    }
-
-    logger.debug(`Copied ${copiedCount} of ${claudeSessions.length} session files`);
+    const tempDir = await tempManager.prepareTempDirectory(claudeSessions, yesterday);
 
     // Create the standup analysis prompt
     const standupPrompt = buildStandupPrompt(tempDir, yesterday);
@@ -116,17 +74,14 @@ export async function standup(): Promise<void> {
       displayStandupSummary(standupData);
 
       // Clean up temp directory
-      try {
-        await fs.rm(tempDir, { recursive: true, force: true });
-      } catch (err) {
-        logger.debug(`Could not clean up temp directory: ${err}`);
-      }
+      await tempManager.cleanup();
       return;
     }
 
     // Show analysis is starting
     console.log();
     console.log(chalk.cyan('🤖 Analyzing your work with Claude Code...'));
+    const sessionsByProject = groupSessionsByProject(claudeSessions);
     console.log(chalk.gray(`📁 Found ${claudeSessions.length} sessions from ${Object.keys(sessionsByProject).length} projects`));
     console.log(chalk.gray('This will take about 30-45 seconds'));
     console.log();
@@ -206,11 +161,7 @@ export async function standup(): Promise<void> {
     }
 
     // Clean up temp directory
-    try {
-      await fs.rm(tempDir, { recursive: true, force: true });
-    } catch (err) {
-      logger.debug(`Could not clean up temp directory: ${err}`);
-    }
+    await tempManager.cleanup();
 
     // Display the standup summary
     if (standupData) {
