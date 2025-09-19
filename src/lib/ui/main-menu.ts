@@ -359,8 +359,9 @@ async function handleMenuAction(
 
     case 'standup':
       try {
-        const { standup } = await import('../../commands/standup');
-        await standup();
+        // Use local analysis for more detailed accomplishments
+        const { standupLocal } = await import('../../commands/standup-local');
+        await standupLocal();
         await waitForEnter();
       } catch (error) {
         displayError(error);
