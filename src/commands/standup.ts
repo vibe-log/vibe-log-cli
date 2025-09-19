@@ -34,19 +34,47 @@ export async function standup(): Promise<void> {
   const spinner = createSpinner('Preparing your standup summary...').start();
 
   try {
+    logger.debug('Starting standup generation...');
+
     // Get recent sessions (last 50 should cover several days)
+    logger.debug('Fetching recent sessions from API...');
     const sessions = await apiClient.getRecentSessions(50);
+    logger.debug(`Received ${sessions?.length || 0} sessions from API`);
+
+    if (!sessions || sessions.length === 0) {
+      spinner.fail('No sessions found');
+      console.log(chalk.yellow('\nNo coding sessions found. Start working on some projects first!'));
+      return;
+    }
+
+    // Log first session structure for debugging
+    if (sessions.length > 0) {
+      logger.debug('Sample session structure:', JSON.stringify(sessions[0], null, 2));
+    }
 
     // Determine yesterday (or last working day)
     const yesterday = getYesterdayWorkingDay();
+    logger.debug(`Target date for standup: ${yesterday.toISOString()}`);
+    logger.debug(`Day of week: ${yesterday.getDay()} (0=Sunday, 1=Monday, etc.)`);
+
+    const today = new Date();
+    logger.debug(`Today's date: ${today.toISOString()}`);
 
     // Filter and process sessions
     const yesterdayWork = filterSessionsByDate(sessions, yesterday);
+    logger.debug(`Sessions on ${yesterday.toDateString()}: ${yesterdayWork.length}`);
+
     const recentWork = filterSessionsLastNDays(sessions, 3);
+    logger.debug(`Sessions in last 3 days: ${recentWork.length}`);
 
     // Extract meaningful accomplishments
+    logger.debug('Extracting accomplishments from yesterday\'s sessions...');
     const accomplishments = extractAccomplishments(yesterdayWork);
+    logger.debug(`Projects with work: ${accomplishments.size}`);
+
+    logger.debug('Identifying open work from recent sessions...');
     const openWork = identifyOpenWork(recentWork);
+    logger.debug(`Open work items: ${openWork.length}`);
 
     spinner.succeed('Standup summary ready!');
 
@@ -55,11 +83,18 @@ export async function standup(): Promise<void> {
 
   } catch (error) {
     spinner.fail('Failed to generate standup summary');
+
+    // Log the actual error details
+    logger.error('Standup generation failed with error:', error);
+    logger.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+
     if (error instanceof VibelogError) {
       throw error;
     }
-    logger.error('Standup generation failed:', error);
-    throw new VibelogError('Failed to generate standup summary', 'STANDUP_ERROR');
+
+    // Include more specific error information
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new VibelogError(`Failed to generate standup summary: ${errorMessage}`, 'STANDUP_ERROR');
   }
 }
 
@@ -85,9 +120,15 @@ function filterSessionsByDate(sessions: SessionData[], targetDate: Date): Sessio
   const endOfDay = new Date(targetDate);
   endOfDay.setHours(23, 59, 59, 999);
 
+  logger.debug(`Filtering sessions between ${startOfDay.toISOString()} and ${endOfDay.toISOString()}`);
+
   return sessions.filter(session => {
     const sessionDate = new Date(session.timestamp);
-    return sessionDate >= startOfDay && sessionDate <= endOfDay;
+    const matches = sessionDate >= startOfDay && sessionDate <= endOfDay;
+    if (matches) {
+      logger.debug(`Session matched: ${session.projectName || 'Unknown'} at ${session.timestamp}`);
+    }
+    return matches;
   });
 }
 
@@ -105,9 +146,16 @@ function filterSessionsLastNDays(sessions: SessionData[], days: number): Session
 function extractAccomplishments(sessions: SessionData[]): Map<string, ProjectWork> {
   const projectWork = new Map<string, ProjectWork>();
 
+  logger.debug(`Processing ${sessions.length} sessions for accomplishments`);
+
   for (const session of sessions) {
+    logger.debug(`Session: ${session.projectName || 'Unknown'}, duration: ${session.duration}s`);
+
     // Skip very short sessions (less than 5 minutes)
-    if (session.duration < 300) continue;
+    if (session.duration < 300) {
+      logger.debug(`  Skipping session (too short: ${session.duration}s < 300s)`);
+      continue;
+    }
 
     const project = session.projectName || 'Unnamed Project';
 
