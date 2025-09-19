@@ -520,6 +520,13 @@ class SecureApiClient {
       params,
     });
 
+    // The API returns { sessions: [...], count: number }
+    // Extract just the sessions array
+    if (response.data && typeof response.data === 'object' && 'sessions' in response.data) {
+      return response.data.sessions;
+    }
+
+    // Fallback for backward compatibility (if API changes)
     return response.data;
   }
   
