@@ -479,10 +479,63 @@ function enrichWithLocalDurations(
   }
 
   // Update the standup data with calculated durations
+  // Try both exact and fuzzy matching for project names
   if (standupData.yesterday && standupData.yesterday.projects) {
     for (const project of standupData.yesterday.projects) {
-      const totalSeconds = projectDurations.get(project.name) || 0;
+      // First try exact match
+      let totalSeconds = projectDurations.get(project.name);
+
+      // If no exact match, try to find a similar project name
+      if (totalSeconds === undefined) {
+        // Check if Claude's project name is a substring of any local project name
+        for (const [localProjectName, duration] of projectDurations.entries()) {
+          if (localProjectName.includes(project.name) || project.name.includes(localProjectName)) {
+            totalSeconds = duration;
+            logger.debug(`Matched Claude project "${project.name}" to local project "${localProjectName}"`);
+            break;
+          }
+        }
+
+        // If still no match, log for debugging
+        if (totalSeconds === undefined) {
+          logger.debug(`No duration found for project "${project.name}". Available projects: ${Array.from(projectDurations.keys()).join(', ')}`);
+          totalSeconds = 0;
+        }
+      }
+
       project.duration = formatDuration(totalSeconds);
+    }
+  }
+
+  // Also ensure any projects found locally but not in Claude's response are added
+  // This handles cases where Claude might miss a project
+  const claudeProjectNames = new Set(
+    standupData.yesterday?.projects?.map(p => p.name) || []
+  );
+
+  for (const [localProjectName, duration] of projectDurations.entries()) {
+    // Check if this project is missing from Claude's response
+    let found = false;
+    for (const claudeProject of claudeProjectNames) {
+      if (localProjectName === claudeProject ||
+          localProjectName.includes(claudeProject) ||
+          claudeProject.includes(localProjectName)) {
+        found = true;
+        break;
+      }
+    }
+
+    if (!found && duration > 0) {
+      // Add the missing project to the standup data
+      logger.debug(`Adding missing project "${localProjectName}" with duration ${duration} seconds`);
+      if (!standupData.yesterday.projects) {
+        standupData.yesterday.projects = [];
+      }
+      standupData.yesterday.projects.push({
+        name: localProjectName,
+        accomplishments: [`Development work on ${localProjectName}`],
+        duration: formatDuration(duration)
+      });
     }
   }
 
