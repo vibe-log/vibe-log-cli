@@ -19,9 +19,9 @@ const optionDetails: Record<string, string[]> = {
   ],
   'cloud': [
     '✓ Uses 0 tokens (our infrastructure)',
-    '📧 Daily standup emails',
-    '📊 Weekly summary every Monday',
-    '🎯 Interactive dashboard and detailed coaching plans'
+    '📧 Weekly recaps & Daily standup emails',
+    '📊 Interactive dashboards',
+    '🎯 Optimization insights & coaching plans'
   ],
   'statusline': [
     '📊 Analyzes your prompts',
@@ -99,9 +99,7 @@ export async function showFirstTimeWelcome(): Promise<WelcomeChoice> {
   console.log();
   console.log(chalk.green.bold('Focus. Discover. Grow. Ship Daily.'));
   console.log();
-  console.log(colors.muted('Setup options:'));
-  console.log();
-
+ 
   const menuChoices = [
     {
       name: '📋 Prepare for standup (2 min) - NEW!',

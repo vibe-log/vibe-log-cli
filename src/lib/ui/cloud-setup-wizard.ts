@@ -33,19 +33,33 @@ function showConnectionErrorHelp(error: unknown): void {
 
 /**
  * Guided cloud setup flow for first-time users
- * NEW FLOW: Session Selection → Privacy Preview → Authentication → Upload
- * Users see concrete sessions BEFORE being asked to authenticate
+ * NEW FLOW: Privacy Notice → Session Selection → Privacy Preview → Authentication → Upload
+ * Users see privacy notice first, then see concrete sessions BEFORE being asked to authenticate
  */
 export async function guidedCloudSetup(): Promise<void> {
   // Get version for logo display
   const pkg = require('../../../package.json');
   const version = process.env.SIMULATE_OLD_VERSION || pkg.version;
-  // Step 1: Session Selection (NO AUTH REQUIRED)
+
+  // Step 0: Show privacy notice first
   console.clear();
   const { showLogo } = await import('../ui');
   await showLogo(version);
+
+  const { showPrivacyNotice } = await import('./privacy-notice');
+  const accepted = await showPrivacyNotice();
+
+  if (!accepted) {
+    console.log(colors.warning('\nSetup cancelled.'));
+    console.log(colors.subdued('You can set up cloud mode later from the main menu.'));
+    return;
+  }
+
+  // Step 1: Session Selection (NO AUTH REQUIRED)
+  console.clear();
+  await showLogo(version);
   console.log(colors.accent('\n👀 Step 1: Let\'s See What You\'ve Been Building\n'));
-  
+
   console.log(colors.primary('Take a peek at your recent Claude Code sessions - no commitment required.'));
   console.log(colors.subdued('Browse freely! We\'ll only ask for authentication if you decide to proceed.\n'));
   

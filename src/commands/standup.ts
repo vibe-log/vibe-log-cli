@@ -15,6 +15,7 @@ import {
   groupSessionsByProject
 } from '../lib/standup-utils';
 import { StandupTempManager } from '../lib/standup-temp-manager';
+import { RotatingTipsWithHeader } from '../lib/ui/rotating-tips';
 import path from 'path';
 import fs from 'fs/promises';
 
@@ -111,8 +112,13 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
 
     const actualSessionsByProject = groupSessionsByProject(actualSessions);
     console.log(chalk.gray(`📁 Analyzing ${actualSessions.length} sessions from ${Object.keys(actualSessionsByProject).length} projects (${actualTargetDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })})`));
-    console.log(chalk.gray('This will take about 2-4 minutes'));
     console.log();
+
+    // Start rotating productivity tips during analysis
+    const tipsDisplay = new RotatingTipsWithHeader(
+      'While we analyze your sessions, here are some productivity tips:',
+    );
+    tipsDisplay.start(6000); // Rotate tips every 6 seconds for better readability
 
     // Execute Claude to analyze the sessions
     let standupData: StandupData | null = null;
@@ -157,13 +163,17 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
                 const outputPath = path.join(tempDir, 'standup-output.json');
                 await fs.writeFile(outputPath, JSON.stringify(standupData, null, 2));
 
+                // Stop tips and show completion
+                tipsDisplay.stop();
                 console.log(chalk.green('\n✓ Claude Code analysis complete!'));
                 logger.debug('Successfully parsed standup data from Claude response');
               } else {
+                tipsDisplay.stop();
                 logger.debug('No JSON found in Claude response');
                 console.log(chalk.yellow('\n⚠️  Claude did not return valid JSON'));
               }
             } catch (err) {
+              tipsDisplay.stop();
               logger.debug(`Could not parse Claude output as JSON: ${err}`);
               console.log(chalk.yellow('\n⚠️  Claude response was not valid JSON'));
 
@@ -173,11 +183,13 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
               }
             }
           } else if (code !== 0) {
+            tipsDisplay.stop();
             console.log(chalk.yellow('\n⚠️  Claude analysis had an issue'));
           }
         }
       });
     } catch (error) {
+      tipsDisplay.stop();
       logger.error('Failed to execute Claude:', error);
       console.log(chalk.yellow(`\n⚠️  Could not run Claude: ${error instanceof Error ? error.message : 'Unknown error'}`));
     }

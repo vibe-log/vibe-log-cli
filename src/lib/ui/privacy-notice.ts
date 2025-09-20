@@ -21,9 +21,9 @@ export async function showPrivacyNotice(): Promise<boolean> {
   // Advantages section
   console.log(colors.accent('  Cloud Mode Advantages:'));
   console.log(colors.success(`  ${icons.check} Uses 0 tokens (our infrastructure)`));
-  console.log(colors.success(`  ${icons.check} Auto-analyzes after each session`));
+  console.log(colors.success(`  ${icons.check} Weekly recaps & Daily standup emails`));
+  console.log(colors.success(`  ${icons.check} Optimization insights & coaching plan`));
   console.log(colors.success(`  ${icons.check} Interactive dashboard`));
-  console.log(colors.success(`  ${icons.check} Community insights`));
   console.log('');
   
   // Privacy section
@@ -31,13 +31,11 @@ export async function showPrivacyNotice(): Promise<boolean> {
   console.log('');
   console.log(colors.accent('  🔒 Privacy Notice:'));
   console.log('');
-  console.log('  vibe-log cloud will:');
-  console.log(colors.success(`  ${icons.check} Analyze sessions on our infrastructure (0 tokens used)`));
-  console.log(colors.success(`  ${icons.check} Store anonymized metrics for insights`));
+  console.log(' We take privacy seriously, vibe-log cloud will:');
+  console.log(colors.success(`  ${icons.check} Analyze sessions on our infrastructure`));
   console.log(colors.error(`  ${icons.cross} Never store your actual code or personal data`));
   console.log('');
   console.log(colors.subdued('  Your code and sensitive information stay private.'));
-  console.log(colors.subdued('  We only track productivity metrics and patterns.'));
   console.log('');
   console.log(colors.subdued('  Read our privacy policy: ') + colors.primary('https://vibe-log.dev/privacy'));
   console.log('');
@@ -49,7 +47,7 @@ export async function showPrivacyNotice(): Promise<boolean> {
     {
       type: 'confirm',
       name: 'accept',
-      message: colors.highlight('Do you accept these terms?'),
+      message: colors.highlight('Accept and continue with cloud setup'),
       default: true
     }
   ]);
