@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { status } from '../status';
 import * as tokenAuth from '../../lib/auth/token';
-import * as apiClient from '../../lib/api-client';
+import { apiClient } from '../../lib/api-client';
 import * as ui from '../../lib/ui';
 import { VibelogError } from '../../utils/errors';
 import { logger } from '../../utils/logger';
@@ -65,12 +65,10 @@ describe('Status Command', () => {
       text: '',
     };
     
-    // Re-setup apiClient mock structure after clearAllMocks
-    mockApiClient.apiClient = {
-      getStreak: vi.fn().mockResolvedValue(mockStreakData),
-      getRecentSessions: vi.fn().mockResolvedValue(mockRecentSessions),
-      uploadSessions: vi.fn(),
-    } as any;
+    // Setup apiClient mocks directly (not nested under .apiClient)
+    mockApiClient.getStreak = vi.fn().mockResolvedValue(mockStreakData);
+    mockApiClient.getRecentSessions = vi.fn().mockResolvedValue(mockRecentSessions);
+    mockApiClient.uploadSessions = vi.fn();
     
     // Setup default mocks
     mockTokenAuth.requireAuth.mockResolvedValue();
@@ -93,7 +91,7 @@ describe('Status Command', () => {
 
       expect(mockTokenAuth.requireAuth).toHaveBeenCalled();
       expect(mockSpinner.start).toHaveBeenCalled();
-      expect(mockApiClient.apiClient.getStreak).toHaveBeenCalled();
+      expect(mockApiClient.getStreak).toHaveBeenCalled();
       expect(mockSpinner.succeed).toHaveBeenCalledWith('Stats loaded!');
       
       // Check displayed information
@@ -108,7 +106,7 @@ describe('Status Command', () => {
     it('should display recent sessions', async () => {
       await status();
 
-      expect(mockApiClient.apiClient.getRecentSessions).toHaveBeenCalledWith(5);
+      expect(mockApiClient.getRecentSessions).toHaveBeenCalledWith(5);
       expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Recent Sessions:'));
       expect(console.log).toHaveBeenCalledWith(expect.stringContaining('vibe-log'));
       expect(console.log).toHaveBeenCalledWith(expect.stringContaining('test-project'));
@@ -141,11 +139,11 @@ describe('Status Command', () => {
         vi.clearAllMocks();
         mockTokenAuth.requireAuth.mockResolvedValue();
         mockUi.createSpinner.mockReturnValue(mockSpinner as any);
-        mockApiClient.apiClient.getStreak.mockResolvedValue({
+        mockApiClient.getStreak.mockResolvedValue({
           ...mockStreakData,
           current: testCase.current,
         });
-        mockApiClient.apiClient.getRecentSessions.mockResolvedValue([]);
+        mockApiClient.getRecentSessions.mockResolvedValue([]);
 
         await status();
 
@@ -156,7 +154,7 @@ describe('Status Command', () => {
 
   describe('zero streak handling', () => {
     it('should handle zero current streak', async () => {
-      mockApiClient.apiClient.getStreak.mockResolvedValue({
+      mockApiClient.getStreak.mockResolvedValue({
         ...mockStreakData,
         current: 0,
         todaySessions: 0,
@@ -170,7 +168,7 @@ describe('Status Command', () => {
     });
 
     it('should handle all zero values', async () => {
-      mockApiClient.apiClient.getStreak.mockResolvedValue({
+      mockApiClient.getStreak.mockResolvedValue({
         current: 0,
         longestStreak: 0,
         points: 0,
@@ -201,7 +199,7 @@ describe('Status Command', () => {
 
     it('should handle API failure', async () => {
       const apiError = new Error('Network error');
-      mockApiClient.apiClient.getStreak.mockRejectedValue(apiError);
+      mockApiClient.getStreak.mockRejectedValue(apiError);
 
       await expect(status()).rejects.toThrow(VibelogError);
       await expect(status()).rejects.toThrow('Failed to fetch your stats');
@@ -211,7 +209,7 @@ describe('Status Command', () => {
     });
 
     it('should handle invalid streak data', async () => {
-      mockApiClient.apiClient.getStreak.mockResolvedValue({
+      mockApiClient.getStreak.mockResolvedValue({
         current: NaN,
         longestStreak: undefined,
         points: null,
@@ -223,14 +221,14 @@ describe('Status Command', () => {
     });
 
     it('should handle missing streak data', async () => {
-      mockApiClient.apiClient.getStreak.mockResolvedValue(null as any);
+      mockApiClient.getStreak.mockResolvedValue(null as any);
 
       await expect(status()).rejects.toThrow(VibelogError);
       await expect(status()).rejects.toThrow('Failed to fetch your stats. Please try again.');
     });
 
     it('should continue if recent sessions fail', async () => {
-      mockApiClient.apiClient.getRecentSessions.mockRejectedValue(new Error('Sessions error'));
+      mockApiClient.getRecentSessions.mockRejectedValue(new Error('Sessions error'));
 
       await status();
 
@@ -244,7 +242,7 @@ describe('Status Command', () => {
 
     it('should rethrow VibelogError without wrapping', async () => {
       const customError = new VibelogError('Custom error', 'CUSTOM_CODE');
-      mockApiClient.apiClient.getStreak.mockRejectedValue(customError);
+      mockApiClient.getStreak.mockRejectedValue(customError);
 
       await expect(status()).rejects.toThrow(customError);
       expect(mockLogger.error).not.toHaveBeenCalled();
@@ -253,7 +251,7 @@ describe('Status Command', () => {
 
   describe('data validation', () => {
     it('should handle negative values gracefully', async () => {
-      mockApiClient.apiClient.getStreak.mockResolvedValue({
+      mockApiClient.getStreak.mockResolvedValue({
         current: -5,
         longestStreak: -10,
         points: -100,
@@ -271,7 +269,7 @@ describe('Status Command', () => {
     });
 
     it('should handle undefined optional fields', async () => {
-      mockApiClient.apiClient.getStreak.mockResolvedValue({
+      mockApiClient.getStreak.mockResolvedValue({
         current: 5,
         longestStreak: undefined,
         points: undefined,
@@ -288,7 +286,7 @@ describe('Status Command', () => {
     });
 
     it('should handle empty recent sessions array', async () => {
-      mockApiClient.apiClient.getRecentSessions.mockResolvedValue([]);
+      mockApiClient.getRecentSessions.mockResolvedValue([]);
 
       await status();
 
@@ -297,7 +295,7 @@ describe('Status Command', () => {
     });
 
     it('should handle malformed session data', async () => {
-      mockApiClient.apiClient.getRecentSessions.mockResolvedValue([
+      mockApiClient.getRecentSessions.mockResolvedValue([
         {
           timestamp: 'invalid-date',
           duration: NaN,
@@ -341,7 +339,7 @@ describe('Status Command', () => {
     });
 
     it('should handle very large numbers', async () => {
-      mockApiClient.apiClient.getStreak.mockResolvedValue({
+      mockApiClient.getStreak.mockResolvedValue({
         current: 999999,
         longestStreak: 999999,
         points: 999999999,
@@ -371,7 +369,7 @@ describe('Status Command', () => {
     });
 
     it('should stop spinner on failure', async () => {
-      mockApiClient.apiClient.getStreak.mockRejectedValue(new Error('API error'));
+      mockApiClient.getStreak.mockRejectedValue(new Error('API error'));
 
       await expect(status()).rejects.toThrow();
       
@@ -381,7 +379,7 @@ describe('Status Command', () => {
 
   describe('edge cases', () => {
     it('should handle Infinity values', async () => {
-      mockApiClient.apiClient.getStreak.mockResolvedValue({
+      mockApiClient.getStreak.mockResolvedValue({
         current: Infinity,
         longestStreak: 10,
         points: 150,
@@ -397,7 +395,7 @@ describe('Status Command', () => {
     });
 
     it('should handle non-numeric string values', async () => {
-      mockApiClient.apiClient.getStreak.mockResolvedValue({
+      mockApiClient.getStreak.mockResolvedValue({
         current: 'five' as any,
         longestStreak: 10,
         points: 150,
@@ -413,7 +411,7 @@ describe('Status Command', () => {
       const circularData: any = { current: 5 };
       circularData.self = circularData;
       
-      mockApiClient.apiClient.getStreak.mockResolvedValue(circularData);
+      mockApiClient.getStreak.mockResolvedValue(circularData);
 
       await status();
 
@@ -422,7 +420,7 @@ describe('Status Command', () => {
     });
 
     it('should handle very long project names', async () => {
-      mockApiClient.apiClient.getRecentSessions.mockResolvedValue([
+      mockApiClient.getRecentSessions.mockResolvedValue([
         {
           timestamp: '2024-01-15T10:00:00Z',
           duration: 3600,
@@ -449,7 +447,7 @@ describe('Status Command', () => {
 
     it('should handle API timeout gracefully', async () => {
       const timeoutError = new Error('ETIMEDOUT');
-      mockApiClient.apiClient.getStreak.mockRejectedValue(timeoutError);
+      mockApiClient.getStreak.mockRejectedValue(timeoutError);
 
       await expect(status()).rejects.toThrow(VibelogError);
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to fetch status', timeoutError);
