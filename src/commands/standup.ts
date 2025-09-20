@@ -128,7 +128,8 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
     try {
       await executeClaude(standupPrompt, {
         systemPrompt: getClaudeSystemPrompt(),
-        cwd: tempDir,  // Use temp directory for execution
+        // Don't change cwd - it breaks Claude's module resolution
+        // The prompt already contains the temp directory path
         claudePath: claudeCheck.path,  // Use the found Claude path
         onStreamEvent: (event) => {
           // Capture what Claude is saying
