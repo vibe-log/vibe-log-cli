@@ -74,7 +74,7 @@ export function buildStandupPrompt(tempDir: string, targetDate: Date): string {
     day: 'numeric'
   });
 
-  return `<think_hard>
+  return `think hard 
 You are analyzing coding sessions to extract ACTUAL DEVELOPER ACCOMPLISHMENTS for a daily standup meeting.
 
 CRITICAL RULES TO PREVENT HALLUCINATION:
@@ -151,7 +151,21 @@ Your response must be ONLY this JSON structure (include ALL projects):
   "blockers": []
 }
 
-IMPORTANT: Return ONLY the JSON object, nothing else. No explanations, no markdown code blocks, just the raw JSON.`;
+CRITICAL OUTPUT INSTRUCTIONS:
+1. Before the JSON, write exactly: ----JSON START----
+2. Then write your JSON object
+3. After the JSON, write exactly: ----JSON END----
+
+Example format:
+----JSON START----
+{
+  "yesterday": { ... },
+  "todayFocus": [...],
+  "blockers": []
+}
+----JSON END----
+
+DO NOT include any text before ----JSON START---- or after ----JSON END----`;
 }
 
 /**

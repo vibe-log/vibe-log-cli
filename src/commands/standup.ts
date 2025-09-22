@@ -152,12 +152,23 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
           }
 
           if (code === 0 && fullOutput) {
-            // Try to parse Claude's response as JSON
+            // Try to parse Claude's response as JSON using delimiters
             try {
-              // Find JSON in the response - it might have some text before/after
-              const jsonMatch = fullOutput.match(/\{[\s\S]*\}/);
-              if (jsonMatch) {
-                const jsonStr = jsonMatch[0];
+              // Look for JSON between the delimiters
+              const startDelimiter = '----JSON START----';
+              const endDelimiter = '----JSON END----';
+
+              const startIndex = fullOutput.indexOf(startDelimiter);
+              const endIndex = fullOutput.indexOf(endDelimiter);
+
+              if (startIndex !== -1 && endIndex !== -1 && startIndex < endIndex) {
+                // Extract JSON between the delimiters
+                const jsonStr = fullOutput.substring(
+                  startIndex + startDelimiter.length,
+                  endIndex
+                ).trim();
+
+                logger.debug(`Extracted JSON between delimiters: ${jsonStr.substring(0, 200)}`);
                 standupData = JSON.parse(jsonStr);
 
                 // Write the JSON to file for consistency
@@ -170,17 +181,40 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
                 logger.debug('Successfully parsed standup data from Claude response');
               } else {
                 tipsDisplay.stop();
-                logger.debug('No JSON found in Claude response');
-                console.log(chalk.yellow('\n⚠️  Claude did not return valid JSON'));
+                if (startIndex === -1) {
+                  logger.debug('JSON START delimiter not found in Claude response');
+                }
+                if (endIndex === -1) {
+                  logger.debug('JSON END delimiter not found in Claude response');
+                }
+                if (startIndex !== -1 && endIndex !== -1 && startIndex >= endIndex) {
+                  logger.debug(`Invalid delimiter positions: start=${startIndex}, end=${endIndex}`);
+                }
+                logger.debug(`Full Claude response for debugging: ${fullOutput}`);
+                console.log(chalk.yellow('\n⚠️  Claude did not return JSON with expected delimiters'));
+                console.log(chalk.gray('Try running with --debug flag to see Claude\'s full response'));
               }
             } catch (err) {
               tipsDisplay.stop();
               logger.debug(`Could not parse Claude output as JSON: ${err}`);
               console.log(chalk.yellow('\n⚠️  Claude response was not valid JSON'));
 
+              // Check if we at least found the delimiters
+              const hasStartDelimiter = fullOutput.includes('----JSON START----');
+              const hasEndDelimiter = fullOutput.includes('----JSON END----');
+
+              if (hasStartDelimiter && hasEndDelimiter) {
+                logger.debug('Delimiters found but JSON parsing failed');
+                console.log(chalk.gray('JSON delimiters found but content was malformed'));
+              } else {
+                logger.debug(`Missing delimiters - Start: ${hasStartDelimiter}, End: ${hasEndDelimiter}`);
+              }
+
               // Log the actual response for debugging
-              if (fullOutput.length < 500) {
+              if (fullOutput.length < 1000) {
                 logger.debug(`Claude response: ${fullOutput}`);
+              } else {
+                logger.debug(`Claude response (truncated): ${fullOutput.substring(0, 1000)}...`);
               }
             }
           } else if (code !== 0) {
