@@ -1,6 +1,6 @@
 import inquirer from 'inquirer';
 import { colors, box } from './styles';
-import { 
+import {
   getStatusLineStatus,
   installStatusLine,
   uninstallStatusLine,
@@ -10,6 +10,7 @@ import {
 } from '../status-line-manager';
 import { showSuccess, showError, showInfo } from '../ui';
 import { logger } from '../../utils/logger';
+import { sendTelemetryUpdate } from '../telemetry';
 
 // Adapter types for menu compatibility
 interface StatusLineConfig {
@@ -218,7 +219,10 @@ async function performInstallation(): Promise<void> {
     
     // Perform installation
     await installStatusLine();
-    
+
+    // After successful installation, update telemetry (cloud users only)
+    await sendTelemetryUpdate(); // This checks for auth internally
+
     // Success message
     console.log('');
     showSuccess('Strategic Co-pilot activated!');
@@ -369,7 +373,10 @@ async function performUninstall(): Promise<void> {
     
     // Perform uninstallation with optional restore
     await uninstallStatusLine(restoreBackup);
-    
+
+    // After successful uninstall, update telemetry (cloud users only)
+    await sendTelemetryUpdate(); // This checks for auth internally
+
     console.log('');
     if (restoreBackup) {
       showSuccess('Original status line restored');

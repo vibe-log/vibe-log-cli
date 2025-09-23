@@ -5,6 +5,7 @@ import { logger } from '../utils/logger';
 import { validateAuthToken } from '../lib/input-validator';
 import { isNetworkError, createNetworkError } from '../lib/errors/network-errors';
 import chalk from 'chalk';
+import { sendTelemetryUpdate } from '../lib/telemetry';
 
 interface AuthOptions {
   token?: string;
@@ -27,6 +28,9 @@ export async function auth(options: AuthOptions): Promise<void> {
       await browserAuth(options.wizardMode);
     }
     
+    // Send initial telemetry for new cloud user
+    await sendTelemetryUpdate();
+
     // Only show success messages if not in wizard mode
     if (!options.wizardMode) {
       showSuccess('Authentication successful!');

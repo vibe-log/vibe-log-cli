@@ -5,6 +5,7 @@ import { validateUrl } from './input-validator';
 import { logger } from '../utils/logger';
 import { isNetworkError, createNetworkError } from './errors/network-errors';
 import crypto from 'crypto';
+import type { CliTelemetry } from './telemetry';
 
 export interface Session {
   tool: 'claude_code' | 'cursor' | 'vscode';
@@ -363,13 +364,22 @@ class SecureApiClient {
     
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
-      const payload = { 
+      const payload: any = {
         sessions: chunk,
         checksum: this.calculateChecksum(chunk),
         totalSessions: sanitizedSessions.length, // Total sessions being uploaded
         batchNumber: i + 1, // Current batch number (1-indexed)
         totalBatches: chunks.length, // Total number of batches
       };
+
+      // On first chunk only, include telemetry
+      if (i === 0) {
+        const { collectTelemetry } = await import('./telemetry');
+        const telemetry = await collectTelemetry();
+        if (telemetry) {
+          payload.telemetry = telemetry; // Add to existing payload
+        }
+      }
       
       // Calculate payload size in kilobytes
       const payloadSize = Buffer.byteLength(JSON.stringify(payload)) / 1024;
@@ -500,6 +510,11 @@ class SecureApiClient {
   async getStreak(): Promise<StreakInfo> {
     const response = await this.client.get('/api/user/streak');
     return response.data;
+  }
+
+  async updateTelemetry(telemetry: CliTelemetry): Promise<void> {
+    // Only called if user has auth token (checked in telemetry.ts)
+    await this.client.post('/api/cli-telemetry', telemetry);
   }
 
   async getRecentSessions(limit: number = 10, startDate?: Date, endDate?: Date): Promise<any[]> {

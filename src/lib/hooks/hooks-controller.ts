@@ -3,6 +3,7 @@ import path from 'path';
 import { logger } from '../../utils/logger';
 import { getCliPath } from '../config';
 import { getGlobalSettingsPath, getProjectLocalSettingsPath } from '../claude-core';
+import { sendTelemetryUpdate } from '../telemetry';
 import { 
   readGlobalSettings, 
   writeGlobalSettings,
@@ -304,8 +305,11 @@ export async function installSelectedHooks(selection: HookSelection): Promise<vo
     getCliPath(),
     'all'  // Global hooks use 'all' mode
   );
-  
+
   logger.info('Hooks installed successfully');
+
+  // After successful installation, update telemetry (cloud users only)
+  await sendTelemetryUpdate();
 }
 
 /**
@@ -449,7 +453,10 @@ export async function uninstallAllHooks(): Promise<{ removedCount: number }> {
   }
   
   logger.info(`Total removed: ${removedCount} hook(s)`);
-  
+
+  // After successful uninstall, update telemetry (cloud users only)
+  await sendTelemetryUpdate();
+
   return { removedCount };
 }
 
@@ -550,8 +557,11 @@ export async function installGlobalHooks(): Promise<void> {
     getCliPath(),
     'all'  // Pass mode='all' for global hooks
   );
-  
+
   logger.info('Global hooks installed for all projects');
+
+  // After successful installation, update telemetry (cloud users only)
+  await sendTelemetryUpdate();
 }
 
 /**
@@ -597,6 +607,8 @@ export async function installProjectHooks(projects: Array<{ path: string; name: 
   
   if (installedCount > 0) {
     logger.info(`Successfully installed hooks for ${installedCount} project(s)`);
+    // After successful installation, update telemetry (cloud users only)
+    await sendTelemetryUpdate();
   }
   if (failedCount > 0) {
     logger.warn(`Failed to install hooks for ${failedCount} project(s)`);
