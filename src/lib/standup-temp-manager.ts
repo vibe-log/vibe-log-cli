@@ -111,37 +111,64 @@ export class StandupTempManager {
       this.tempDir = null;
     }
 
-    // Clean up old temp directories (older than 1 hour)
+    // Clean up all other temp directories
     await this.cleanupOldTempDirs();
+
+    // Clean up Claude project folders for temp directories
+    await this.cleanupClaudeProjectFolders();
   }
 
   /**
-   * Clean up old temp directories to prevent buildup
-   * Removes directories older than 1 hour
+   * Clean up all temp directories
+   * Since users don't run multiple standups in parallel, we clean everything
    */
   private async cleanupOldTempDirs(): Promise<void> {
     try {
       const files = await fs.readdir(this.baseDir);
-      const oneHourAgo = Date.now() - (60 * 60 * 1000);
 
       for (const file of files) {
         if (file.startsWith('session-')) {
-          // Extract timestamp from directory name
-          const timestamp = parseInt(file.replace('session-', ''), 10);
-          if (!isNaN(timestamp) && timestamp < oneHourAgo) {
-            const dirPath = path.join(this.baseDir, file);
-            try {
-              await fs.rm(dirPath, { recursive: true, force: true });
-              logger.debug(`Cleaned up old temp directory: ${dirPath}`);
-            } catch (err) {
-              logger.debug(`Could not clean up old directory ${dirPath}: ${err}`);
-            }
+          const dirPath = path.join(this.baseDir, file);
+          try {
+            await fs.rm(dirPath, { recursive: true, force: true });
+            logger.debug(`Cleaned up temp directory: ${dirPath}`);
+          } catch (err) {
+            logger.debug(`Could not clean up directory ${dirPath}: ${err}`);
           }
         }
       }
     } catch (err) {
       // Ignore errors - cleanup is best effort
-      logger.debug(`Could not clean up old temp directories: ${err}`);
+      logger.debug(`Could not clean up temp directories: ${err}`);
+    }
+  }
+
+  /**
+   * Clean up Claude project folders created for temp directories
+   * Claude creates project folders when we run it from a directory
+   */
+  private async cleanupClaudeProjectFolders(): Promise<void> {
+    try {
+      const claudeProjectsDir = path.join(os.homedir(), '.claude', 'projects');
+      const files = await fs.readdir(claudeProjectsDir);
+
+      for (const file of files) {
+        // Look for URL-encoded temp directory names
+        // Format: C--Users-username--vibe-log-temp-standup-session-*
+        // This matches our temp directory pattern but URL-encoded
+        if (file.includes('--vibe-log-temp-standup-session-')) {
+          const projectPath = path.join(claudeProjectsDir, file);
+          try {
+            await fs.rm(projectPath, { recursive: true, force: true });
+            logger.debug(`Cleaned up Claude project folder: ${projectPath}`);
+          } catch (err) {
+            logger.debug(`Could not clean up Claude project folder ${projectPath}: ${err}`);
+          }
+        }
+      }
+    } catch (err) {
+      // Ignore errors - Claude projects directory might not exist
+      logger.debug(`Could not clean up Claude project folders: ${err}`);
     }
   }
 

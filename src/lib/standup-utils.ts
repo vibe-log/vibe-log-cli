@@ -67,7 +67,7 @@ export function formatDuration(totalSeconds: number): string {
  * Build the standup analysis prompt for Claude
  * This is the exact prompt from the working version
  */
-export function buildStandupPrompt(tempDir: string, targetDate: Date): string {
+export function buildStandupPrompt(_tempDir: string, targetDate: Date): string {
   const dateStr = targetDate.toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'short',
@@ -86,9 +86,9 @@ CRITICAL RULES TO PREVENT HALLUCINATION:
 IMPORTANT: Do NOT use sub-agents or Task tools. Read files directly using the Read tool.
 
 Task:
-1. Read ${tempDir}/standup-manifest.json to see available sessions
+1. Read ./standup-manifest.json to see available sessions (in current directory)
 2. IMPORTANT: Analyze ALL projects listed in the manifest, not just a sample
-3. Read the JSONL session files DIRECTLY from ${tempDir}/ (they are in the current directory)
+3. Read the JSONL session files DIRECTLY from current directory (they are here with you)
 4. CRITICAL: Ignore any sessions from today - only report on PAST work
 5. Extract ONLY work that is ACTUALLY DESCRIBED in the messages
 6. Include EVERY project that had work on ${dateStr} in your response
