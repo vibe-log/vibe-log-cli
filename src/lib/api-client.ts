@@ -1,9 +1,10 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import { getToken, getApiUrl } from './config';
+import { getToken, getApiUrl, getStatusLinePersonality } from './config';
 import { VibelogError } from '../utils/errors';
 import { validateUrl } from './input-validator';
 import { logger } from '../utils/logger';
 import { isNetworkError, createNetworkError } from './errors/network-errors';
+import { claudeSettingsManager } from './claude-settings-manager';
 import crypto from 'crypto';
 
 export interface Session {
@@ -57,9 +58,56 @@ export interface UploadResult {
   batchId?: string;              // Batch ID for tracking
 }
 
+export interface CLIConfiguration {
+  statusline: {
+    personality: 'gordon' | 'vibe-log' | 'custom';
+    customPersonality?: {
+      name: string;
+      description: string;
+      templates?: {
+        poor: string;
+        fair: string;
+        good: string;
+        excellent: string;
+      };
+    };
+  };
+  hooks: {
+    sessionStartInstalled: boolean;
+    preCompactInstalled: boolean;
+    mode?: 'all' | 'selected';
+  };
+}
+
 // Request ID for tracking
 function generateRequestId(): string {
   return crypto.randomBytes(16).toString('hex');
+}
+
+// Gather current CLI configuration for sending to server
+async function gatherCLIConfiguration(): Promise<CLIConfiguration | null> {
+  try {
+    // Get statusline configuration
+    const statuslineConfig = getStatusLinePersonality();
+
+    // Get hooks configuration
+    const featureStatus = await claudeSettingsManager.getFeatureStatus();
+
+    return {
+      statusline: {
+        personality: statuslineConfig.personality,
+        customPersonality: statuslineConfig.customPersonality
+      },
+      hooks: {
+        sessionStartInstalled: featureStatus.autoSync.sessionStartInstalled,
+        preCompactInstalled: featureStatus.autoSync.preCompactInstalled,
+        mode: featureStatus.autoSync.mode
+      }
+    };
+  } catch (error) {
+    logger.debug('Failed to gather CLI configuration:', error);
+    return null; // Don't fail upload if config gathering fails
+  }
 }
 
 class SecureApiClient {
@@ -336,12 +384,15 @@ class SecureApiClient {
   }
 
   async uploadSessions(
-    sessions: Session[], 
+    sessions: Session[],
     onProgress?: (current: number, total: number, sizeKB?: number) => void
   ): Promise<any> {
+    // Gather CLI configuration to send with the upload
+    const cliConfig = await gatherCLIConfiguration();
+
     // Validate and sanitize sessions
     const sanitizedSessions = sessions.map(session => this.sanitizeSession(session));
-    
+
     // Chunk large uploads
     // Using 100 for better performance - modern connections can handle 300-500KB payloads
     const CHUNK_SIZE = 100;
@@ -404,8 +455,17 @@ class SecureApiClient {
       
       while (retryCount <= MAX_RETRIES) {
         try {
+          // Prepare configuration headers
+          const configHeaders: Record<string, string> = {};
+          if (cliConfig) {
+            configHeaders['x-vibe-config-statusline'] = JSON.stringify(cliConfig.statusline);
+            configHeaders['x-vibe-config-hooks'] = JSON.stringify(cliConfig.hooks);
+          }
+
           // Use /cli/sessions endpoint for CLI uploads (bearer token auth)
-          const response = await this.client.post('/cli/sessions', payload);
+          const response = await this.client.post('/cli/sessions', payload, {
+            headers: configHeaders
+          });
           results.push(response.data);
           
           // Update progress after successful chunk upload
