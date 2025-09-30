@@ -65,16 +65,31 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
     const tempManager = new StandupTempManager();
     const yesterday = getYesterdayWorkingDay();
 
+    // CRITICAL: Filter out today's sessions - only show PAST work
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const pastSessions = claudeSessions.filter(s =>
+      s.timestamp.toISOString().split('T')[0] !== todayStr
+    );
+
+    // If no past sessions, show "nothing" message
+    if (pastSessions.length === 0) {
+      spinner.succeed('All sessions are from today - no past work to report');
+      console.log(chalk.yellow('\nNo completed work to report yet.'));
+      console.log(chalk.gray('Come back tomorrow to see today\'s standup summary!'));
+      return;
+    }
+
     // Find actual date with sessions (might not be yesterday)
     const yesterdayStr = yesterday.toISOString().split('T')[0];
-    const yesterdaySessions = claudeSessions.filter(s =>
+    const yesterdaySessions = pastSessions.filter(s =>
       s.timestamp.toISOString().split('T')[0] === yesterdayStr
     );
 
     let actualTargetDate = yesterday;
     if (yesterdaySessions.length === 0) {
-      // No sessions yesterday, find most recent day with sessions
-      const sortedSessions = claudeSessions.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      // No sessions yesterday, find most recent PAST day with sessions
+      const sortedSessions = pastSessions.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
       if (sortedSessions.length > 0) {
         actualTargetDate = new Date(sortedSessions[0].timestamp);
         // Set to start of day to match date comparison
@@ -82,7 +97,7 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
       }
     }
 
-    const tempDir = await tempManager.prepareTempDirectory(claudeSessions, actualTargetDate);
+    const tempDir = await tempManager.prepareTempDirectory(pastSessions, actualTargetDate);
 
     // Create the standup analysis prompt with actual date
     const standupPrompt = buildStandupPrompt(tempDir, actualTargetDate);
@@ -92,7 +107,7 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
     if (!claudeCheck.installed) {
       console.log(chalk.yellow('\n⚠️  Claude Code is not installed'));
       console.log(chalk.gray('Using basic analysis instead...'));
-      const standupData = await fallbackAnalysis(claudeSessions, yesterday);
+      const standupData = await fallbackAnalysis(pastSessions, actualTargetDate);
       displayStandupSummary(standupData);
 
       // Clean up temp directory
@@ -106,7 +121,7 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
 
     // Show accurate count for actual target date
     const actualDateStr = actualTargetDate.toISOString().split('T')[0];
-    const actualSessions = claudeSessions.filter(s =>
+    const actualSessions = pastSessions.filter(s =>
       s.timestamp.toISOString().split('T')[0] === actualDateStr
     );
 
@@ -231,10 +246,10 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
     // If no standup data was generated, use fallback
     if (!standupData) {
       logger.debug('No standup data generated, using fallback');
-      standupData = await fallbackAnalysis(claudeSessions, actualTargetDate);
+      standupData = await fallbackAnalysis(pastSessions, actualTargetDate);
     } else {
       // Calculate durations locally for consistency
-      standupData = enrichWithLocalDurations(standupData, claudeSessions, actualTargetDate);
+      standupData = enrichWithLocalDurations(standupData, pastSessions, actualTargetDate);
     }
 
     // Clean up temp directory

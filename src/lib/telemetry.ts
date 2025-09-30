@@ -15,7 +15,10 @@ export interface CliTelemetry {
 
   // Version info
   cliVersion: string;
-  hookVersion?: string;
+  hookVersion?: string; // Deprecated - kept for backward compatibility
+  sessionStartHookVersion?: string;
+  preCompactHookVersion?: string;
+  sessionEndHookVersion?: string;
 
   // Timestamps
   lastTelemetryUpdate: string;
@@ -41,7 +44,10 @@ export async function collectTelemetry(): Promise<CliTelemetry | null> {
     statusLineInstalled: state.hasStatusLine,
     statusLinePersonality: statusLine.personality,
     cliVersion: pkg.version,
-    hookVersion: hookStatus.sessionStartHook?.version || hookStatus.preCompactHook?.version,
+    hookVersion: hookStatus.sessionStartHook?.version || hookStatus.preCompactHook?.version, // Deprecated
+    sessionStartHookVersion: hookStatus.sessionStartHook?.version,
+    preCompactHookVersion: hookStatus.preCompactHook?.version,
+    sessionEndHookVersion: hookStatus.sessionEndHook?.version,
     lastTelemetryUpdate: new Date().toISOString()
   };
 }

@@ -29,6 +29,7 @@ export interface StatusLineFeatureStatus {
 export interface AutoSyncFeatureStatus {
   sessionStartInstalled: boolean;
   preCompactInstalled: boolean;
+  sessionEndInstalled: boolean;
   mode?: 'all' | 'selected';
   trackedProjects?: string[];
 }
@@ -419,6 +420,7 @@ export class ClaudeSettingsManager {
     return {
       sessionStartInstalled: this.hasSessionStartHook(settings),
       preCompactInstalled: this.hasPreCompactHook(settings),
+      sessionEndInstalled: this.hasSessionEndHook(settings),
       mode: this.detectAutoSyncMode(settings)
     };
   }
@@ -483,12 +485,23 @@ export class ClaudeSettingsManager {
    */
   private hasPreCompactHook(settings: ClaudeSettings | null): boolean {
     if (!settings?.hooks?.PreCompact) return false;
-    
+
     return settings.hooks.PreCompact.some(config =>
       config.hooks?.some(hook => this.isAutoSyncCommand(hook.command))
     );
   }
-  
+
+  /**
+   * Check if SessionEnd hook is installed
+   */
+  private hasSessionEndHook(settings: ClaudeSettings | null): boolean {
+    if (!settings?.hooks?.SessionEnd) return false;
+
+    return settings.hooks.SessionEnd.some((config: any) =>
+      config.hooks?.some((hook: any) => this.isAutoSyncCommand(hook.command))
+    );
+  }
+
   /**
    * Detect auto-sync mode from hook commands
    */

@@ -76,6 +76,7 @@ export interface CLIConfiguration {
   hooks: {
     sessionStartInstalled: boolean;
     preCompactInstalled: boolean;
+    sessionEndInstalled: boolean;
     mode?: 'all' | 'selected';
   };
 }
@@ -102,6 +103,7 @@ async function gatherCLIConfiguration(): Promise<CLIConfiguration | null> {
       hooks: {
         sessionStartInstalled: featureStatus.autoSync.sessionStartInstalled,
         preCompactInstalled: featureStatus.autoSync.preCompactInstalled,
+        sessionEndInstalled: featureStatus.autoSync.sessionEndInstalled,
         mode: featureStatus.autoSync.mode
       }
     };
