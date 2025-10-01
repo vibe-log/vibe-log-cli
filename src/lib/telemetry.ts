@@ -42,7 +42,7 @@ export async function collectTelemetry(): Promise<CliTelemetry | null> {
     hookMode: state.trackingMode,
     trackedProjectCount: state.trackedProjectCount,
     statusLineInstalled: state.hasStatusLine,
-    statusLinePersonality: statusLine.personality,
+    statusLinePersonality: statusLine?.personality || 'gordon',
     cliVersion: pkg.version,
     hookVersion: hookStatus.sessionStartHook?.version || hookStatus.preCompactHook?.version, // Deprecated
     sessionStartHookVersion: hookStatus.sessionStartHook?.version,

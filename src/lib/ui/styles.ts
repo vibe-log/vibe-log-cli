@@ -1,5 +1,14 @@
 import chalk from 'chalk';
 
+// Helper function to safely use chalk.hex with fallback
+const safeHex = (color: string, fallback: any) => {
+  try {
+    return chalk.hex ? chalk.hex(color) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
 // Color palette - optimized for visibility on dark terminals
 export const colors = {
   primary: chalk.cyan,
@@ -7,15 +16,15 @@ export const colors = {
   warning: chalk.yellow,
   error: chalk.red,
   info: chalk.cyan,  // Changed from blue to cyan for better visibility
-  muted: chalk.hex('#808080'),  // Brighter gray for better visibility on black terminals
+  muted: safeHex('#808080', chalk.gray),  // Brighter gray for better visibility on black terminals
   accent: chalk.magenta,
   highlight: chalk.bold.white,
-  dim: chalk.hex('#606060'),  // Custom gray instead of chalk.dim for consistency
-  
+  dim: safeHex('#606060', chalk.dim),  // Custom gray instead of chalk.dim for consistency
+
   // Semantic helpers for better readability
-  subdued: chalk.hex('#909090'),  // Increased contrast for better readability
-  hint: chalk.hex('#7A8290'),     // Slightly brighter for better visibility
-  inactive: chalk.hex('#4B5563'),  // For disabled/inactive items
+  subdued: safeHex('#909090', chalk.gray),  // Increased contrast for better readability
+  hint: safeHex('#7A8290', chalk.gray),     // Slightly brighter for better visibility
+  inactive: safeHex('#4B5563', chalk.dim),  // For disabled/inactive items
 };
 
 // Icons
