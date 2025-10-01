@@ -127,11 +127,19 @@ describe('API Client Module', () => {
         streak: testData.createStreakInfo(),
         batchId: undefined,
       });
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/cli/sessions', 
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/cli/sessions',
         expect.objectContaining({
           sessions: expect.any(Array),
           checksum: expect.any(String),
-        })
+          telemetry: expect.objectContaining({
+            cliVersion: expect.any(String),
+            statusLinePersonality: expect.any(String),
+          }),
+          batchNumber: expect.any(Number),
+          totalBatches: expect.any(Number),
+          totalSessions: expect.any(Number),
+        }),
+        expect.any(Object)  // headers object
       );
     });
 
