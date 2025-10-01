@@ -5,6 +5,36 @@ All notable changes to the vibe-log-cli project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2025-10-01
+
+### Added
+- **Daily Standup Command**: New `standup` command to prepare for daily meetings
+  - Runs locally on user's machine
+  - Analyzes previous day's Claude Code sessions automatically
+  - Extracts real accomplishments and features built
+  - Provides business-value focused summaries
+  - Includes smart suggestions for next steps
+  - Anti-hallucination safeguards ensure accuracy
+- **Interactive Onboarding Menu**: Enhanced first-time user experience
+  - Streamlined setup flow with clear guidance
+- **CLI Telemetry**: Anonymous usage tracking for authenticated users
+  - Helps improve CLI based on actual usage patterns
+  - Fully respects user privacy
+- **Gamification Feature**: CLI now showing streak and awarded points
+
+### Fixed
+- Session filtering now correctly excludes today's sessions from standup reports
+- Project name matching in standup duration calculations
+- Claude Code no longer creates project folders for temp directories
+- Standup command parsing with proper JSON delimiters
+- Parallel session and sub-agent dependency issues resolved
+- Time calculation consistency in standup reports
+
+### Improved
+- Temp directory cleanup for standup operations
+- Error handling and user feedback throughout the CLI
+- Configuration transmission to server for better sync
+
 ## [0.6.4] - 2025-01-14
 
 ### Added
