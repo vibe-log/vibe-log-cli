@@ -170,7 +170,7 @@ async function showSubAgentsManagement(): Promise<void> {
       console.log(colors.success('Sub-agents reinstalled successfully!'));
       break;
 
-    case 'Uninstall sub-agents':
+    case 'Uninstall sub-agents': {
       const { confirmUninstall } = await inquirer.prompt([{
         type: 'confirm',
         name: 'confirmUninstall',
@@ -184,6 +184,7 @@ async function showSubAgentsManagement(): Promise<void> {
         console.log(colors.success('Sub-agents uninstalled successfully!'));
       }
       break;
+    }
   }
 }
 
