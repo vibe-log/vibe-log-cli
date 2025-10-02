@@ -30,39 +30,50 @@
 
 ![vibe-log-cli](https://github.com/user-attachments/assets/d72bebde-f90d-432f-92dd-6f7f0e4ec480)
 
-
 ## What is Vibe-Log?
 
-vibe-log-cli is an open-source command-line tool that analyzes your Claude Code sessions to extract productivity insights and generate reports. All analysis can run completely locally on your machine using Claude Code's capabilities.
+vibe-log-cli is an open-source command-line tool that analyzes your Claude Code sessions to extract productivity insights and generate reports. All analyses can run completely locally on your machine using Claude Code's capabilities. It also encompasses a statusline that help you get more for your sessions.  
+## Main features 
+### 1. 📋 Today's standup 
+New: Be prepared in 2-3 minutes for your daily standup meeting! 
+<img width="1270" height="512" alt="Screenshot 2025-10-02 163102" src="https://github.com/user-attachments/assets/b0e2bd55-618e-4b9e-b1c0-f2d7069e76aa" />
 
-## Updates 
-v0.6.0 – Faster, Smoother Reports 🚀
-Local reports now run on streamlined templates, cutting Claude runtime by up to 3 minutes and making your reports more reliable than ever.
 
-## Architecture
-
-### 1. 💬 Claude Status Line - Strategic Co-pilot / Advisor (Local)
-Strategic product advisor in Claude Code. Your prompts are analyzed locally (via CC) to provide actionable guidance that pushes you to ship faster. Feedback appears in your Claude Code status line with concrete next steps.
-
-### 2. 📊 Claude Code Productivity Report Generation (Local) 
+### 3. 📊 Claude Code Productivity Report Generation (Local) 
 Generate comprehensive productivity reports using Claude Code's sub-agents to analyze your sessions in parallel. No data leaves your machine.
+See example of locally generated report here: https://vibe-log.dev/example-daily-report
+ 
 
-### 3. 📈 Web Dashboard - Cloud Sync & Daily Shippers Club (Optional)
-Sync sanitized session data to the Vibe-Log dashboard for web-based analytics and deep insights across sessions and projects.
-
-**NEW: 🏆 Daily Shippers Club** - Earn points for consistent daily shipping:
-- 🔥 **Streak Points**: Exponential rewards (2^day) for consecutive days of coding (max 128/day)
-- 📊 **Volume Bonus**: 1 point per session uploaded (max 30/day)
-- 🏅 **Instant Feedback**: See points earned immediately after CLI uploads
-- 📈 **Leaderboard**: Compete with other builders in the community
-- 🎁 **Web Platform Extras**: Share sessions on the dashboard for bonus points
-
-## Status Line - Claude Strategic Co-pilot / Advisor (Safe & Reversible)
-
+## 3. 💬 Claude Status Line - Strategic Co-pilot / Advisor (Local)
+Strategic product advisor in Claude Code. Your prompts are analyzed locally (via CC) to provide actionable guidance that pushes you to ship faster. Feedback appears in your Claude Code status line with concrete next steps.
 <img width="612" height="227" alt="image" src="https://github.com/user-attachments/assets/b2f7f10b-8a29-429b-921a-d0fc0bc45183" />
 
+## Updates 
 
-The Status Line uses your local Claude Code to provide strategic guidance that pushes you to ship faster. It remembers your original goal and gives concrete, actionable steps to achieve it.
+### What's New in v0.7.x
+#### Today's Standup ✨
+Get a personalized standup summary of your recent claude coding activity right from your terminal. Runs 100% locally using your own Claude Code installation 
+The standup feature analyzes your recent sessions and generates a concise summary of:
+* What you worked on
+* Key accomplishments
+* Next steps
+
+#### Improved Onboarding Experience 🚀
+Getting started with vibe-log is now smoother than ever:
+Better first-run setup flow
+Helpful prompts to guide you through configuration
+Improved error messages when things go wrong
+
+#### Improved Time Calculation ⏱️
+More accurate session duration tracking with better handling of:
+Massive sessions: Sessions with 10,000+ messages no longer cause performance issues
+Smart truncation: Large sessions are intelligently truncated while preserving time data
+Consistent timestamps: Better parsing and validation of session timing information
+Edge case handling: Fixed issues with sessions that had missing or invalid timestamps
+
+
+
+## 💬 More about Claude Status Line - Strategic Co-pilot / Advisor (Local)
 
 **🔒 Installation Safety**: Automatically backs up your existing status line configuration. Uninstalling instantly restores your original setup - zero risk to your Claude Code configuration.
 
@@ -75,7 +86,7 @@ The Status Line uses your local Claude Code to provide strategic guidance that p
 - **📈 Strategic Thinking**: Considers edge cases, user experience, and scaling at the right time
 - **📊 Token Usage Display**: Integrates with ccusage to show real-time token metrics
 - **↩️ Easy Restore**: Your original status line is backed up and can be restored anytime
-
+## Architecture
 ### How Status Line Works
 1. Intercepts prompts submitted in Claude Code
 1. Analyzes via the local Claude Code latest prompt with relevant session context.
