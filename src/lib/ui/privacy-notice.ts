@@ -47,11 +47,11 @@ export async function showPrivacyNotice(): Promise<boolean> {
     {
       type: 'confirm',
       name: 'accept',
-      message: colors.highlight('Accept and continue with cloud setup'),
+      message: 'Accept and continue with cloud setup',
       default: true
     }
   ]);
-  
+
   return accept;
 }
 

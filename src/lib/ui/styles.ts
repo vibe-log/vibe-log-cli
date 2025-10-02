@@ -9,7 +9,7 @@ const safeHex = (color: string, fallback: any) => {
   }
 };
 
-// Color palette - optimized for visibility on dark terminals
+// Color palette - optimized for visibility on both dark and light terminals
 export const colors = {
   primary: chalk.cyan,
   success: chalk.green,
@@ -18,7 +18,7 @@ export const colors = {
   info: chalk.cyan,  // Changed from blue to cyan for better visibility
   muted: safeHex('#808080', chalk.gray),  // Brighter gray for better visibility on black terminals
   accent: chalk.magenta,
-  highlight: chalk.bold.white,
+  highlight: chalk.bold.cyan,  // Changed from white to cyan for visibility on light terminals
   dim: safeHex('#606060', chalk.dim),  // Custom gray instead of chalk.dim for consistency
 
   // Semantic helpers for better readability
