@@ -5,6 +5,13 @@ All notable changes to the vibe-log-cli project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.2] - 2025-10-02
+
+### Fixed
+- Duration calculation accuracy improved using gap-based approach
+- Sessions with large time gaps between messages now accurately calculate active coding time
+- Fixed issue where total duration could exceed actual session length
+
 ## [0.7.1] - 2025-10-01
 
 ### Fixed
