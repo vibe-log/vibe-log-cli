@@ -295,21 +295,23 @@ async function parseSessionFile(filePath: string): Promise<SessionData | null> {
 function calculateDuration(messages: Message[]): number {
   if (messages.length < 2) return 0;
 
-  const firstTimestamp = messages[0].timestamp.getTime();
-  const lastTimestamp = messages[messages.length - 1].timestamp.getTime();
+  let totalActiveTime = 0;
+  const MAX_IDLE_GAP = 15 * 60; // 15 minutes in seconds
+  const MAX_SESSION_DURATION = 8 * 60 * 60; // 8 hours max
 
-  // Calculate raw duration
-  let duration = Math.max(0, Math.floor((lastTimestamp - firstTimestamp) / 1000)); // Convert to seconds
+  // Sum gaps between consecutive messages, excluding long idle periods
+  for (let i = 1; i < messages.length; i++) {
+    const gapSeconds = Math.floor(
+      (messages[i].timestamp.getTime() - messages[i-1].timestamp.getTime()) / 1000
+    );
 
-  // Cap duration at 8 hours (28800 seconds) to handle overnight sessions
-  // If someone worked more than 8 hours straight, it's likely they left it open
-  const MAX_REASONABLE_DURATION = 8 * 60 * 60; // 8 hours in seconds
-  if (duration > MAX_REASONABLE_DURATION) {
-    // For very long sessions, estimate based on message count
-    // Assume average of 2 minutes per message interaction
-    const estimatedDuration = messages.length * 120; // 2 minutes per message
-    duration = Math.min(estimatedDuration, MAX_REASONABLE_DURATION);
+    // Only count gaps <= 15 minutes as active coding time
+    if (gapSeconds > 0 && gapSeconds <= MAX_IDLE_GAP) {
+      totalActiveTime += gapSeconds;
+    }
+    // Gaps > 15 minutes are considered breaks/idle time (not counted)
   }
 
-  return duration;
+  // Cap at 8 hours max for safety
+  return Math.min(totalActiveTime, MAX_SESSION_DURATION);
 }
