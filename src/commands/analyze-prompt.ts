@@ -58,7 +58,7 @@ export function createAnalyzePromptCommand(): Command {
     .option('--background-mode', 'Background processing mode (internal use)', false)
     .option('--context <text>', 'Conversation context for analysis')
     .action(async (options) => {
-      let { sessionId, prompt, context: providedContext } = options;
+      const { sessionId, prompt, context: providedContext } = options;
       const { timeout, verbose, silent, backgroundMode } = options;
       let transcriptPath: string | undefined;
 

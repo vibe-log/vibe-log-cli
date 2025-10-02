@@ -289,9 +289,8 @@ export async function executeClaudePrompt(
   let exitCode = 0;
   
   // Promise that resolves when the report display is complete
-  let reportDisplayComplete: Promise<void>;
   const reportDisplayCompleteResolve: { resolve?: () => void } = {};
-  reportDisplayComplete = new Promise<void>(resolve => {
+  const reportDisplayComplete: Promise<void> = new Promise<void>(resolve => {
     reportDisplayCompleteResolve.resolve = resolve;
   });
   
