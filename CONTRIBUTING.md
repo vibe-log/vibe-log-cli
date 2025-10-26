@@ -318,7 +318,7 @@ Before submitting a PR, ensure:
 
 ### Getting Help
 
-- **Discord**: Join our [Discord server](https://discord.gg/vibe-log)
+- **Discord**: Join our [Discord server](https://discord.gg/qKqs7MZVJ)
 - **Discussions**: Use [GitHub Discussions](https://github.com/vibe-log/vibe-log/discussions)
 - **Stack Overflow**: Tag questions with `vibelog`
 
@@ -376,7 +376,7 @@ After any release:
 
 Feel free to:
 - Open a [GitHub Discussion](https://github.com/vibe-log/vibe-log/discussions)
-- Join our [Discord](https://discord.gg/vibe-log)
+- Join our [Discord](https://discord.gg/qKqs7MZVJ)
 - Email us at contribute@vibe-log.dev
 
 Thank you for contributing to Vibelog CLI!
