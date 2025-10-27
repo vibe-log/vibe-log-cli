@@ -77,32 +77,41 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
   
   // For LOCAL_ONLY state
   if (context.state === 'LOCAL_ONLY') {
+    // Primary action - Standup (works without auth in local mode)
+    items.push({
+      id: 'standup',
+      label: `📋 Today's standup`,
+      action: 'standup'
+    });
+
+    items.push({ separator: true } as MenuItem);
+
     items.push({
       id: 'status-line',
       label: MENU_LABELS.STRATEGIC_COPILOT,
       description: MENU_LABELS.STRATEGIC_COPILOT_DESC,
       action: 'status-line'
     });
-    
+
     // Separator between local and analysis tools
     items.push({ separator: true } as MenuItem);
-    
+
     // Analysis tools
     items.push({
       id: 'report',
       label: `${icons.chart} Generate local report (using Claude sub-agents)`,
       action: 'report'
     });
-    
+
     items.push({
       id: 'install-agents',
       label: getAgentManageLabel(context.agentCount, context.totalAgents),
       action: 'install-agents'
     });
-    
+
     // Separator before cloud option
     items.push({ separator: true } as MenuItem);
-    
+
     items.push({
       id: 'switch-cloud',
       label: `${icons.sparkles} Switch to cloud mode`,

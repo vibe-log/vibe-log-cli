@@ -379,7 +379,10 @@ async function handleMenuAction(
       try {
         // Use Claude Code analysis for standup
         const { standup } = await import('../../commands/standup');
-        await standup();
+
+        // Skip auth for local-only users (they don't need cloud)
+        const skipAuth = !state.hasAuth;
+        await standup({ skipAuth });
         await waitForEnter();
       } catch (error) {
         displayError(error);
