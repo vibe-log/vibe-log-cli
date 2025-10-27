@@ -61,7 +61,7 @@ let cachedSDK: { query: any } | null = null;
 async function getClaudeSDK(): Promise<{ query: any }> {
   if (!cachedSDK) {
     logger.debug('Loading Claude SDK for first time...');
-    cachedSDK = await import('@anthropic-ai/claude-code');
+    cachedSDK = await import('@anthropic-ai/claude-agent-sdk');
   } else {
     logger.debug('Using cached Claude SDK');
   }
