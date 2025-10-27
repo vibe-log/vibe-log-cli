@@ -5,6 +5,19 @@ All notable changes to the vibe-log-cli project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.3] - 2025-10-27
+
+### Changed
+- **SDK Migration**: Migrated from `@anthropic-ai/claude-code` to `@anthropic-ai/claude-agent-sdk@0.1.27`
+  - Future-proof solution using Anthropic's actively maintained SDK
+  - Better isolation with no interference from Claude Code settings
+  - Maintains full API compatibility with no breaking changes
+
+### Fixed
+- "Today's standup" option now appears in LOCAL_ONLY menu for users who completed onboarding but didn't enable cloud mode
+- Standup command properly skips authentication for local-only users
+- Updated Discord invite link to correct URL
+
 ## [0.7.2] - 2025-10-02
 
 ### Fixed
