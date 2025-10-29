@@ -7,6 +7,7 @@ import { privacy } from './commands/privacy';
 import { createAnalyzePromptCommand } from './commands/analyze-prompt';
 import { createStatuslineCommand } from './commands/statusline';
 import { createTestPersonalityCommand } from './commands/test-personality';
+import { createPushUpCommand } from './commands/pushup-challenge';
 import { installAutoSync } from './commands/install-auto-sync';
 import { showLogo } from './lib/ui';
 import { handleError } from './utils/errors';
@@ -83,11 +84,12 @@ program
     }
     // Skip logo in silent mode - check command line args directly since --silent is command-specific
     const isSilent = process.argv.includes('--silent');
-    // Skip logo for statusline command (used by Claude Code status line)
-    const isStatusline = process.argv[2] === 'statusline';
+    // Skip logo for hook commands (statusline, pushup check-prompt, etc.)
+    const isHookCommand = process.argv[2] === 'statusline' ||
+                          (process.argv[2] === 'pushup' && process.argv[3] === 'check-prompt');
     // Only show logo if a command is specified (not the default interactive menu)
     const hasCommand = process.argv.length > 2 && !process.argv[2].startsWith('-');
-    if (!isSilent && !isStatusline && hasCommand) {
+    if (!isSilent && !isHookCommand && hasCommand) {
       await showLogo(currentVersion);
     }
   });
@@ -173,6 +175,9 @@ program.addCommand(createStatuslineCommand());
 
 // Add test-personality command (hidden - for debugging)
 program.addCommand(createTestPersonalityCommand());
+
+// Add push-up challenge command (hidden - for advanced users)
+program.addCommand(createPushUpCommand());
 
 // Add install-auto-sync command for direct access to auto-sync configuration
 program

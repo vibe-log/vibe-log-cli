@@ -599,6 +599,95 @@ export class ClaudeSettingsManager {
     await writeGlobalSettings(settings);
     logger.debug('CLI path updated successfully');
   }
+
+  /**
+   * Install Push-Up Challenge hook (Stop hook for validation detection)
+   * This hooks into Claude's response completion to detect validation phrases
+   */
+  async installPushUpChallengeHook(config?: { cliPath?: string }): Promise<void> {
+    logger.debug('Installing push-up challenge hook (silent mode only)');
+
+    const cliPath = config?.cliPath || getCliPath();
+    const settings = await readGlobalSettings() || { hooks: {} };
+
+    if (!settings.hooks) settings.hooks = {};
+    if (!settings.hooks.Stop) settings.hooks.Stop = [];
+
+    // Check if push-up challenge hook already exists in Stop
+    const stopHookExists = settings.hooks.Stop.some((config: any) =>
+      config.hooks?.some((hook: any) => this.isPushUpChallengeCommand(hook.command))
+    );
+
+    // Build the command for push-up challenge detection (Stop hook)
+    const detectCommand = `${cliPath} pushup detect --stdin --silent`;
+
+    // Install Stop hook (detection) if not exists
+    if (!stopHookExists) {
+      if (settings.hooks.Stop.length > 0 && settings.hooks.Stop[0].hooks) {
+        settings.hooks.Stop[0].hooks.push({
+          type: 'command',
+          command: detectCommand
+        });
+      } else {
+        settings.hooks.Stop.push({
+          hooks: [{
+            type: 'command',
+            command: detectCommand
+          }]
+        });
+      }
+      logger.debug(`Added push-up challenge Stop hook: ${detectCommand}`);
+    }
+
+    await writeGlobalSettings(settings);
+    logger.debug('Push-up challenge hook installed successfully');
+  }
+
+  /**
+   * Uninstall Push-Up Challenge hook (Stop hook only)
+   */
+  async uninstallPushUpChallengeHook(): Promise<void> {
+    logger.debug('Uninstalling push-up challenge hook');
+
+    const settings = await readGlobalSettings();
+    if (!settings?.hooks) {
+      logger.debug('No hooks found');
+      return;
+    }
+
+    // Remove push-up challenge hooks from Stop
+    if (settings.hooks.Stop) {
+      settings.hooks.Stop = settings.hooks.Stop.filter((config: any) => {
+        if (!config.hooks) return true;
+
+        config.hooks = config.hooks.filter((hook: any) =>
+          !this.isPushUpChallengeCommand(hook.command)
+        );
+
+        return config.hooks.length > 0;
+      });
+
+      if (settings.hooks.Stop.length === 0) {
+        delete settings.hooks.Stop;
+      }
+    }
+
+    await writeGlobalSettings(settings);
+    logger.debug('Push-up challenge hook uninstalled successfully');
+  }
+
+  /**
+   * Check if a command is the push-up challenge detection command
+   */
+  private isPushUpChallengeCommand(command: string | undefined): boolean {
+    if (!command) return false;
+
+    const cliPath = getCliPath();
+    const expectedPrefix = `${cliPath} pushup detect`;
+
+    // Match both interactive (no --silent) and silent/batch (with --silent) modes
+    return command.startsWith(expectedPrefix) && command.includes('--stdin');
+  }
 }
 
 // Export singleton instance

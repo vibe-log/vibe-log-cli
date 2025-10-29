@@ -255,6 +255,48 @@ export function createLocalEngineSection(engine: LocalEngine): string {
 
 
 /**
+ * Create push-up challenge section
+ */
+export function createPushUpChallengeSection(): string {
+  const { getPushUpChallengeConfig, getPushUpStats } = require('../config');
+  const config = getPushUpChallengeConfig();
+  const stats = getPushUpStats();
+
+  if (!config.enabled) {
+    return '';
+  }
+
+  const content: string[] = [];
+
+  // Today's progress
+  const todayProgress = `${stats.todayCompleted} completed / ${stats.todayDebt} owed`;
+  content.push(
+    `📅 ${colors.muted('Today:')} ${colors.primary(todayProgress)}`
+  );
+
+  // Total debt with color coding
+  const debtColor = stats.debt > 20 ? colors.error :
+                     stats.debt > 10 ? colors.warning :
+                     colors.success;
+  content.push(
+    `💳 ${colors.muted('Total Debt:')} ${debtColor(stats.debt.toString())}`
+  );
+
+  // Streak with fire emoji for active streaks
+  const streakEmoji = stats.streakDays >= 7 ? '🔥🔥' :
+                      stats.streakDays >= 3 ? '🔥' : '';
+  content.push(
+    `🏆 ${colors.muted('Streak:')} ${colors.accent(stats.streakDays + ' days')} ${streakEmoji}`
+  );
+
+  return createSection('PUSH-UP CHALLENGE', content, {
+    icon: '💪',
+    style: 'single',
+    color: colors.accent,
+  });
+}
+
+/**
  * Create a status dashboard with multiple sections
  */
 export function createStatusDashboard(
@@ -265,10 +307,17 @@ export function createStatusDashboard(
   // Cloud status
   sections.push(createCloudStatusSection(cloud));
   sections.push('');
-  
+
   // Local engine (Claude Code + sub-agents)
   sections.push(createLocalEngineSection(local));
-  
+
+  // Push-up challenge (if enabled)
+  const pushUpSection = createPushUpChallengeSection();
+  if (pushUpSection) {
+    sections.push('');
+    sections.push(pushUpSection);
+  }
+
   return sections.join('\n');
 }
 

@@ -13,6 +13,7 @@ import {
 import { ClaudeSettingsManager } from '../lib/claude-settings-manager';
 import { syncPushUpStats } from '../lib/push-up-sync';
 import { logger } from '../utils/logger';
+import { displayReceiptWithCopyOption } from '../lib/ui/push-up-receipt';
 
 // Helper functions
 function calculateDuration(startDate: string): string {
@@ -158,7 +159,7 @@ Examples:
   // Summary sub-command
   pushup
     .command('summary')
-    .description('Show today\'s summary and mark push-ups as done')
+    .description('Show push-up stats and settle debt')
     .action(async () => {
       try {
         const stats = getPushUpStats();
@@ -169,20 +170,17 @@ Examples:
           return;
         }
 
-        console.log('\n' + chalk.bold('💪 Today\'s Push-Up Challenge:'));
-        console.log(chalk.gray('   Debt added: ') + chalk.red(`${stats.todayDebt} push-ups`));
-        console.log(chalk.gray('   Completed: ') + chalk.green(`${stats.todayCompleted} push-ups`));
-        console.log(chalk.gray('   Outstanding: ') + chalk.yellow(`${stats.todayDebt - stats.todayCompleted} push-ups`));
+        console.log('\n' + chalk.bold('💪 Push-Up Challenge Summary:'));
+        console.log(chalk.gray('   Today: ') + chalk.cyan(`${stats.todayCompleted} done / ${stats.todayDebt} owed`));
         console.log(chalk.gray('   Total debt: ') + chalk.red(stats.debt));
+        console.log(chalk.gray('   Total completed: ') + chalk.green(stats.completed));
         console.log();
 
-        if (stats.todayDebt > stats.todayCompleted) {
-          const outstanding = stats.todayDebt - stats.todayCompleted;
-
+        if (stats.debt > 0) {
           const { action } = await inquirer.prompt([{
             type: 'list',
             name: 'action',
-            message: `Mark ${outstanding} push-ups as done?`,
+            message: `You owe ${stats.debt} push-ups. Mark as done?`,
             choices: [
               { name: '✅ Yes, already did them', value: 'done' },
               { name: '📝 No, keep in debt', value: 'debt' },
@@ -191,10 +189,14 @@ Examples:
 
           if (action === 'done') {
             // Mark push-ups as completed and reduce debt
-            recordPushUpsCompleted(outstanding);
-            incrementPushUpDebt(-outstanding); // Reduce total debt
+            recordPushUpsCompleted(stats.debt);
+            incrementPushUpDebt(-stats.debt);
             await syncPushUpStats();
-            console.log(chalk.green(`✅ Marked ${outstanding} push-ups as completed!`));
+            console.log(chalk.green(`\n✅ Marked ${stats.debt} push-ups as completed!`));
+            console.log();
+
+            // Display the awesome receipt with clipboard copy
+            await displayReceiptWithCopyOption(stats.debt);
           } else {
             console.log(chalk.yellow('📝 Debt remains. Keep pushing!'));
           }

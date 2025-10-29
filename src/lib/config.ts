@@ -13,6 +13,25 @@ export interface ProjectSyncData {
   sessionCount?: number;
 }
 
+export interface PushUpPendingPrompt {
+  timestamp: string;
+  amount: number;
+  phrase: string;
+}
+
+export interface PushUpChallengeConfig {
+  enabled: boolean;
+  pushUpsPerTrigger: number;
+  totalDebt: number;
+  totalCompleted: number;
+  streakDays: number;
+  lastCompletedDate?: string;
+  enabledDate?: string;
+  todayDebt: number;
+  todayCompleted: number;
+  lastResetDate?: string;
+}
+
 interface ConfigSchema {
   apiUrl: string;
   cliPath?: string;
@@ -50,6 +69,7 @@ interface ConfigSchema {
     backupDate: string;
     backupReason?: string; // Why it was backed up (e.g., "Replaced by vibe-log status line")
   };
+  pushUpChallenge?: PushUpChallengeConfig;
 }
 
 const config = new Conf<ConfigSchema>({
@@ -450,4 +470,150 @@ export function getStatusLineBackup(): ConfigSchema['statusLineBackup'] | undefi
 export function clearStatusLineBackup(): void {
   config.delete('statusLineBackup');
   logger.debug('Status line backup cleared');
+}
+
+// Push-Up Challenge Configuration Functions
+
+export function getPushUpChallengeConfig(): PushUpChallengeConfig {
+  const pushUpConfig = config.get('pushUpChallenge');
+
+  // Return with defaults if not configured
+  return pushUpConfig || {
+    enabled: false,
+    pushUpsPerTrigger: 1,
+    totalDebt: 0,
+    totalCompleted: 0,
+    streakDays: 0,
+    todayDebt: 0,
+    todayCompleted: 0
+  };
+}
+
+export function setPushUpChallengeEnabled(
+  enabled: boolean,
+  pushUpsPerTrigger = 1
+): void {
+  const current = getPushUpChallengeConfig();
+
+  config.set('pushUpChallenge', {
+    ...current,
+    enabled,
+    pushUpsPerTrigger,
+    enabledDate: enabled && !current.enabledDate ? new Date().toISOString() : current.enabledDate,
+    // Reset daily counters when enabling
+    todayDebt: enabled ? 0 : current.todayDebt,
+    todayCompleted: enabled ? 0 : current.todayCompleted,
+    lastResetDate: enabled ? new Date().toISOString().split('T')[0] : current.lastResetDate
+  });
+
+  logger.debug(`Push-up challenge ${enabled ? 'enabled' : 'disabled'}`);
+}
+
+
+export function incrementPushUpDebt(amount: number): void {
+  const current = getPushUpChallengeConfig();
+
+  config.set('pushUpChallenge', {
+    ...current,
+    totalDebt: Math.max(0, current.totalDebt + amount)
+  });
+}
+
+export function recordPushUpsCompleted(amount: number): void {
+  const current = getPushUpChallengeConfig();
+  const today = new Date().toISOString().split('T')[0];
+
+  config.set('pushUpChallenge', {
+    ...current,
+    totalCompleted: current.totalCompleted + amount,
+    todayCompleted: current.todayCompleted + amount,
+    lastCompletedDate: today
+  });
+}
+
+export function incrementTodayDebt(amount: number): void {
+  const current = getPushUpChallengeConfig();
+
+  config.set('pushUpChallenge', {
+    ...current,
+    todayDebt: current.todayDebt + amount
+  });
+}
+
+export function incrementTodayCompleted(amount: number): void {
+  const current = getPushUpChallengeConfig();
+
+  config.set('pushUpChallenge', {
+    ...current,
+    todayCompleted: current.todayCompleted + amount
+  });
+}
+
+export interface PushUpStats {
+  debt: number;
+  completed: number;
+  streakDays: number;
+  startDate?: string;
+  todayDebt: number;
+  todayCompleted: number;
+  lastCompletedDate?: string;
+}
+
+export function getPushUpStats(): PushUpStats {
+  const config = getPushUpChallengeConfig();
+
+  return {
+    debt: config.totalDebt,
+    completed: config.totalCompleted,
+    streakDays: config.streakDays,
+    startDate: config.enabledDate,
+    todayDebt: config.todayDebt,
+    todayCompleted: config.todayCompleted,
+    lastCompletedDate: config.lastCompletedDate
+  };
+}
+
+export function incrementStreak(): void {
+  const current = getPushUpChallengeConfig();
+
+  config.set('pushUpChallenge', {
+    ...current,
+    streakDays: current.streakDays + 1
+  });
+}
+
+export function resetStreak(): void {
+  const current = getPushUpChallengeConfig();
+
+  config.set('pushUpChallenge', {
+    ...current,
+    streakDays: 0
+  });
+}
+
+
+export function setPushUpChallengeConfig(pushUpConfig: Partial<PushUpChallengeConfig>): void {
+  const current = getPushUpChallengeConfig();
+
+  config.set('pushUpChallenge', {
+    ...current,
+    ...pushUpConfig
+  });
+}
+
+export function resetPushUpStats(): void {
+  const current = getPushUpChallengeConfig();
+  const today = new Date().toISOString();
+
+  config.set('pushUpChallenge', {
+    ...current,
+    totalDebt: 0,
+    totalCompleted: 0,
+    todayDebt: 0,
+    todayCompleted: 0,
+    streakDays: 0,
+    lastResetDate: today,
+    lastCompletedDate: undefined,
+    enabledDate: current.enabledDate || today
+  });
 }
