@@ -483,8 +483,7 @@ export function createStatuslineCommand(): Command {
           }
         } else {
           // Debug why we're not calling ccusage
-          const fs = require('fs');
-          fs.appendFileSync('/tmp/vibe-ccusage-debug.log', `[${new Date().toISOString()}] Not calling ccusage - withUsage: ${options.withUsage}, hasContext: ${!!claudeContext}\n`);
+          debugLog(`Not calling ccusage - withUsage: ${options.withUsage}, hasContext: ${!!claudeContext}`);
         }
 
         // Get push-up stats (always check if enabled)

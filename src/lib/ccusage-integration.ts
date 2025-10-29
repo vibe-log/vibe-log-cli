@@ -10,6 +10,8 @@
 
 import { spawn } from 'child_process';
 import { logger } from '../utils/logger';
+import os from 'os';
+import path from 'path';
 
 // Cache for ccusage output to avoid repeated calls
 interface CacheEntry {
@@ -50,6 +52,9 @@ export async function getCCUsageMetrics(
   
   logger.debug('No cache hit, calling ccusage...');
 
+  // Set up cross-platform debug log path
+  const debugLogPath = path.join(os.homedir(), '.vibe-log', 'ccusage-debug.log');
+
   return new Promise((resolve) => {
     let output = '';
     let errorOutput = '';
@@ -61,12 +66,12 @@ export async function getCCUsageMetrics(
       timedOut = true;
       logger.debug(`ccusage timed out after ${timeout}ms`);
       const fs = require('fs');
-      fs.appendFileSync('/tmp/vibe-ccusage-debug.log', `[${new Date().toISOString()}] TIMEOUT after ${timeout}ms - output so far: "${output}"\n`);
+      fs.appendFileSync(debugLogPath, `[${new Date().toISOString()}] TIMEOUT after ${timeout}ms - output so far: "${output}"\n`);
       
       // On timeout, return the last successful result if available
       const existingCache = cache.get(cacheKey);
       if (existingCache && existingCache.output) {
-        fs.appendFileSync('/tmp/vibe-ccusage-debug.log', `[${new Date().toISOString()}] Returning cached result after timeout\n`);
+        fs.appendFileSync(debugLogPath, `[${new Date().toISOString()}] Returning cached result after timeout\n`);
         resolve(existingCache.output);
       } else {
         resolve(null);
@@ -76,7 +81,7 @@ export async function getCCUsageMetrics(
     try {
       // Debug logging to file
       const fs = require('fs');
-      fs.appendFileSync('/tmp/vibe-ccusage-debug.log', `[${new Date().toISOString()}] Spawning ccusage process\n`);
+      fs.appendFileSync(debugLogPath, `[${new Date().toISOString()}] Spawning ccusage process\n`);
       
       // Spawn ccusage process using npx with @latest to ensure v16+
       const ccusage = spawn('npx', ['ccusage@latest', 'statusline'], {
@@ -86,7 +91,7 @@ export async function getCCUsageMetrics(
 
       // Send the full Claude context to stdin (ccusage expects all these fields)
       const inputData = JSON.stringify(claudeContext);
-      fs.appendFileSync('/tmp/vibe-ccusage-debug.log', `[${new Date().toISOString()}] Sending data length: ${inputData.length}\n`);
+      fs.appendFileSync(debugLogPath, `[${new Date().toISOString()}] Sending data length: ${inputData.length}\n`);
       ccusage.stdin.write(inputData);
       ccusage.stdin.end();
 
@@ -107,7 +112,7 @@ export async function getCCUsageMetrics(
       // Handle process completion
       ccusage.on('close', (code) => {
         const fs = require('fs');
-        fs.appendFileSync('/tmp/vibe-ccusage-debug.log', `[${new Date().toISOString()}] Process closed with code ${code}, timedOut: ${timedOut}, output: "${output}"\n`);
+        fs.appendFileSync(debugLogPath, `[${new Date().toISOString()}] Process closed with code ${code}, timedOut: ${timedOut}, output: "${output}"\n`);
         
         if (processExited) return;
         processExited = true;
