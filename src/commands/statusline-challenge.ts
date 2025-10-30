@@ -92,11 +92,8 @@ function formatDisabledMessage(format: OutputFormat): string {
 function formatCompactStats(stats: PushUpStats): string {
   const parts: string[] = ['💪 Push-Up Challenge'];
 
-  // Show total debt if non-zero
-  if (stats.debt > 0) {
-    parts.push(`Total Debt: ${stats.debt}`);
-  }
-
+  // Always show total debt (even when zero)
+  parts.push(`Total Debt: ${stats.debt}`);
 
   // Show today's completed push-ups
   if (stats.todayCompleted > 0) {
@@ -125,9 +122,8 @@ function formatDetailedStats(stats: PushUpStats): string {
     lines.push(`Today: ${stats.todayCompleted} done, ${stats.todayDebt} remaining`);
   }
 
-  if (stats.debt > 0) {
-    lines.push(`Total Debt: ${stats.debt}`);
-  }
+  // Always show total debt (even when zero)
+  lines.push(`Total Debt: ${stats.debt}`);
 
   lines.push(`Total Completed: ${formatNumber(stats.completed)}`);
 
@@ -157,9 +153,8 @@ function formatEmojiStats(stats: PushUpStats): string {
 
   parts.push(`${progressEmoji} ${stats.todayCompleted}/${todayTotal > 0 ? todayTotal : stats.todayCompleted}`);
 
-  if (stats.debt > 0) {
-    parts.push(`📊 ${stats.debt}`);
-  }
+  // Always show total debt (even when zero)
+  parts.push(`📊 ${stats.debt}`);
 
   parts.push(`✅ ${formatNumber(stats.completed)}`);
 

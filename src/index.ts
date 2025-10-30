@@ -6,6 +6,8 @@ import { logout } from './commands/logout';
 import { privacy } from './commands/privacy';
 import { createAnalyzePromptCommand } from './commands/analyze-prompt';
 import { createStatuslineCommand } from './commands/statusline';
+import { createChallengeStatuslineCommand } from './commands/statusline-challenge';
+import { createRefreshPushUpChallengeStatuslineCommand } from './commands/refresh-push-up-challenge-statusline';
 import { createTestPersonalityCommand } from './commands/test-personality';
 import { createPushUpCommand } from './commands/pushup-challenge';
 import { installAutoSync } from './commands/install-auto-sync';
@@ -84,8 +86,9 @@ program
     }
     // Skip logo in silent mode - check command line args directly since --silent is command-specific
     const isSilent = process.argv.includes('--silent');
-    // Skip logo for hook commands (statusline, pushup check-prompt, etc.)
+    // Skip logo for hook commands (statusline, statusline-challenge, pushup check-prompt, etc.)
     const isHookCommand = process.argv[2] === 'statusline' ||
+                          process.argv[2] === 'statusline-challenge' ||
                           (process.argv[2] === 'pushup' && process.argv[3] === 'check-prompt');
     // Only show logo if a command is specified (not the default interactive menu)
     const hasCommand = process.argv.length > 2 && !process.argv[2].startsWith('-');
@@ -172,6 +175,12 @@ program.addCommand(createAnalyzePromptCommand());
 
 // Add statusline command (hidden - for Claude Code status line)
 program.addCommand(createStatuslineCommand());
+
+// Add challenge statusline command (hidden - for Claude Code status line)
+program.addCommand(createChallengeStatuslineCommand());
+
+// Add refresh command for push-up challenge statusline (hidden - triggers statusline refresh)
+program.addCommand(createRefreshPushUpChallengeStatuslineCommand());
 
 // Add test-personality command (hidden - for debugging)
 program.addCommand(createTestPersonalityCommand());

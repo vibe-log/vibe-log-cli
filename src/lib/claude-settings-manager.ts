@@ -106,18 +106,49 @@ export class ClaudeSettingsManager {
    */
   private isStatuslineCommand(command: string | undefined): boolean {
     if (!command) return false;
-    
+
     // Get the configured CLI path to match exactly what we installed
     const cliPath = getCliPath();
-    
+
     // Our statusline command is exactly: [cliPath] statusline [options]
     // Check if command starts with our CLI path and has statusline as the command
     const expectedPrefix = `${cliPath} statusline`;
-    
+
     // Must match our exact pattern (with or without options like --with-usage)
     return command === expectedPrefix || command.startsWith(`${expectedPrefix} `);
   }
-  
+
+  /**
+   * Check if a command is specifically the challenge statusline display command
+   */
+  private isChallengeStatuslineCommand(command: string | undefined): boolean {
+    if (!command) return false;
+
+    // Get the configured CLI path to match exactly what we installed
+    const cliPath = getCliPath();
+
+    // Our challenge statusline command is exactly: [cliPath] statusline-challenge [options]
+    const expectedPrefix = `${cliPath} statusline-challenge`;
+
+    // Must match our exact pattern (with or without options)
+    return command === expectedPrefix || command.startsWith(`${expectedPrefix} `);
+  }
+
+  /**
+   * Check if a command is the refresh-push-up-challenge-statusline command
+   */
+  private isRefreshChallengeStatuslineCommand(command: string | undefined): boolean {
+    if (!command) return false;
+
+    // Get the configured CLI path to match exactly what we installed
+    const cliPath = getCliPath();
+
+    // Our refresh command is exactly: [cliPath] refresh-push-up-challenge-statusline
+    const expectedCommand = `${cliPath} refresh-push-up-challenge-statusline`;
+
+    return command === expectedCommand;
+  }
+
   /**
    * Check if a command is an auto-sync hook (SessionStart or PreCompact)
    */
@@ -201,17 +232,84 @@ export class ClaudeSettingsManager {
   }
   
   /**
+   * Install the Challenge Status Line feature (statusLine display + UserPromptSubmit hook)
+   * This displays push-up challenge stats and ensures auto-refresh after user prompts
+   */
+  async installChallengeStatusLineFeature(config?: StatusLineConfig): Promise<void> {
+    logger.debug('Installing challenge status line feature');
+
+    const cliPath = config?.cliPath || getCliPath();
+    const settings = await readGlobalSettings() || { hooks: {} };
+
+    // 1. Check for existing non-vibe-log status line and backup if found
+    const existingStatusLine = this.detectExistingStatusLine(settings);
+    if (existingStatusLine) {
+      logger.debug('Backing up existing status line:', existingStatusLine);
+      saveStatusLineBackup({
+        originalCommand: existingStatusLine.command,
+        originalType: existingStatusLine.type,
+        originalPadding: existingStatusLine.padding,
+        backupReason: 'Replaced by vibe-log challenge status line'
+      });
+    }
+
+    // 2. Remove any existing status line components to prevent duplicates
+    this.removeStatusLineComponents(settings);
+    this.removeChallengeStatusLineComponents(settings);
+
+    // 3. Install UserPromptSubmit hook for statusline refresh trigger
+    // This ensures the statusline updates after every user prompt
+    if (!settings.hooks) settings.hooks = {};
+    if (!settings.hooks.UserPromptSubmit) settings.hooks.UserPromptSubmit = [];
+
+    const refreshCommand = `${cliPath} refresh-push-up-challenge-statusline`;
+
+    // Check if there's already a UserPromptSubmit config with hooks array
+    if (settings.hooks.UserPromptSubmit.length > 0 && settings.hooks.UserPromptSubmit[0].hooks) {
+      // Append to existing hooks array
+      settings.hooks.UserPromptSubmit[0].hooks.push({
+        type: 'command',
+        command: refreshCommand
+      });
+    } else {
+      // Create new config with hooks array
+      settings.hooks.UserPromptSubmit.push({
+        hooks: [{
+          type: 'command',
+          command: refreshCommand
+        }]
+      });
+    }
+
+    logger.debug(`Added UserPromptSubmit hook for statusline refresh: ${refreshCommand}`);
+
+    // 4. Install statusLine display configuration
+    const statuslineCommand = `${cliPath} statusline-challenge --format compact`;
+    settings.statusLine = {
+      type: 'command',
+      command: statuslineCommand,
+      padding: 0
+    };
+
+    logger.debug(`Added challenge statusLine config: ${statuslineCommand}`);
+
+    // 5. Save settings
+    await writeGlobalSettings(settings);
+    logger.debug('Challenge status line feature installed successfully');
+  }
+
+  /**
    * Remove the Status Line feature completely
    * @param restoreBackup - Whether to restore the backed up status line
    */
   async removeStatusLineFeature(restoreBackup: boolean = false): Promise<void> {
     logger.debug('Removing status line feature');
-    
+
     const settings = await readGlobalSettings();
     if (!settings) return;
-    
+
     this.removeStatusLineComponents(settings);
-    
+
     // Check if we should restore a backed up status line
     if (restoreBackup) {
       const backup = getStatusLineBackup();
@@ -225,9 +323,39 @@ export class ClaudeSettingsManager {
         clearStatusLineBackup(); // Clear the backup after restoring
       }
     }
-    
+
     await writeGlobalSettings(settings);
     logger.debug('Status line feature removed successfully');
+  }
+
+  /**
+   * Remove the Challenge Status Line feature completely
+   * @param restoreBackup - Whether to restore the backed up status line
+   */
+  async removeChallengeStatusLineFeature(restoreBackup: boolean = false): Promise<void> {
+    logger.debug('Removing challenge status line feature');
+
+    const settings = await readGlobalSettings();
+    if (!settings) return;
+
+    this.removeChallengeStatusLineComponents(settings);
+
+    // Check if we should restore a backed up status line
+    if (restoreBackup) {
+      const backup = getStatusLineBackup();
+      if (backup && backup.originalCommand) {
+        logger.debug('Restoring backed up status line:', backup);
+        settings.statusLine = {
+          type: backup.originalType || 'command',
+          command: backup.originalCommand,
+          padding: backup.originalPadding !== undefined ? backup.originalPadding : 0
+        };
+        clearStatusLineBackup(); // Clear the backup after restoring
+      }
+    }
+
+    await writeGlobalSettings(settings);
+    logger.debug('Challenge status line feature removed successfully');
   }
   
   /**
@@ -238,24 +366,54 @@ export class ClaudeSettingsManager {
     if (settings.hooks?.UserPromptSubmit) {
       settings.hooks.UserPromptSubmit = settings.hooks.UserPromptSubmit.filter((config: any) => {
         if (!config.hooks) return true; // Keep configs without hooks array
-        
+
         // Filter out vibe-log analyze-prompt hooks
-        config.hooks = config.hooks.filter((hook: any) => 
+        config.hooks = config.hooks.filter((hook: any) =>
           !this.isAnalyzePromptCommand(hook.command)
         );
-        
+
         // Keep config only if it still has hooks
         return config.hooks.length > 0;
       });
-      
+
       // Remove UserPromptSubmit entirely if empty
       if (settings.hooks.UserPromptSubmit.length === 0) {
         delete settings.hooks.UserPromptSubmit;
       }
     }
-    
+
     // Remove statusLine display if it's ours
     if (settings.statusLine?.command && this.isStatuslineCommand(settings.statusLine.command)) {
+      delete settings.statusLine;
+    }
+  }
+
+  /**
+   * Helper to remove challenge status line components from settings object
+   */
+  private removeChallengeStatusLineComponents(settings: ClaudeSettings): void {
+    // Remove UserPromptSubmit hooks that are refresh-push-up-challenge-statusline
+    if (settings.hooks?.UserPromptSubmit) {
+      settings.hooks.UserPromptSubmit = settings.hooks.UserPromptSubmit.filter((config: any) => {
+        if (!config.hooks) return true; // Keep configs without hooks array
+
+        // Filter out refresh challenge statusline hooks
+        config.hooks = config.hooks.filter((hook: any) =>
+          !this.isRefreshChallengeStatuslineCommand(hook.command)
+        );
+
+        // Keep config only if it still has hooks
+        return config.hooks.length > 0;
+      });
+
+      // Remove UserPromptSubmit entirely if empty
+      if (settings.hooks.UserPromptSubmit.length === 0) {
+        delete settings.hooks.UserPromptSubmit;
+      }
+    }
+
+    // Remove statusLine display if it's the challenge one
+    if (settings.statusLine?.command && this.isChallengeStatuslineCommand(settings.statusLine.command)) {
       delete settings.statusLine;
     }
   }

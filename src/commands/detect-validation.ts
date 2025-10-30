@@ -92,13 +92,7 @@ export function createDetectValidationCommand(): Command {
       // Detection patterns (case-insensitive)
       const patterns = [
         { regex: /you('re|\s+are)\s+absolutely\s+right/i, phrase: "you're absolutely right" },
-        { regex: /you('re|\s+are)\s+totally\s+right/i, phrase: "you're totally right" },
-        { regex: /you('re|\s+are)\s+completely\s+correct/i, phrase: "you're completely correct" },
-        { regex: /that('s|\s+is)\s+absolutely\s+correct/i, phrase: "that's absolutely correct" },
-        { regex: /absolutely\s+right/i, phrase: "absolutely right" },
-        { regex: /perfect(ly)?\s+(right|correct)/i, phrase: "perfectly correct" },
-        { regex: /you\s+nailed\s+it/i, phrase: "you nailed it" },
-        { regex: /spot\s+on/i, phrase: "spot on" },
+
       ];
 
       const matchedPattern = patterns.find(p => p.regex.test(response));

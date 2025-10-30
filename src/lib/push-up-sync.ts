@@ -1,5 +1,5 @@
-import axios from 'axios';
-import { getApiUrl, getToken, getPushUpStats, getPushUpChallengeConfig } from './config';
+import { apiClient } from './api-client';
+import { getPushUpStats, getPushUpChallengeConfig } from './config';
 import { logger } from '../utils/logger';
 
 /**
@@ -7,53 +7,55 @@ import { logger } from '../utils/logger';
  * Silent fail - don't break user flow
  */
 export async function syncPushUpStats(): Promise<void> {
+  logger.info('[PUSHUP-SYNC-CLI] Starting push-up stats sync...');
+
   const stats = getPushUpStats();
   const config = getPushUpChallengeConfig();
-  const apiUrl = getApiUrl();
 
-  let token: string | null;
-  try {
-    token = await getToken();
-  } catch (error) {
-    logger.debug('Failed to get token for push-up sync', error);
-    return;
-  }
-
-  if (!token) {
-    // Not authenticated yet - skip sync
-    logger.debug('No auth token - skipping push-up sync');
-    return;
-  }
+  logger.debug('[PUSHUP-SYNC-CLI] Current stats:', { stats, config });
 
   try {
-    const response = await axios.post(
-      `${apiUrl}/api/push-up-challenge/sync`,
-      {
-        enabled: config.enabled,
-        rate: config.pushUpsPerTrigger,
-        debt: stats.debt,
-        completed: stats.completed,
-        streakDays: stats.streakDays,
-        lastCompletedDate: stats.lastCompletedDate,
-        todayDebt: stats.todayDebt,
-        todayCompleted: stats.todayCompleted,
-      },
-      {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 5000,
-      }
-    );
+    // Convert lastCompletedDate from string to Unix timestamp (seconds)
+    let lastCompletedTimestamp: number | null = null;
+    if (stats.lastCompletedDate) {
+      const date = new Date(stats.lastCompletedDate);
+      lastCompletedTimestamp = Math.floor(date.getTime() / 1000);
+    }
 
-    logger.debug('Push-up stats synced successfully', response.data);
+    // Convert enabledDate from string to Unix timestamp (seconds)
+    let enabledDateTimestamp: number | null = null;
+    if (config.enabledDate) {
+      const date = new Date(config.enabledDate);
+      enabledDateTimestamp = Math.floor(date.getTime() / 1000);
+    }
+
+    const payload = {
+      enabled: config.enabled,
+      rate: config.pushUpsPerTrigger,
+      debt: stats.debt,
+      completed: stats.completed,
+      streakDays: stats.streakDays,
+      lastCompletedDate: lastCompletedTimestamp,
+      enabledDate: enabledDateTimestamp,
+      todayDebt: stats.todayDebt,
+      todayCompleted: stats.todayCompleted,
+    };
+
+    logger.debug('[PUSHUP-SYNC-CLI] Payload to send:', payload);
+
+    const response = await apiClient.syncPushUpChallenge(payload);
+
+    logger.info('[PUSHUP-SYNC-CLI] ✓ Sync successful!');
+    logger.debug('[PUSHUP-SYNC-CLI] Response:', response);
   } catch (error) {
-    // Silent fail - don't break user flow
-    if (axios.isAxiosError(error)) {
-      logger.debug('Failed to sync push-up stats', {
-        status: error.response?.status,
-        message: error.message
+    // Log error but don't break user flow
+    logger.error('[PUSHUP-SYNC-CLI] ✗ Sync failed:', error);
+    // Log the full error for debugging
+    if (error instanceof Error) {
+      logger.error('[PUSHUP-SYNC-CLI] Error details:', {
+        message: error.message,
+        stack: error.stack
       });
-    } else {
-      logger.debug('Failed to sync push-up stats', error);
     }
   }
 }
@@ -71,41 +73,12 @@ export async function fetchPushUpStats(): Promise<{
   lastCompletedDate?: string;
   enabledDate?: string;
 } | null> {
-  const apiUrl = getApiUrl();
-
-  let token: string | null;
   try {
-    token = await getToken();
-  } catch (error) {
-    logger.debug('Failed to get token for fetching push-up stats', error);
-    return null;
-  }
-
-  if (!token) {
-    logger.debug('No auth token - skipping push-up stats fetch');
-    return null;
-  }
-
-  try {
-    const response = await axios.get(
-      `${apiUrl}/api/push-up-challenge/stats`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 5000,
-      }
-    );
-
+    const response = await apiClient.fetchPushUpChallengeStats();
     logger.debug('Push-up stats fetched successfully');
-    return response.data;
+    return response;
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      logger.debug('Failed to fetch push-up stats', {
-        status: error.response?.status,
-        message: error.message
-      });
-    } else {
-      logger.debug('Failed to fetch push-up stats', error);
-    }
+    logger.debug('Failed to fetch push-up stats', error);
     return null;
   }
 }

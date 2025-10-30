@@ -380,9 +380,4 @@ ls ~/.claude/projects | head -20
 - Always run `npm run build` which now includes type checking
 - Type checking prevents runtime errors and ensures consistency
 - Test files are excluded from build but not from type checking
-
-
-###  Development note:
-1. no backward compatbility when working  - we did not launch it yet , this is fresh  
-2. this is an npx and it should run on multiple platforms, mainly mac os and Windows - where Claude Code is used.
-3. Do not run the node vibe-log.js yourself, you can't realy use the inner menus, let me know what to test when you are done,
+ 

@@ -38,9 +38,10 @@ export function createPushUpCommand(): Command {
     .description('Push-up challenge gamification for reducing AI over-validation')
     .addHelpText('after', `
 Examples:
-  $ vibe-log pushup enable
-  $ vibe-log pushup stats
-  $ vibe-log pushup summary
+  $ vibe-log pushup enable       # Enable challenge with optional statusline
+  $ vibe-log pushup stats        # View current stats
+  $ vibe-log pushup summary      # Settle your push-up debt
+  $ vibe-log pushup statusline   # Manage statusline display
     `);
 
   // Enable sub-command
@@ -50,6 +51,8 @@ Examples:
     .action(async () => {
       try {
         // Ask for push-up count
+        console.log(chalk.gray('\n🔍 Debug: About to show 2 prompts...\n'));
+
         const answers = await (inquirer.prompt as any)([
           {
             type: 'number',
@@ -62,21 +65,53 @@ Examples:
               }
               return true;
             }
+          },
+          {
+            type: 'confirm',
+            name: 'installStatusline',
+            message: 'Install challenge statusline to track progress in Claude Code?',
+            default: true
           }
         ]);
+
+        console.log(chalk.gray(`\n🔍 Debug: Received answers - pushUps: ${answers.pushUpsPerTrigger}, statusline: ${answers.installStatusline}\n`));
+
         const pushUpsPerTrigger = answers.pushUpsPerTrigger;
+        const installStatusline = answers.installStatusline;
 
         // Update config (no mode needed, always silent)
         setPushUpChallengeEnabled(true, pushUpsPerTrigger as number);
+
+        // Sync to server immediately after enabling
+        try {
+          await syncPushUpStats();
+          logger.debug('Push-up challenge synced to server');
+        } catch (error) {
+          logger.error('Failed to sync push-up challenge to server', error);
+          console.log(chalk.yellow('\n⚠️  Warning: Failed to sync to server. Will retry on next session upload.'));
+        }
 
         // Install hook (silent mode only)
         const settingsManager = new ClaudeSettingsManager();
         await settingsManager.installPushUpChallengeHook();
 
-        console.log(chalk.green(`✅ Push-up challenge enabled!`));
+        // Install challenge statusline if requested
+        if (installStatusline) {
+          await settingsManager.installChallengeStatusLineFeature();
+          console.log(chalk.green(`✅ Push-up challenge enabled with statusline!`));
+        } else {
+          console.log(chalk.green(`✅ Push-up challenge enabled!`));
+        }
+
         console.log(chalk.gray(`   Rate: ${pushUpsPerTrigger} push-up(s) per validation`));
         console.log();
         console.log(chalk.cyan('💡 Debt will accumulate silently. Check with `vibe-log pushup stats`'));
+
+        if (installStatusline) {
+          console.log(chalk.cyan('💡 Your progress is now visible in Claude Code statusline!'));
+        } else {
+          console.log(chalk.gray('   Run `vibe-log pushup statusline install` to add statusline later'));
+        }
       } catch (error) {
         logger.error('Failed to enable push-up challenge', error);
         process.exit(1);
@@ -114,6 +149,15 @@ Examples:
 
         // Disable in config (preserve stats)
         setPushUpChallengeEnabled(false);
+
+        // Sync to server immediately after disabling
+        try {
+          await syncPushUpStats();
+          logger.debug('Push-up challenge disabled status synced to server');
+        } catch (error) {
+          logger.error('Failed to sync disabled status to server', error);
+          console.log(chalk.yellow('\n⚠️  Warning: Failed to sync to server. Will retry on next session upload.'));
+        }
 
         console.log('\n' + chalk.green('✅ Push-up challenge disabled. Stats preserved.'));
       } catch (error) {
@@ -345,6 +389,99 @@ Examples:
         }));
       } else if (triggered) {
         logger.info(`Validation detected: ${matchedPattern.phrase}`);
+      }
+    });
+
+  // Statusline management sub-command
+  pushup
+    .command('statusline')
+    .description('Manage challenge statusline display in Claude Code')
+    .action(async () => {
+      try {
+        const settingsManager = new ClaudeSettingsManager();
+
+        // Detect current statusline status
+        const { readGlobalSettings } = await import('../lib/claude-settings-reader');
+        const settings = await readGlobalSettings();
+
+        let currentStatusline = 'none';
+        if (settings?.statusLine?.command) {
+          if (settings.statusLine.command.includes('statusline-challenge')) {
+            currentStatusline = 'challenge';
+          } else if (settings.statusLine.command.includes('statusline')) {
+            currentStatusline = 'prompt-analysis';
+          } else {
+            currentStatusline = 'other';
+          }
+        }
+
+        // Show current status
+        console.log('\n' + chalk.bold('📊 Challenge Statusline Management:'));
+        console.log(chalk.gray('   Current statusline: ') +
+          (currentStatusline === 'challenge' ? chalk.green('Challenge Statusline ✅') :
+           currentStatusline === 'prompt-analysis' ? chalk.yellow('Prompt Analysis Statusline') :
+           currentStatusline === 'other' ? chalk.cyan('Custom Statusline') :
+           chalk.red('No statusline installed')));
+        console.log();
+
+        // Ask user what they want to do
+        const { action } = await inquirer.prompt([{
+          type: 'list',
+          name: 'action',
+          message: 'What would you like to do?',
+          choices: [
+            { name: '📥 Install challenge statusline', value: 'install', disabled: currentStatusline === 'challenge' },
+            { name: '🔄 Switch from prompt analysis to challenge statusline', value: 'switch-to-challenge', disabled: currentStatusline !== 'prompt-analysis' },
+            { name: '🔙 Restore previous statusline', value: 'restore', disabled: currentStatusline === 'none' },
+            { name: '❌ Uninstall challenge statusline', value: 'uninstall', disabled: currentStatusline !== 'challenge' },
+            { name: '⬅️  Go back', value: 'back' }
+          ]
+        }]);
+
+        if (action === 'back') {
+          return;
+        }
+
+        // Handle actions
+        switch (action) {
+          case 'install':
+            await settingsManager.installChallengeStatusLineFeature();
+            console.log(chalk.green('\n✅ Challenge statusline installed!'));
+            console.log(chalk.cyan('💡 Your push-up progress is now visible in Claude Code statusline'));
+            break;
+
+          case 'switch-to-challenge':
+            await settingsManager.removeStatusLineFeature();
+            await settingsManager.installChallengeStatusLineFeature();
+            console.log(chalk.green('\n✅ Switched to challenge statusline!'));
+            console.log(chalk.cyan('💡 Your push-up progress is now visible in Claude Code statusline'));
+            break;
+
+          case 'restore':
+            await settingsManager.removeChallengeStatusLineFeature(true);
+            console.log(chalk.green('\n✅ Previous statusline restored!'));
+            break;
+
+          case 'uninstall':
+            const { confirmUninstall } = await inquirer.prompt([{
+              type: 'confirm',
+              name: 'confirmUninstall',
+              message: 'Remove challenge statusline? (Stats will be preserved)',
+              default: false
+            }]);
+
+            if (confirmUninstall) {
+              await settingsManager.removeChallengeStatusLineFeature();
+              console.log(chalk.green('\n✅ Challenge statusline uninstalled!'));
+              console.log(chalk.gray('   Your challenge stats are still preserved'));
+            } else {
+              console.log(chalk.yellow('\n❌ Cancelled'));
+            }
+            break;
+        }
+      } catch (error) {
+        logger.error('Failed to manage statusline', error);
+        process.exit(1);
       }
     });
 

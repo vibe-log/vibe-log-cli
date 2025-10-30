@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import clipboardy from 'clipboardy';
+import { brandColors } from './styles';
 
 /**
  * Generate ASCII receipt for completed push-ups
@@ -76,13 +77,13 @@ export async function displayReceiptWithCopyOption(pushUps: number): Promise<voi
   const receipt = generatePushUpReceipt(pushUps);
   const plainText = generatePlainTextReceipt(pushUps);
 
-  console.log(chalk.green(receipt));
+  console.log(brandColors.primary(receipt));
   console.log();
 
   // Try to copy to clipboard
   try {
     await clipboardy.write(plainText);
-    console.log(chalk.cyan('✓ Receipt copied to clipboard!'));
+    console.log(brandColors.primary('✓ Receipt copied to clipboard!'));
   } catch (error) {
     console.log(chalk.yellow('⚠️  Could not copy to clipboard automatically'));
     console.log(chalk.gray('   You can manually copy the receipt above'));
