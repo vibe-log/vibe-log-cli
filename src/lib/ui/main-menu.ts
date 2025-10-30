@@ -121,8 +121,15 @@ export async function showMainMenu(
         await showMainMenu(state, packageUpdateInfo);
         return;
       }
-      
-      
+
+      case 'pushup-challenge': {
+        const { showPushUpChallengeMenu } = await import('./push-up-challenge-menu');
+        await showPushUpChallengeMenu(true); // true indicates first-time setup
+        // Show welcome again after push-up challenge configuration
+        await showMainMenu(state, packageUpdateInfo);
+        return;
+      }
+
       case 'exit':
         console.log(colors.muted('\nGoodbye! 👋\n'));
         process.exit(0);
@@ -379,7 +386,10 @@ async function handleMenuAction(
       try {
         // Use Claude Code analysis for standup
         const { standup } = await import('../../commands/standup');
-        await standup();
+
+        // Skip auth for local-only users (they don't need cloud)
+        const skipAuth = !state.hasAuth;
+        await standup({ skipAuth });
         await waitForEnter();
       } catch (error) {
         displayError(error);
@@ -501,17 +511,23 @@ async function handleMenuAction(
       }
       break;
       
+    case 'pushup-challenge': {
+      const { showPushUpChallengeMenu } = await import('./push-up-challenge-menu');
+      await showPushUpChallengeMenu(false); // false indicates regular menu access
+      break;
+    }
+
     case 'help':
       showHelp();
       console.log('Press Enter to continue...');
       await inquirer.prompt([{ type: 'input', name: 'continue', message: '' }]);
       break;
-      
+
     case 'exit':
       console.log(colors.muted('\nGoodbye! 👋\n'));
       process.exit(0);
       break;
-      
+
     default:
       console.log(colors.warning(`Unknown action: ${action}`));
   }

@@ -73,10 +73,10 @@ export function validateUrl(url: string): string {
     ];
     
     const hostname = parsed.hostname.toLowerCase();
-    if (hostname === 'localhost' || 
+    if (hostname === 'localhost' ||
         privatePatterns.some(pattern => pattern.test(hostname))) {
-      // Allow but warn for development
-      console.warn('Private/local URL detected:', hostname);
+      // Allow localhost for development without warning
+      // Production deployments should never use localhost
     }
     
     // Check for suspicious ports

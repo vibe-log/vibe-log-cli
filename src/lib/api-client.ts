@@ -610,6 +610,40 @@ class SecureApiClient {
   getBaseUrl(): string {
     return this.client.defaults.baseURL || 'http://localhost:3000';
   }
+
+  /**
+   * Sync push-up challenge stats to backend
+   */
+  async syncPushUpChallenge(data: {
+    enabled: boolean;
+    rate: number;
+    debt: number;
+    completed: number;
+    streakDays: number;
+    lastCompletedDate?: number | null;
+    enabledDate?: number | null;
+    todayDebt?: number;
+    todayCompleted?: number;
+  }): Promise<{ success: boolean }> {
+    const response = await this.client.post('/api/push-up-challenge/sync', data);
+    return response.data;
+  }
+
+  /**
+   * Fetch push-up challenge stats from backend
+   */
+  async fetchPushUpChallengeStats(): Promise<{
+    enabled: boolean;
+    rate: number;
+    debt: number;
+    completed: number;
+    streakDays: number;
+    lastCompletedDate?: string;
+    enabledDate?: string;
+  }> {
+    const response = await this.client.get('/api/push-up-challenge/stats');
+    return response.data;
+  }
 }
 
 export const apiClient = new SecureApiClient();

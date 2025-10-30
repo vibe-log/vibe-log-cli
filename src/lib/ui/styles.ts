@@ -9,15 +9,24 @@ const safeHex = (color: string, fallback: any) => {
   }
 };
 
+// Claude Code Brand Colors
+export const brandColors = {
+  primary: safeHex('#d97757', chalk.red),       // Claude Code Orange - Primary brand color
+  accent: safeHex('#FF5F56', chalk.red),        // Bright orange - Accent
+  dark: safeHex('#111827', chalk.black),        // Ebony - Dark contrast
+  lightPeach: safeHex('#F08D7A', chalk.red),    // Lighter peach for highlights
+  warmGray: safeHex('#9CA3AF', chalk.gray),     // Warm gray for muted text
+};
+
 // Color palette - optimized for visibility on both dark and light terminals
 export const colors = {
-  primary: chalk.cyan,
+  primary: brandColors.primary,  // Use brand primary as default primary
   success: chalk.green,
   warning: chalk.yellow,
   error: chalk.red,
   info: chalk.cyan,  // Changed from blue to cyan for better visibility
   muted: safeHex('#808080', chalk.gray),  // Brighter gray for better visibility on black terminals
-  accent: chalk.magenta,
+  accent: brandColors.accent,  // Use brand accent
   highlight: chalk.bold.cyan,  // Changed from white to cyan for visibility on light terminals
   dim: safeHex('#606060', chalk.dim),  // Custom gray instead of chalk.dim for consistency
 
@@ -25,6 +34,13 @@ export const colors = {
   subdued: safeHex('#909090', chalk.gray),  // Increased contrast for better readability
   hint: safeHex('#7A8290', chalk.gray),     // Slightly brighter for better visibility
   inactive: safeHex('#4B5563', chalk.dim),  // For disabled/inactive items
+
+  // Brand-specific semantic colors
+  brandPrimary: brandColors.primary,
+  brandAccent: brandColors.accent,
+  brandDark: brandColors.dark,
+  brandLight: brandColors.lightPeach,
+  brandMuted: brandColors.warmGray,
 };
 
 // Icons
@@ -149,13 +165,13 @@ export function sectionDivider(title?: string): string {
   if (!title) {
     return colors.muted(horizontalLine(box.horizontal, width));
   }
-  
+
   const titleWithSpaces = ` ${title} `;
   // eslint-disable-next-line no-control-regex
   const titleLength = titleWithSpaces.replace(/\u001b\[[0-9;]*m/g, '').length;
   const leftWidth = Math.floor((width - titleLength) / 2);
   const rightWidth = width - titleLength - leftWidth;
-  
+
   return colors.muted(
     box.horizontal.repeat(Math.max(0, leftWidth)) +
     colors.primary(titleWithSpaces) +

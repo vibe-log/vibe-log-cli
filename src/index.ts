@@ -6,7 +6,10 @@ import { logout } from './commands/logout';
 import { privacy } from './commands/privacy';
 import { createAnalyzePromptCommand } from './commands/analyze-prompt';
 import { createStatuslineCommand } from './commands/statusline';
+import { createChallengeStatuslineCommand } from './commands/statusline-challenge';
+import { createRefreshPushUpChallengeStatuslineCommand } from './commands/refresh-push-up-challenge-statusline';
 import { createTestPersonalityCommand } from './commands/test-personality';
+import { createPushUpCommand } from './commands/pushup-challenge';
 import { installAutoSync } from './commands/install-auto-sync';
 import { showLogo } from './lib/ui';
 import { handleError } from './utils/errors';
@@ -83,11 +86,13 @@ program
     }
     // Skip logo in silent mode - check command line args directly since --silent is command-specific
     const isSilent = process.argv.includes('--silent');
-    // Skip logo for statusline command (used by Claude Code status line)
-    const isStatusline = process.argv[2] === 'statusline';
+    // Skip logo for hook commands (statusline, statusline-challenge, pushup check-prompt, etc.)
+    const isHookCommand = process.argv[2] === 'statusline' ||
+                          process.argv[2] === 'statusline-challenge' ||
+                          (process.argv[2] === 'pushup' && process.argv[3] === 'check-prompt');
     // Only show logo if a command is specified (not the default interactive menu)
     const hasCommand = process.argv.length > 2 && !process.argv[2].startsWith('-');
-    if (!isSilent && !isStatusline && hasCommand) {
+    if (!isSilent && !isHookCommand && hasCommand) {
       await showLogo(currentVersion);
     }
   });
@@ -171,8 +176,17 @@ program.addCommand(createAnalyzePromptCommand());
 // Add statusline command (hidden - for Claude Code status line)
 program.addCommand(createStatuslineCommand());
 
+// Add challenge statusline command (hidden - for Claude Code status line)
+program.addCommand(createChallengeStatuslineCommand());
+
+// Add refresh command for push-up challenge statusline (hidden - triggers statusline refresh)
+program.addCommand(createRefreshPushUpChallengeStatuslineCommand());
+
 // Add test-personality command (hidden - for debugging)
 program.addCommand(createTestPersonalityCommand());
+
+// Add push-up challenge command (hidden - for advanced users)
+program.addCommand(createPushUpCommand());
 
 // Add install-auto-sync command for direct access to auto-sync configuration
 program

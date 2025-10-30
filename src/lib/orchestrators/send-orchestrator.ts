@@ -1,7 +1,7 @@
 import { requireAuth, getToken } from '../auth/token';
 import { readClaudeSessions } from '../readers/claude';
 import { apiClient, Session } from '../api-client';
-import { 
+import {
   getProjectSyncData,
   updateProjectSyncBoundaries,
   setLastSyncSummary
@@ -18,6 +18,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import { filterImageContent } from '../readers/image-filter';
 import { extractLanguagesFromSession } from '../language-extractor';
+import { syncPushUpStats } from '../push-up-sync';
 
 export interface SendOptions {
   dry?: boolean;
@@ -63,6 +64,16 @@ export class SendOrchestrator {
 
     // Upload sessions
     const results = await this.uploadSessions(apiSessions, options);
+
+    // Sync push-up challenge stats after session upload
+    logger.info('🔄 Triggering push-up stats sync after session upload...');
+    try {
+      await syncPushUpStats();
+      logger.info('✅ Push-up stats sync completed');
+    } catch (err) {
+      logger.error('❌ Failed to sync push-up stats after session upload:', err);
+      // Don't fail the whole upload if push-up sync fails
+    }
 
     // Update sync state
     await this.updateSyncState(sessions, options);

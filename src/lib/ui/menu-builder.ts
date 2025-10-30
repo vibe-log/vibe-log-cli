@@ -1,4 +1,5 @@
 import { colors, icons, box, padRight, getTerminalWidth } from './styles';
+import { getPushUpChallengeConfig, getPushUpStats } from '../config';
 
 // Menu item labels - centralized for consistency
 const MENU_LABELS = {
@@ -77,32 +78,60 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
   
   // For LOCAL_ONLY state
   if (context.state === 'LOCAL_ONLY') {
+    // Primary action - Standup (works without auth in local mode)
+    items.push({
+      id: 'standup',
+      label: `📋 Today's standup`,
+      action: 'standup'
+    });
+
+    // Add Push-Up Challenge menu item immediately after standup
+    const pushUpConfig = getPushUpChallengeConfig();
+    const pushUpStats = getPushUpStats();
+
+    if (pushUpConfig.enabled) {
+      const streakEmoji = pushUpStats.streakDays > 0 ? '🔥' : '';
+      items.push({
+        id: 'pushup-challenge',
+        label: `💪 Push-Up Challenge (Debt: ${pushUpStats.debt}, Streak: ${pushUpStats.streakDays} days ${streakEmoji})`,
+        action: 'pushup-challenge'
+      });
+    } else {
+      items.push({
+        id: 'pushup-challenge',
+        label: `💪 Push-Up Challenge`,
+        action: 'pushup-challenge'
+      });
+    }
+
+    items.push({ separator: true } as MenuItem);
+
     items.push({
       id: 'status-line',
       label: MENU_LABELS.STRATEGIC_COPILOT,
       description: MENU_LABELS.STRATEGIC_COPILOT_DESC,
       action: 'status-line'
     });
-    
+
     // Separator between local and analysis tools
     items.push({ separator: true } as MenuItem);
-    
+
     // Analysis tools
     items.push({
       id: 'report',
       label: `${icons.chart} Generate local report (using Claude sub-agents)`,
       action: 'report'
     });
-    
+
     items.push({
       id: 'install-agents',
       label: getAgentManageLabel(context.agentCount, context.totalAgents),
       action: 'install-agents'
     });
-    
+
     // Separator before cloud option
     items.push({ separator: true } as MenuItem);
-    
+
     items.push({
       id: 'switch-cloud',
       label: `${icons.sparkles} Switch to cloud mode`,
@@ -118,6 +147,25 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
       label: `📋 Today's standup`,
       action: 'standup'
     });
+
+    // Add Push-Up Challenge menu item immediately after standup
+    const pushUpConfigCloud = getPushUpChallengeConfig();
+    const pushUpStatsCloud = getPushUpStats();
+
+    if (pushUpConfigCloud.enabled) {
+      const streakEmojiCloud = pushUpStatsCloud.streakDays > 0 ? '🔥' : '';
+      items.push({
+        id: 'pushup-challenge',
+        label: `💪 Push-Up Challenge (Debt: ${pushUpStatsCloud.debt}, Streak: ${pushUpStatsCloud.streakDays} days ${streakEmojiCloud})`,
+        action: 'pushup-challenge'
+      });
+    } else {
+      items.push({
+        id: 'pushup-challenge',
+        label: `💪 Push-Up Challenge`,
+        action: 'pushup-challenge'
+      });
+    }
 
     items.push({ separator: true } as MenuItem);
 
