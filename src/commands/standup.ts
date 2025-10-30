@@ -138,7 +138,7 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
     // Execute Claude to analyze the sessions
     let standupData: StandupData | null = null;
 
-    let claudeMessages: string[] = [];
+    const claudeMessages: string[] = [];
 
     try {
       await executeClaude(standupPrompt, {
