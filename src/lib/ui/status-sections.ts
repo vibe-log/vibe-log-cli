@@ -257,37 +257,66 @@ export function createLocalEngineSection(engine: LocalEngine): string {
 /**
  * Create push-up challenge section
  */
-export function createPushUpChallengeSection(): string {
+export async function createPushUpChallengeSection(): Promise<string> {
   const { getPushUpChallengeConfig, getPushUpStats } = require('../config');
+  const { readGlobalSettings } = require('../claude-settings-reader');
   const config = getPushUpChallengeConfig();
   const stats = getPushUpStats();
 
-  if (!config.enabled) {
-    return '';
-  }
-
   const content: string[] = [];
 
-  // Today's progress
-  const todayProgress = `${stats.todayCompleted} completed / ${stats.todayDebt} owed`;
+  // Challenge status
+  const challengeEnabled = config.enabled;
+  const challengeIcon = challengeEnabled ? icons.check : icons.cross;
+  const challengeColor = challengeEnabled ? colors.success : colors.error;
+  const challengeText = challengeEnabled
+    ? `Enabled (${config.pushUpsPerTrigger} per validation)`
+    : 'Not enabled';
   content.push(
-    `📅 ${colors.muted('Today:')} ${colors.primary(todayProgress)}`
+    `${challengeIcon} ${colors.muted('Challenge:')} ${challengeColor(challengeText)}`
   );
 
-  // Total debt with color coding
-  const debtColor = stats.debt > 20 ? colors.error :
-                     stats.debt > 10 ? colors.warning :
-                     colors.success;
+  // Statusline status - check global settings
+  let statuslineInstalled = false;
+  try {
+    const settings = await readGlobalSettings();
+    if (settings?.statusLine?.command?.includes('statusline-challenge')) {
+      statuslineInstalled = true;
+    }
+  } catch (error) {
+    // If we can't read settings, assume not installed
+  }
+
+  const statuslineIcon = statuslineInstalled ? icons.check : icons.cross;
+  const statuslineColor = statuslineInstalled ? colors.success : colors.error;
+  const statuslineText = statuslineInstalled ? 'Installed' : 'Not installed';
   content.push(
-    `💳 ${colors.muted('Total Debt:')} ${debtColor(stats.debt.toString())}`
+    `${statuslineIcon} ${colors.muted('Statusline:')} ${statuslineColor(statuslineText)}`
   );
 
-  // Streak with fire emoji for active streaks
-  const streakEmoji = stats.streakDays >= 7 ? '🔥🔥' :
-                      stats.streakDays >= 3 ? '🔥' : '';
-  content.push(
-    `🏆 ${colors.muted('Streak:')} ${colors.accent(stats.streakDays + ' days')} ${streakEmoji}`
-  );
+  // Only show stats if challenge is enabled
+  if (challengeEnabled) {
+    // Today's progress
+    const todayProgress = `${stats.todayCompleted} completed / ${stats.todayDebt} owed`;
+    content.push(
+      `📅 ${colors.muted('Today:')} ${colors.primary(todayProgress)}`
+    );
+
+    // Total debt with color coding
+    const debtColor = stats.debt > 20 ? colors.error :
+                       stats.debt > 10 ? colors.warning :
+                       colors.success;
+    content.push(
+      `💳 ${colors.muted('Total Debt:')} ${debtColor(stats.debt.toString())}`
+    );
+
+    // Streak with fire emoji for active streaks
+    const streakEmoji = stats.streakDays >= 7 ? '🔥🔥' :
+                        stats.streakDays >= 3 ? '🔥' : '';
+    content.push(
+      `🏆 ${colors.muted('Streak:')} ${colors.accent(stats.streakDays + ' days')} ${streakEmoji}`
+    );
+  }
 
   return createSection('PUSH-UP CHALLENGE', content, {
     icon: '💪',
@@ -299,10 +328,10 @@ export function createPushUpChallengeSection(): string {
 /**
  * Create a status dashboard with multiple sections
  */
-export function createStatusDashboard(
+export async function createStatusDashboard(
   cloud: CloudStatus,
   local: LocalEngine
-): string {
+): Promise<string> {
   const sections: string[] = [];
   // Cloud status
   sections.push(createCloudStatusSection(cloud));
@@ -311,12 +340,9 @@ export function createStatusDashboard(
   // Local engine (Claude Code + sub-agents)
   sections.push(createLocalEngineSection(local));
 
-  // Push-up challenge (if enabled)
-  const pushUpSection = createPushUpChallengeSection();
-  if (pushUpSection) {
-    sections.push('');
-    sections.push(pushUpSection);
-  }
+  // Push-up challenge (always show status)
+  sections.push('');
+  sections.push(await createPushUpChallengeSection());
 
   return sections.join('\n');
 }

@@ -184,7 +184,7 @@ export async function showMainMenu(
     configPath: '~/.claude/config'
   };
   
-  console.log(createStatusDashboard(cloudStatus, localEngine));
+  console.log(await createStatusDashboard(cloudStatus, localEngine));
   console.log('');
   
   // Build context-aware menu
