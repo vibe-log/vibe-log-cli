@@ -7,7 +7,8 @@ import {
   setPushUpChallengeEnabled,
   recordPushUpsCompleted,
   incrementPushUpDebt,
-  resetPushUpStats
+  resetPushUpStats,
+  getDashboardUrl
 } from '../config';
 import { claudeSettingsManager } from '../claude-settings-manager';
 import { displayReceiptWithCopyOption } from './push-up-receipt';
@@ -112,8 +113,19 @@ export async function showPushUpChallengeMenu(firstTime: boolean = false): Promi
       await setupDailyEmail();
       break;
 
-    case 'email-settings':
-      await showEmailSettings();
+    case 'open-email-dashboard':
+      // Open dashboard settings page directly
+      try {
+        const open = (await import('open')).default;
+        const dashboardUrl = getDashboardUrl();
+        const settingsUrl = `${dashboardUrl}/settings`;
+        console.log(colors.info(`\nOpening dashboard: ${settingsUrl}`));
+        await open(settingsUrl);
+      } catch (error) {
+        console.log(colors.warning('\nCould not open browser automatically.'));
+        const dashboardUrl = getDashboardUrl();
+        console.log(colors.muted(`Please visit: ${dashboardUrl}/settings\n`));
+      }
       break;
 
     case 'back':
@@ -169,13 +181,21 @@ async function buildEnabledMenuChoices(stats: any): Promise<any[]> {
   const isLoggedIn = await isAuthenticated();
 
   if (isLoggedIn) {
-    // Authenticated users - simple option
+    // Authenticated users - show configure action without repeating benefits
+    choices.push(new inquirer.Separator('📧 Push-ups tracked in daily emails'));
+    choices.push(new inquirer.Separator(''));
+
+    // Selectable action to open dashboard
     choices.push({
-      name: '📧 Push-ups tracked in daily emails',
-      value: 'email-settings'
+      name: '🌐 Open dashboard to configure email settings',
+      value: 'open-email-dashboard'
     });
+    // Show what can be configured
+    choices.push(new inquirer.Separator('   • Change delivery time'));
+    choices.push(new inquirer.Separator('   • Toggle daily/weekly emails'));
+    choices.push(new inquirer.Separator('   • Update preferences'));
   } else {
-    // Non-authenticated users - show selectable option with benefits
+    // Non-authenticated users - show selectable setup option with benefits
     choices.push({
       name: '📧 Track this in your daily standup email',
       value: 'setup-daily-email'
@@ -189,6 +209,7 @@ async function buildEnabledMenuChoices(stats: any): Promise<any[]> {
     choices.push(new inquirer.Separator(''));
     choices.push(new inquirer.Separator('   Perfect for team standups, status reports,'));
     choices.push(new inquirer.Separator('   and never forgetting what you built.'));
+    choices.push(new inquirer.Separator(''));
     choices.push(new inquirer.Separator('   (Requires free cloud sync)'));
   }
 
@@ -402,66 +423,17 @@ async function uninstallChallengeStatusline(): Promise<void> {
 /**
  * Setup daily email for non-authenticated users
  * Launches cloud setup wizard directly
+ * Note: guidedCloudSetup() handles all success/cancellation messages
  */
 async function setupDailyEmail(): Promise<void> {
   try {
     const { guidedCloudSetup } = await import('./cloud-setup-wizard');
     await guidedCloudSetup();
-
-    console.log(colors.success('\n✅ Daily emails enabled!'));
-    console.log('Your first daily standup email arrives tomorrow morning.');
-    console.log('It will include your push-up stats! 💪\n');
-
-    console.log(chalk.gray('Press Enter to continue...'));
-    await inquirer.prompt([{ type: 'input', name: 'continue', message: '' }]);
+    // No additional messages needed - wizard shows its own success/cancellation messages
   } catch (error) {
-    console.log(colors.warning('\nCloud setup cancelled or failed.'));
+    // Only show error if there's an unexpected exception
+    console.log(colors.warning('\nCloud setup failed unexpectedly.'));
     console.log(colors.muted('You can try again from the push-up menu\n'));
   }
 }
 
-/**
- * Show email settings for authenticated users
- * Links to web dashboard email settings
- */
-async function showEmailSettings(): Promise<void> {
-  console.clear();
-  console.log(colors.success('\n✅ You\'re all set!\n'));
-  console.log('Your push-up stats are automatically included');
-  console.log('in your daily standup emails.\n');
-
-  console.log(colors.muted('📧 Your daily email includes:'));
-  console.log(colors.subdued('   • Yesterday\'s coding accomplishments'));
-  console.log(colors.subdued('   • Push-up stats and streaks 💪'));
-  console.log(colors.subdued('   • Productivity insights'));
-  console.log(colors.subdued('   • Strategic focus for today'));
-  console.log();
-
-  const settingsUrl = 'https://app.vibe-log.dev/settings/email';
-  console.log(colors.muted('⚙️  Manage your email settings:'));
-  console.log(chalk.cyan(`   ${settingsUrl}`));
-  console.log(colors.subdued('   • Change delivery time'));
-  console.log(colors.subdued('   • Toggle daily/weekly emails'));
-  console.log(colors.subdued('   • Update preferences'));
-  console.log();
-
-  const { action } = await inquirer.prompt([{
-    type: 'list',
-    name: 'action',
-    message: 'What would you like to do?',
-    choices: [
-      { name: '🌐 Open email settings in browser', value: 'open' },
-      { name: '← Back to menu', value: 'back' }
-    ]
-  }]);
-
-  if (action === 'open') {
-    try {
-      const open = (await import('open')).default;
-      await open(settingsUrl);
-      console.log(colors.muted('\nOpening browser...\n'));
-    } catch (error) {
-      console.log(colors.warning(`\nPlease visit: ${settingsUrl}\n`));
-    }
-  }
-}
