@@ -207,7 +207,8 @@ export async function showMainMenu(
   const choices = menuItems
     .map(item => {
       if (item.separator) {
-        return new inquirer.Separator('─────────────────────');
+        // Use custom text if provided in label, otherwise use default separator line
+        return new inquirer.Separator(item.label || '─────────────────────');
       }
       return {
         name: item.label,

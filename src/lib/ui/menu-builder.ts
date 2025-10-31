@@ -134,6 +134,12 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
       label: `${icons.sparkles} Enable cloud mode`,
       action: 'switch-cloud'
     });
+
+    // Add cloud mode details as non-selectable items
+    items.push({ separator: true, id: 'cloud-detail-1', label: '   ✓ Uses 0 tokens (our infrastructure)' } as MenuItem);
+    items.push({ separator: true, id: 'cloud-detail-2', label: '   📧 Weekly recaps & Daily standup emails' } as MenuItem);
+    items.push({ separator: true, id: 'cloud-detail-3', label: '   📊 Interactive dashboards' } as MenuItem);
+    items.push({ separator: true, id: 'cloud-detail-4', label: '   🎯 Optimization insights & coaching plans' } as MenuItem);
   }
 
   // For LOCAL_ONLY state
@@ -197,6 +203,12 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
       label: `${icons.sparkles} Switch to cloud mode`,
       action: 'switch-cloud'
     });
+
+    // Add cloud mode details as non-selectable items
+    items.push({ separator: true, id: 'cloud-detail-local-1', label: '   ✓ Uses 0 tokens (our infrastructure)' } as MenuItem);
+    items.push({ separator: true, id: 'cloud-detail-local-2', label: '   📧 Weekly recaps & Daily standup emails' } as MenuItem);
+    items.push({ separator: true, id: 'cloud-detail-local-3', label: '   📊 Interactive dashboards' } as MenuItem);
+    items.push({ separator: true, id: 'cloud-detail-local-4', label: '   🎯 Optimization insights & coaching plans' } as MenuItem);
   }
   
   // For CLOUD states - simplified menu
