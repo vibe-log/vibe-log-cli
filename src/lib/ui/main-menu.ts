@@ -125,9 +125,7 @@ export async function showMainMenu(
       case 'pushup-challenge': {
         const { showPushUpChallengeMenu } = await import('./push-up-challenge-menu');
         await showPushUpChallengeMenu(true); // true indicates first-time setup
-        // Show welcome again after push-up challenge configuration
-        await showMainMenu(state, packageUpdateInfo);
-        return;
+        break;
       }
 
       case 'exit':
