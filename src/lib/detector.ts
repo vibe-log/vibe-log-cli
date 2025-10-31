@@ -1,15 +1,16 @@
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
-import { getAllConfig, getToken as getConfigToken, getLastSyncSummary, getDashboardUrl } from './config';
+import { getAllConfig, getToken as getConfigToken, getLastSyncSummary, getDashboardUrl, getPushUpChallengeConfig } from './config';
 import { logger } from '../utils/logger';
 import { VIBE_LOG_SUB_AGENTS } from './sub-agents/constants';
 import { getHookMode, getTrackedProjects as getHookTrackedProjects } from './claude-settings-reader';
 import { getStatusLineStatus, StatusLineStatus } from './status-line-manager';
 
-export type SetupState = 
+export type SetupState =
   | 'FIRST_TIME'           // No configuration exists
   | 'LOCAL_ONLY'          // Sub-agents installed, no cloud
+  | 'PUSHUP_ONLY'         // Push-up challenge installed, no cloud or sub-agents
   | 'CLOUD_AUTO'          // Cloud + hooks installed
   | 'CLOUD_MANUAL'        // Cloud without hooks
   | 'CLOUD_ONLY'          // Cloud, no local sub-agents
@@ -26,6 +27,7 @@ export interface StateDetails {
   hasHooks: boolean;
   hasStatusLine: boolean;
   statusLineStatus: StatusLineStatus;
+  hasPushUpChallenge: boolean;
   cloudUrl?: string;
   lastSync?: Date;
   lastSyncProject?: string;
@@ -49,6 +51,7 @@ export async function detectSetupState(): Promise<StateDetails> {
     hasHooks: false,
     hasStatusLine: false,
     statusLineStatus: 'not-installed',
+    hasPushUpChallenge: false,
     trackingMode: 'none',
     trackedProjectCount: 0,
     errors
@@ -132,6 +135,15 @@ export async function detectSetupState(): Promise<StateDetails> {
       details.hasStatusLine = false;
     }
 
+    // Check for push-up challenge
+    try {
+      const pushUpConfig = getPushUpChallengeConfig();
+      details.hasPushUpChallenge = pushUpConfig.enabled === true;
+    } catch (error) {
+      logger.debug('Error checking push-up challenge:', error);
+      details.hasPushUpChallenge = false;
+    }
+
     // Check for Claude Code projects
     const projectsPath = path.join(os.homedir(), '.claude', 'projects');
     try {
@@ -164,6 +176,8 @@ export async function detectSetupState(): Promise<StateDetails> {
       details.state = 'CLOUD_ONLY';
     } else if (!details.hasAuth && details.hasAgents) {
       details.state = 'LOCAL_ONLY';
+    } else if (!details.hasAuth && !details.hasAgents && details.hasPushUpChallenge) {
+      details.state = 'PUSHUP_ONLY';
     } else {
       details.state = 'PARTIAL_SETUP';
     }

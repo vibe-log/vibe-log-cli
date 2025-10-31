@@ -75,7 +75,67 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
     });
     return items;
   }
-  
+
+  // For PUSHUP_ONLY state - user has only enabled push-up challenge
+  if (context.state === 'PUSHUP_ONLY') {
+    // Primary action - Push-Up Challenge
+    const pushUpConfig = getPushUpChallengeConfig();
+    const pushUpStats = getPushUpStats();
+
+    if (pushUpConfig.enabled) {
+      const streakEmoji = pushUpStats.streakDays > 0 ? '🔥' : '';
+      items.push({
+        id: 'pushup-challenge',
+        label: `💪 Push-Up Challenge (Debt: ${pushUpStats.debt}, Streak: ${pushUpStats.streakDays} days ${streakEmoji})`,
+        action: 'pushup-challenge'
+      });
+    } else {
+      items.push({
+        id: 'pushup-challenge',
+        label: `💪 Push-Up Challenge`,
+        action: 'pushup-challenge'
+      });
+    }
+
+    items.push({ separator: true } as MenuItem);
+
+    // Standup - works without auth
+    items.push({
+      id: 'standup',
+      label: `📋 Today's standup`,
+      action: 'standup'
+    });
+
+    items.push({ separator: true } as MenuItem);
+
+    items.push({
+      id: 'status-line',
+      label: MENU_LABELS.STRATEGIC_COPILOT,
+      description: MENU_LABELS.STRATEGIC_COPILOT_DESC,
+      action: 'status-line'
+    });
+
+    // Separator before additional features
+    items.push({ separator: true } as MenuItem);
+
+    // Offer to install sub-agents for local reports
+    items.push({
+      id: 'install-agents',
+      label: `${icons.package} Install local sub-agents`,
+      action: 'install-agents'
+    });
+
+    // Separator before cloud option
+    items.push({ separator: true } as MenuItem);
+
+    // Offer cloud mode for email summaries
+    items.push({
+      id: 'switch-cloud',
+      label: `${icons.sparkles} Enable cloud mode`,
+      action: 'switch-cloud'
+    });
+  }
+
   // For LOCAL_ONLY state
   if (context.state === 'LOCAL_ONLY') {
     // Primary action - Standup (works without auth in local mode)

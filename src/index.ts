@@ -252,6 +252,7 @@ program.action(async () => {
       hasHooks: false,
       hasStatusLine: false,
       statusLineStatus: 'not-installed' as const,
+      hasPushUpChallenge: false,
       trackingMode: 'none' as const,
       trackedProjectCount: 0,
       errors: [error instanceof Error ? error.message : 'Unknown error']
