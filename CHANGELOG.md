@@ -5,6 +5,22 @@ All notable changes to the vibe-log-cli project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.5] - 2025-10-31
+
+### Fixed
+- Push-up challenge first-time setup now correctly transitions to main menu instead of looping back to welcome screen
+- Added PUSHUP_ONLY state detection for users with only push-up challenge enabled
+- Push-up challenge status section now displays even when disabled, showing installation state
+- State refresh after first-time feature setup now works correctly
+
+### Improved
+- Added challenge and statusline installation status to push-up challenge section
+- Push-up challenge info now shown when challenge is disabled (setup instructions)
+- Cloud dashboard feature details now visible in main menu for non-authenticated users
+- Centralized menu item labels to eliminate duplication across different states
+- Increased main menu page size to prevent status sections from scrolling out of view
+- Updated statusline description text for clarity
+
 ## [0.7.4] - 2025-10-30
 
 ### Added
