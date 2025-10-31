@@ -210,7 +210,7 @@ export function createLocalEngineSection(engine: LocalEngine): string {
   // Add explanation if not installed
   if (engine.statusLineStatus !== 'installed') {
     content.push(
-      colors.subdued(`                      → Strategic guidance to move forward effectively`)
+      colors.subdued(`  → Live Guidance to move forward effectively`)
     );
   }
   
