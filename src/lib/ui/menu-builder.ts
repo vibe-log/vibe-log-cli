@@ -41,6 +41,13 @@ function getAgentManageLabel(agentCount?: number, totalAgents?: number): string 
   return `${icons.package} Manage local sub-agents`;
 }
 
+/**
+ * Generate consistent report generation label
+ */
+function getReportGenerateLabel(): string {
+  return `${icons.chart} Generate local reports (install sub-agents)`;
+}
+
 
 /**
  * Generate context-aware menu items based on current state
@@ -121,7 +128,7 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
     // Offer to install sub-agents for local reports
     items.push({
       id: 'install-agents',
-      label: `${icons.package} Install local sub-agents`,
+      label: getReportGenerateLabel(),
       action: 'install-agents'
     });
 
@@ -185,7 +192,7 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
     // Analysis tools
     items.push({
       id: 'report',
-      label: `${icons.chart} Generate local report (using Claude sub-agents)`,
+      label: getReportGenerateLabel(),
       action: 'report'
     });
 
@@ -271,7 +278,7 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
 
     items.push({
       id: 'report',
-      label: `📊 Generate local report`,
+      label: getReportGenerateLabel(),
       action: 'report'
     });
 
@@ -279,7 +286,7 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
     if (context.agentCount && context.agentCount > 0) {
       items.push({
         id: 'install-agents',
-        label: `🤖 Manage sub-agents`,
+        label: getAgentManageLabel(context.agentCount, context.totalAgents),
         action: 'install-agents'
       });
     }
