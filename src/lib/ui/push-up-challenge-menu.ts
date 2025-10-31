@@ -55,6 +55,17 @@ export async function showPushUpChallengeMenu(firstTime: boolean = false): Promi
       statuslineStatus);
   } else {
     console.log(colors.warning('❌ Disabled'));
+    console.log();
+    console.log(chalk.white('The Rule: ') + chalk.cyan('Every "You are absolutely right" from Claude = 1 push-up'));
+    console.log();
+    console.log(chalk.white('Live monitoring:'));
+    console.log(colors.muted('  ✅ Statusline - see your count while coding'));
+    console.log();
+    console.log(chalk.white('Long-term tracking (cloud sync):'));
+    console.log(colors.muted('  ✅ Daily emails - "Yesterday: 23 push-ups"'));
+    console.log(colors.muted('  ✅ Weekly summaries - your week at a glance'));
+    console.log();
+    console.log(colors.muted('Honor system - you actually do the push-ups 💪'));
   }
 
   console.log();
