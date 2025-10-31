@@ -31,7 +31,7 @@ const optionDetails: Record<string, string[]> = {
   ],
   'pushup-challenge': [
     '🎮 Gamify your coding with push-ups',
-    '✅ Tracks validation responses from Claude',
+    '✅ Tracks validation responses from Claude (You are absolutely right)',
     '📊 Build streaks and compete with yourself',
     '💬 Integrates with Claude Code statusline'
   ]
