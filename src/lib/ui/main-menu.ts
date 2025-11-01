@@ -373,6 +373,17 @@ async function handleMenuAction(
         await waitForEnter();
       }
       break;
+
+    case 'cursor-stats':
+      try {
+        const { cursorStats } = await import('../../commands/cursor-stats');
+        await cursorStats();
+        await waitForEnter();
+      } catch (error) {
+        displayError(error);
+        await waitForEnter();
+      }
+      break;
       
     case 'dashboard':
       if (state.cloudUrl) {
