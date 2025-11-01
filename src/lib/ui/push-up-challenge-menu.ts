@@ -29,45 +29,8 @@ export async function showPushUpChallengeMenu(firstTime: boolean = false): Promi
 
   console.clear();
   console.log(chalk.bold('\n💪 You\'re Absolutely Right - Push-Up Challenge\n'));
-
-  if (config.enabled) {
-    // Detect current statusline status
-    const settings = await readGlobalSettings();
-    let statuslineStatus = '❌';
-    if (settings?.statusLine?.command) {
-      if (settings.statusLine.command.includes('statusline-challenge')) {
-        statuslineStatus = '✅';
-      } else if (settings.statusLine.command.includes('statusline')) {
-        statuslineStatus = '⚠️';
-      } else {
-        statuslineStatus = '⚠️';
-      }
-    }
-
-    // Simple single-line display
-    console.log(colors.muted('Active • ') +
-      chalk.white(`${config.pushUpsPerTrigger} per validation`) +
-      colors.muted(' • Debt: ') +
-      chalk.white(`${stats.debt}`) +
-      colors.muted(' • Done: ') +
-      chalk.white(`${stats.completed}`) +
-      colors.muted(' • Statusline: ') +
-      statuslineStatus);
-  } else {
-    console.log(colors.warning('❌ Disabled'));
-    console.log();
-    console.log(chalk.white('The Rule: ') + chalk.cyan('Every "You are absolutely right" from Claude = 1 push-up'));
-    console.log();
-    console.log(chalk.white('Live monitoring:'));
-    console.log(colors.muted('  ✅ Statusline - see your count while coding'));
-    console.log();
-    console.log(chalk.white('Long-term tracking (cloud sync):'));
-    console.log(colors.muted('  ✅ Daily emails - "Yesterday: 23 push-ups"'));
-    console.log(colors.muted('  ✅ Weekly summaries - your week at a glance'));
-    console.log();
-    console.log(colors.muted('Honor system - you actually do the push-ups 💪'));
-  }
-
+  console.log();
+  console.log(chalk.bold('The Rule: Every "You are absolutely right" from Claude = 1 push-up'));
   console.log();
 
   // Build choices with statusline management
@@ -211,17 +174,7 @@ async function buildEnabledMenuChoices(stats: any): Promise<any[]> {
       name: '📧 Track this in your daily standup email',
       value: 'setup-daily-email'
     });
-    // Add non-selectable benefit details below
-    choices.push(new inquirer.Separator('   Wake up every morning with an email containing:'));
-    choices.push(new inquirer.Separator('   ✅ Yesterday\'s accomplishments with metrics'));
-    choices.push(new inquirer.Separator('   💪 Your push-up stats and streaks'));
-    choices.push(new inquirer.Separator('   🎯 Strategic focus for today'));
-    choices.push(new inquirer.Separator('   📊 Productivity insights over time'));
-    choices.push(new inquirer.Separator(''));
-    choices.push(new inquirer.Separator('   Perfect for team standups, status reports,'));
-    choices.push(new inquirer.Separator('   and never forgetting what you built.'));
-    choices.push(new inquirer.Separator(''));
-    choices.push(new inquirer.Separator('   (Requires free cloud sync)'));
+
   }
 
   choices.push(new inquirer.Separator());
@@ -232,8 +185,10 @@ async function buildEnabledMenuChoices(stats: any): Promise<any[]> {
 
 async function showFirstTimeSetup(): Promise<void> {
   console.clear();
-  console.log(chalk.bold('\n💪 Push-Up Challenge Setup'));
-  console.log(colors.muted('Do push-ups when Claude validates you!\n'));
+  console.log(chalk.bold('\n💪 Push-Up Challenge Setup\n'));
+ 
+  console.log(chalk.bold('The Rule: Every "You are absolutely right" from Claude = 1 push-up'));
+  console.log();
 
   const { enable } = await inquirer.prompt([
     { type: 'confirm', name: 'enable', message: 'Enable push-up challenge?', default: true }
@@ -264,8 +219,14 @@ async function enableChallenge(): Promise<void> {
   setPushUpChallengeEnabled(true, answers.pushUpsPerTrigger);
   await claudeSettingsManager.installPushUpChallengeHook();
 
-  // Sync to server
-  await syncPushUpStats();
+  // Check authentication status once for both sync and email setup
+  const { isAuthenticated } = await import('../auth/token');
+  const isLoggedIn = await isAuthenticated();
+
+  // Sync to server only if authenticated
+  if (isLoggedIn) {
+    await syncPushUpStats();
+  }
 
   console.log(colors.success('\n✅ Challenge enabled!'));
 
@@ -281,6 +242,22 @@ async function enableChallenge(): Promise<void> {
   } else {
     console.log();
   }
+
+  // If not authenticated, offer email setup
+  if (!isLoggedIn) {
+    const { setupEmail } = await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'setupEmail',
+        message: 'Want daily emails with your push-up stats and coding session summaries for standups?',
+        default: true
+      }
+    ]);
+
+    if (setupEmail) {
+      await setupDailyEmail();
+    }
+  }
 }
 
 async function disableChallenge(): Promise<void> {
@@ -292,8 +269,12 @@ async function disableChallenge(): Promise<void> {
     setPushUpChallengeEnabled(false);
     await claudeSettingsManager.uninstallPushUpChallengeHook();
 
-    // Sync to server
-    await syncPushUpStats();
+    // Sync to server only if authenticated
+    const { isAuthenticated } = await import('../auth/token');
+    const isLoggedIn = await isAuthenticated();
+    if (isLoggedIn) {
+      await syncPushUpStats();
+    }
 
     console.log(colors.success('\n✅ Disabled'));
   }
@@ -331,7 +312,13 @@ async function settleDebt(): Promise<void> {
     // Mark push-ups as completed and reduce debt
     recordPushUpsCompleted(amount);
     incrementPushUpDebt(-amount);
-    await syncPushUpStats();
+
+    // Sync to server only if authenticated
+    const { isAuthenticated } = await import('../auth/token');
+    const isLoggedIn = await isAuthenticated();
+    if (isLoggedIn) {
+      await syncPushUpStats();
+    }
 
     console.log(colors.success(`\n✅ Marked ${amount} push-ups as completed!`));
     console.log();
@@ -365,7 +352,14 @@ async function resetChallenge(): Promise<void> {
   if (confirm) {
     // Reset all stats
     resetPushUpStats();
-    await syncPushUpStats();
+
+    // Sync to server only if authenticated
+    const { isAuthenticated } = await import('../auth/token');
+    const isLoggedIn = await isAuthenticated();
+    if (isLoggedIn) {
+      await syncPushUpStats();
+    }
+
     console.log(colors.success('\n✅ Challenge reset! Starting fresh.'));
   } else {
     console.log(colors.muted('\n❌ Reset cancelled.'));

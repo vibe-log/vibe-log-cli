@@ -33,7 +33,7 @@ export async function showPrivacyNotice(): Promise<boolean> {
   console.log('');
   console.log(' We take privacy seriously, vibe-log cloud will:');
   console.log(colors.success(`  ${icons.check} Analyze sessions on our infrastructure`));
-  console.log(colors.error(`  ${icons.cross} Never store your actual code or personal data`));
+  console.log(colors.success(`  ${icons.check} Your code and personal data never leaves your machine`));
   console.log('');
   console.log(colors.subdued('  Your code and sensitive information stay private.'));
   console.log('');

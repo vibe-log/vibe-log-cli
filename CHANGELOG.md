@@ -5,6 +5,29 @@ All notable changes to the vibe-log-cli project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.6] - 2025-10-31
+
+### Added
+- **Email Setup Integration**: Push-up challenge now prompts users to enable daily emails with push-up stats and coding session summaries for standups
+  - Automatically triggers cloud setup wizard if user isn't authenticated
+  - Default "Yes" for streamlined onboarding
+  - Only appears for non-authenticated users to avoid duplicate prompts
+
+### Fixed
+- **Authentication Checks**: Push-up stats sync now only attempts when user is authenticated
+  - Prevents 401 Unauthorized errors during challenge enable/disable/settle/reset operations
+  - Silently skips sync for local-only users
+  - All sync operations check authentication status first
+
+### Improved
+- **Privacy Notice Clarity**: Updated privacy notice text to be more positive and clear
+  - Changed from "Never store" to "Your code and personal data never leaves your machine"
+  - More reassuring messaging about data privacy
+- **Push-Up Menu Simplification**: Streamlined push-up challenge menu display
+  - Removed verbose benefit descriptions from disabled state
+  - Cleaner, more focused UI
+  - "The Rule" now displayed prominently in both main menu and first-time setup
+
 ## [0.7.5] - 2025-10-31
 
 ### Fixed
