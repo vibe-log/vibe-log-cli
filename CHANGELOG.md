@@ -5,6 +5,42 @@ All notable changes to the vibe-log-cli project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Cursor IDE Integration**: Full support for tracking Cursor IDE conversations and validations
+  - New "View Cursor IDE stats" menu option shows conversation and message counts
+  - Automatic validation phrase detection in Cursor assistant responses
+  - Push-up challenge now tracks validation phrases in both Claude Code AND Cursor IDE
+  - Supports both legacy and modern Cursor conversation formats
+  - Cross-platform support (macOS, Windows, Linux)
+  - Shared validation patterns between Claude Code and Cursor (8 over-validation phrases)
+  - Real-time push-up debt tracking when viewing Cursor stats
+  - **Time-Based Statistics**: Cursor push-up stats now show time periods
+    - This week (Monday-Sunday)
+    - Last week
+    - This month
+    - This year
+
+### Technical
+- Added `better-sqlite3` dependency for Cursor database access
+- New `src/lib/readers/cursor.ts` module for Cursor data extraction
+- Enhanced `countCursorMessages()` function for statistics
+- New `getCursorMessagesSince()` function for incremental message scanning
+- Shared `VALIDATION_PATTERNS` constant in config for consistency
+- Modern Cursor conversation support with bubble text lookup
+- New `ValidationDetection` interface for tracking validation history with timestamps
+- New `TimeBasedStats` interface for week/month/year aggregations
+- **Timestamp Extraction**: Messages now include original timestamps from Cursor database
+  - Legacy format: Extracts from individual message timestamp field
+  - Modern format: Uses conversation-level createdAt/lastUpdatedAt timestamps
+  - Ensures accurate time-based statistics reflecting when validations actually occurred
+- **Direct Database Calculation**: Cursor time stats calculated from full database scan
+  - `calculateCursorTimeStats()` scans ALL messages for accurate historical stats
+  - Returns all messages in addition to new messages for time-based calculations
+  - No persistent validation history needed for Cursor (database is source of truth)
+  - Validation history still used for Claude Code stats tracking
+
 ## [0.7.6] - 2025-10-31
 
 ### Added

@@ -132,3 +132,6 @@ C:\\
 # Test-generated files with Windows paths
 **/C:\\*
 **\\C:\\*
+
+# Reference/example projects (not part of build)
+cursor-chat-history-mcp/

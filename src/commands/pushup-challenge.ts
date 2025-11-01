@@ -485,7 +485,6 @@ Examples:
       }
     });
 
-
   return pushup;
 }
 
