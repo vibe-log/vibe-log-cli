@@ -113,12 +113,6 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
       action: 'standup'
     });
 
-    items.push({
-      id: 'cursor-stats',
-      label: `💬 View Cursor IDE stats`,
-      action: 'cursor-stats'
-    });
-
     items.push({ separator: true } as MenuItem);
 
     items.push({
@@ -162,12 +156,6 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
       id: 'standup',
       label: `📋 Today's standup`,
       action: 'standup'
-    });
-
-    items.push({
-      id: 'cursor-stats',
-      label: `💬 View Cursor IDE stats`,
-      action: 'cursor-stats'
     });
 
     // Add Push-Up Challenge menu item immediately after standup
@@ -237,12 +225,6 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
       id: 'standup',
       label: `📋 Today's standup`,
       action: 'standup'
-    });
-
-    items.push({
-      id: 'cursor-stats',
-      label: `💬 View Cursor IDE stats`,
-      action: 'cursor-stats'
     });
 
     // Add Push-Up Challenge menu item immediately after standup

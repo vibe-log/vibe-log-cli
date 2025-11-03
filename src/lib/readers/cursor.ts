@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import os from 'os';
+import fs from 'fs';
 import { VibelogError } from '../../utils/errors';
 
 interface CursorConversation {
@@ -44,6 +45,19 @@ function getCursorDatabasePath(): string {
 }
 
 /**
+ * Check if Cursor is installed on this system (cross-platform)
+ * @returns true if Cursor database exists, false otherwise
+ */
+export function isCursorInstalled(): boolean {
+  try {
+    const dbPath = getCursorDatabasePath();
+    return fs.existsSync(dbPath);
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
  * Check if conversation is legacy format
  */
 function isLegacyConversation(conversation: any): boolean {
@@ -78,13 +92,15 @@ export interface CursorMessagesResult {
   messages: CursorMessage[]; // New messages since last check
   allMessages: CursorMessage[]; // All messages for time-based stats
   totalCount: number;
+  maxTimestamp: number; // Latest message timestamp for next check
 }
 
 /**
- * Get Cursor messages since a specific message count
+ * Get Cursor messages since a specific timestamp
+ * @param sinceTimestamp Unix timestamp in milliseconds (0 = get all messages)
  */
 export async function getCursorMessagesSince(
-  sinceMessageCount: number
+  sinceTimestamp: number
 ): Promise<CursorMessagesResult> {
   const dbPath = getCursorDatabasePath();
   let db: Database.Database | null = null;
@@ -166,13 +182,19 @@ export async function getCursorMessagesSince(
       }
     }
 
-    // Get only new messages since the last check
-    const newMessages = allMessages.slice(sinceMessageCount);
+    // Filter messages by timestamp (more reliable than array slicing)
+    const newMessages = allMessages.filter(msg => msg.timestamp > sinceTimestamp);
+
+    // Find the maximum timestamp for next check
+    const maxTimestamp = allMessages.length > 0
+      ? Math.max(...allMessages.map(m => m.timestamp))
+      : sinceTimestamp;
 
     return {
       messages: newMessages,
       allMessages: allMessages, // Include all messages for time-based stats
-      totalCount: allMessages.length
+      totalCount: allMessages.length,
+      maxTimestamp: maxTimestamp
     };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {

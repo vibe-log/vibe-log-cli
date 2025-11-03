@@ -28,6 +28,7 @@ export interface ValidationDetection {
 
 export interface PushUpChallengeConfig {
   enabled: boolean;
+  cursorIntegrationEnabled?: boolean; // Enable/disable Cursor IDE validation tracking
   pushUpsPerTrigger: number;
   totalDebt: number;
   totalCompleted: number;
@@ -38,7 +39,7 @@ export interface PushUpChallengeConfig {
   todayCompleted: number;
   lastResetDate?: string;
   // Cursor IDE tracking
-  lastCursorMessageCount?: number;
+  lastCursorMessageTimestamp?: number; // Unix timestamp in milliseconds
   lastCursorCheckDate?: string;
   // Validation history (for Claude Code stats - Cursor calculates from database directly)
   validationHistory?: ValidationDetection[];
@@ -498,7 +499,7 @@ export function getPushUpChallengeConfig(): PushUpChallengeConfig {
     streakDays: 0,
     todayDebt: 0,
     todayCompleted: 0,
-    lastCursorMessageCount: 0,
+    lastCursorMessageTimestamp: 0,
     lastCursorCheckDate: undefined
   };
 }
@@ -521,6 +522,17 @@ export function setPushUpChallengeEnabled(
   });
 
   logger.debug(`Push-up challenge ${enabled ? 'enabled' : 'disabled'}`);
+}
+
+export function setCursorIntegrationEnabled(enabled: boolean): void {
+  const current = getPushUpChallengeConfig();
+
+  config.set('pushUpChallenge', {
+    ...current,
+    cursorIntegrationEnabled: enabled
+  });
+
+  logger.debug(`Cursor integration ${enabled ? 'enabled' : 'disabled'}`);
 }
 
 
@@ -779,8 +791,8 @@ export interface CursorPushUpResult {
 export async function checkAndUpdateCursorPushUps(): Promise<CursorPushUpResult> {
   const current = getPushUpChallengeConfig();
 
-  // If main challenge is not enabled, return early
-  if (!current.enabled) {
+  // If main challenge is not enabled OR cursor integration is not enabled, return early
+  if (!current.enabled || !current.cursorIntegrationEnabled) {
     return {
       newMessages: 0,
       pushUpsAdded: 0,
@@ -788,11 +800,11 @@ export async function checkAndUpdateCursorPushUps(): Promise<CursorPushUpResult>
     };
   }
 
-  const lastCount = current.lastCursorMessageCount || 0;
+  const lastTimestamp = current.lastCursorMessageTimestamp || 0;
 
   // Get messages from Cursor database
   const { getCursorMessagesSince } = await import('./readers/cursor');
-  const result = await getCursorMessagesSince(lastCount);
+  const result = await getCursorMessagesSince(lastTimestamp);
 
   const newMessages = result.messages.length;
   const validationPhrasesDetected: string[] = [];
@@ -817,20 +829,23 @@ export async function checkAndUpdateCursorPushUps(): Promise<CursorPushUpResult>
     logger.debug(`Added ${pushUpsAdded} push-ups from ${validationPhrasesDetected.length} validations in Cursor`);
   }
 
-  // Update last message count and check date
+  // Get FRESH config after increments
+  const updated = getPushUpChallengeConfig();
+
+  // Update last message timestamp and check date
   config.set('pushUpChallenge', {
-    ...current,
-    lastCursorMessageCount: result.totalCount,
+    ...updated,
+    lastCursorMessageTimestamp: result.maxTimestamp,
     lastCursorCheckDate: new Date().toISOString().split('T')[0]
   });
 
   // Calculate time-based stats from ALL messages
-  const timeStats = calculateCursorTimeStats(result.allMessages, current.pushUpsPerTrigger);
+  const timeStats = calculateCursorTimeStats(result.allMessages, updated.pushUpsPerTrigger);
 
   return {
     newMessages,
     pushUpsAdded,
-    totalDebt: current.totalDebt + pushUpsAdded,
+    totalDebt: updated.totalDebt,
     validationPhrasesDetected,
     timeStats
   };
