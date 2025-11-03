@@ -5,11 +5,14 @@ import {
   getPushUpChallengeConfig,
   getPushUpStats,
   setPushUpChallengeEnabled,
+  setCursorIntegrationEnabled,
   recordPushUpsCompleted,
   incrementPushUpDebt,
   resetPushUpStats,
-  getDashboardUrl
+  getDashboardUrl,
+  checkAndUpdateCursorPushUps
 } from '../config';
+import { isCursorInstalled } from '../readers/cursor';
 import { claudeSettingsManager } from '../claude-settings-manager';
 import { displayReceiptWithCopyOption } from './push-up-receipt';
 import { syncPushUpStats } from '../push-up-sync';
@@ -25,6 +28,18 @@ export async function showPushUpChallengeMenu(firstTime: boolean = false): Promi
   if (firstTime) {
     await showFirstTimeSetup();
     return;
+  }
+
+  // Auto-scan for new Cursor messages if integration is enabled
+  if (config.enabled && config.cursorIntegrationEnabled) {
+    try {
+      const result = await checkAndUpdateCursorPushUps();
+      if (result.pushUpsAdded > 0) {
+        console.log(colors.info(`\n💬 Cursor IDE: Found ${result.validationPhrasesDetected?.length || 0} new validation(s) - added ${result.pushUpsAdded} push-ups to debt\n`));
+      }
+    } catch (error) {
+      // Silently fail - don't block menu if Cursor scanning fails
+    }
   }
 
   console.clear();
@@ -57,6 +72,10 @@ export async function showPushUpChallengeMenu(firstTime: boolean = false): Promi
 
     case 'disable':
       await disableChallenge();
+      break;
+
+    case 'toggle-cursor':
+      await toggleCursorIntegration();
       break;
 
     case 'settle':
@@ -125,11 +144,20 @@ async function buildEnabledMenuChoices(stats: any): Promise<any[]> {
     }
   }
 
+  // Get cursor integration status
+  const config = getPushUpChallengeConfig();
+  const cursorEnabled = config.cursorIntegrationEnabled || false;
+
   const choices: any[] = [
     ...(stats.debt > 0
       ? [{ name: '💰 Settle debt', value: 'settle' }]
       : []
     ),
+    new inquirer.Separator(),
+    {
+      name: cursorEnabled ? '💬 Disable Cursor detection' : '💬 Enable Cursor detection',
+      value: 'toggle-cursor'
+    },
     new inquirer.Separator(),
     { name: '🔄 Reset challenge', value: 'reset' },
     { name: '❌ Disable', value: 'disable' },
@@ -210,6 +238,12 @@ async function enableChallenge(): Promise<void> {
     },
     {
       type: 'confirm',
+      name: 'enableCursorIntegration',
+      message: 'Enable Cursor IDE integration? (detect validations in Cursor conversations)',
+      default: true
+    },
+    {
+      type: 'confirm',
       name: 'installStatusline',
       message: 'Install challenge statusline in Claude Code?',
       default: true
@@ -217,6 +251,21 @@ async function enableChallenge(): Promise<void> {
   ]);
 
   setPushUpChallengeEnabled(true, answers.pushUpsPerTrigger);
+
+  // Enable Cursor integration if requested
+  if (answers.enableCursorIntegration) {
+    // Check if Cursor is actually installed (cross-platform)
+    const cursorInstalled = isCursorInstalled();
+
+    if (!cursorInstalled) {
+      console.log(colors.warning('\n⚠️  Cursor IDE not detected on this system'));
+      console.log(chalk.gray('   Cursor integration will be enabled, but no validations will be tracked'));
+      console.log(chalk.gray('   Install Cursor at https://cursor.sh and restart the CLI to start tracking\n'));
+    }
+
+    setCursorIntegrationEnabled(true);
+  }
+
   await claudeSettingsManager.installPushUpChallengeHook();
 
   // Check authentication status once for both sync and email setup
@@ -229,6 +278,21 @@ async function enableChallenge(): Promise<void> {
   }
 
   console.log(colors.success('\n✅ Challenge enabled!'));
+
+  // If Cursor integration was enabled, scan immediately
+  if (answers.enableCursorIntegration) {
+    console.log(colors.info('💬 Scanning Cursor IDE for validations...'));
+    try {
+      const result = await checkAndUpdateCursorPushUps();
+      if (result.pushUpsAdded > 0) {
+        console.log(colors.info(`   Found ${result.validationPhrasesDetected?.length || 0} validation(s) - added ${result.pushUpsAdded} push-ups`));
+      } else {
+        console.log(colors.muted('   No validations found in Cursor'));
+      }
+    } catch (error) {
+      console.log(colors.warning('   Could not scan Cursor (may not be installed)'));
+    }
+  }
 
   // Optionally install statusline
   if (answers.installStatusline) {
@@ -277,6 +341,44 @@ async function disableChallenge(): Promise<void> {
     }
 
     console.log(colors.success('\n✅ Disabled'));
+  }
+}
+
+async function toggleCursorIntegration(): Promise<void> {
+  const config = getPushUpChallengeConfig();
+  const currentlyEnabled = config.cursorIntegrationEnabled || false;
+  const newState = !currentlyEnabled;
+
+  setCursorIntegrationEnabled(newState);
+
+  if (newState) {
+    // Check if Cursor is actually installed (cross-platform)
+    const cursorInstalled = isCursorInstalled();
+
+    if (!cursorInstalled) {
+      console.log(colors.warning('\n⚠️  Cursor IDE not detected on this system'));
+      console.log(chalk.gray('   Cursor integration enabled, but no validations will be tracked'));
+      console.log(chalk.gray('   Install Cursor at https://cursor.sh and restart to start tracking\n'));
+      return;
+    }
+
+    console.log(colors.success('\n✅ Cursor IDE integration enabled!'));
+    console.log(chalk.cyan('💡 Validations from Cursor will now be tracked automatically\n'));
+
+    // Immediately scan for new messages
+    try {
+      const result = await checkAndUpdateCursorPushUps();
+      if (result.pushUpsAdded > 0) {
+        console.log(colors.info(`💬 Found ${result.validationPhrasesDetected?.length || 0} validation(s) - added ${result.pushUpsAdded} push-ups to debt\n`));
+      } else if (result.newMessages > 0) {
+        console.log(colors.muted(`💬 Scanned ${result.newMessages} new message(s) - no validations found\n`));
+      }
+    } catch (error) {
+      console.log(colors.warning('⚠️  Could not scan Cursor messages\n'));
+    }
+  } else {
+    console.log(colors.success('\n✅ Cursor IDE integration disabled'));
+    console.log(chalk.gray('   Only Claude Code validations will be tracked\n'));
   }
 }
 

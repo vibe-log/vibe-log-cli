@@ -4,6 +4,7 @@ import { apiClient } from '../lib/api-client';
 import { createSpinner, formatDuration, formatDate } from '../lib/ui';
 import { VibelogError } from '../utils/errors';
 import { logger } from '../utils/logger';
+import { countCursorMessages } from '../lib/readers/cursor';
 
 export async function status(): Promise<void> {
   await requireAuth();
@@ -80,7 +81,24 @@ export async function status(): Promise<void> {
       logger.debug('Failed to fetch recent sessions', error);
       // Don't fail the whole command if recent sessions fail
     }
-    
+
+    // Cursor IDE message count
+    try {
+      const cursorStats = await countCursorMessages();
+
+      if (cursorStats.conversationCount > 0) {
+        console.log(chalk.gray('\n═══════════════════════════════\n'));
+        console.log(chalk.cyan('💬 Cursor IDE Stats:'));
+        console.log(chalk.gray(`   • Total Conversations: ${chalk.bold(cursorStats.conversationCount)}`));
+        console.log(chalk.gray(`   • Total Messages: ${chalk.bold(cursorStats.totalMessages)}`));
+        console.log(chalk.gray(`   • User Messages: ${chalk.bold(cursorStats.userMessages)}`));
+        console.log(chalk.gray(`   • Assistant Messages: ${chalk.bold(cursorStats.assistantMessages)}`));
+      }
+    } catch (error) {
+      logger.debug('Failed to fetch Cursor stats', error);
+      // Don't fail the whole command if Cursor stats fail
+    }
+
     // Motivational messages based on streak (only show for valid data)
     console.log('');
     if (streak.current === 0) {
