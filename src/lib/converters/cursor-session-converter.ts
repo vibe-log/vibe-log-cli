@@ -98,8 +98,9 @@ export class CursorSessionConverter {
     // Convert messages to vibe-log format
     const messages = this.convertMessages(conversation.messages);
 
-    // Calculate session duration
-    const duration = this.calculateDuration(conversation.messages);
+    // Calculate session duration from conversation timestamps (not message timestamps)
+    // Modern Cursor format: all messages have same timestamp, so use createdAt/lastUpdatedAt
+    const duration = this.calculateDurationFromConversation(conversation);
 
     // Extract metadata
     const metadata = this.extractMetadata(conversation.messages);
@@ -179,6 +180,31 @@ export class CursorSessionConverter {
 
     // Ensure at least 60 seconds for multi-message sessions
     return Math.max(60, durationSeconds);
+  }
+
+  /**
+   * Calculate session duration from conversation timestamps
+   * Uses createdAt and lastUpdatedAt from the conversation metadata
+   * This is more reliable for modern Cursor format where all messages have the same timestamp
+   */
+  private static calculateDurationFromConversation(conversation: CursorConversation): number {
+    // If we have both timestamps, use them
+    if (conversation.createdAt && conversation.lastUpdatedAt) {
+      const durationMs = conversation.lastUpdatedAt - conversation.createdAt;
+      let durationSeconds = Math.floor(durationMs / 1000);
+
+      // Cap at MAX_SESSION_HOURS
+      const maxSeconds = this.MAX_SESSION_HOURS * 60 * 60;
+      if (durationSeconds > maxSeconds) {
+        durationSeconds = maxSeconds;
+      }
+
+      // Return at least 60 seconds if we have multiple messages
+      return conversation.messages.length > 1 ? Math.max(60, durationSeconds) : durationSeconds;
+    }
+
+    // Fallback to message-based calculation (for legacy format)
+    return this.calculateDuration(conversation.messages);
   }
 
   /**

@@ -69,14 +69,26 @@ export async function cursorUpload(options: CursorUploadOptions = {}): Promise<v
 
     const conversionResult = CursorSessionConverter.convertConversations(cursorResult.conversations);
 
-    if (conversionResult.skippedSessions.length > 0 && !options.silent) {
-      console.log(chalk.yellow(`\n⚠️  Skipped ${conversionResult.skippedSessions.length} session(s) (too short or invalid)`));
+    if (conversionResult.skippedSessions.length > 0) {
+      console.log(chalk.yellow(`\n⚠️  Skipped ${conversionResult.skippedSessions.length} session(s):`));
+
+      if (process.env.VIBELOG_DEBUG === 'true') {
+        conversionResult.skippedSessions.forEach((skipped, idx) => {
+          console.log(chalk.dim(`  ${idx + 1}. ${skipped.composerId.slice(0, 8)}: ${skipped.reason}`));
+        });
+      } else if (!options.silent) {
+        console.log(chalk.dim('  (Run with VIBELOG_DEBUG=true to see details)'));
+      }
     }
 
     if (conversionResult.sessions.length === 0) {
       convertSpinner.fail('No valid sessions to upload');
       console.log(chalk.yellow('\n⚠️  No valid Cursor sessions to upload after filtering.'));
-      console.log(chalk.dim('Sessions must be at least 4 minutes long.'));
+      console.log(chalk.dim('Sessions must be at least 4 minutes (240 seconds) long.'));
+
+      if (process.env.VIBELOG_DEBUG === 'true') {
+        console.log(chalk.dim('\n[DEBUG] All sessions were filtered out. Check reasons above.'));
+      }
       return;
     }
 
@@ -223,5 +235,7 @@ function handleError(error: unknown, options: CursorUploadOptions): void {
   }
 
   logger.error('Cursor upload error:', error);
-  process.exit(1);
+
+  // Don't exit - let error propagate to allow CLI to handle it gracefully
+  throw error;
 }
