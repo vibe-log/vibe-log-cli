@@ -45,6 +45,121 @@ function getCursorDatabasePath(): string {
 }
 
 /**
+ * Get the Cursor workspaceStorage directory path based on platform
+ */
+function getCursorWorkspaceStoragePath(): string {
+  const platform = os.platform();
+
+  if (platform === 'darwin') {
+    return path.join(os.homedir(), 'Library/Application Support/Cursor/User/workspaceStorage');
+  } else if (platform === 'win32') {
+    const appData = process.env.APPDATA || path.join(os.homedir(), 'AppData/Roaming');
+    return path.join(appData, 'Cursor/User/workspaceStorage');
+  } else {
+    // Linux
+    return path.join(os.homedir(), '.config/Cursor/User/workspaceStorage');
+  }
+}
+
+/**
+ * Discover all Cursor workspaces and map them to project paths
+ * @returns Map of workspace database paths to project directory names
+ */
+function discoverWorkspaceProjects(): Map<string, string> {
+  const workspaceMap = new Map<string, string>();
+  const workspaceStoragePath = getCursorWorkspaceStoragePath();
+
+  try {
+    if (!fs.existsSync(workspaceStoragePath)) {
+      return workspaceMap;
+    }
+
+    const workspaceDirs = fs.readdirSync(workspaceStoragePath);
+
+    for (const workspaceHash of workspaceDirs) {
+      const workspaceDir = path.join(workspaceStoragePath, workspaceHash);
+      const workspaceJsonPath = path.join(workspaceDir, 'workspace.json');
+      const stateDbPath = path.join(workspaceDir, 'state.vscdb');
+
+      // Only process if both workspace.json and state.vscdb exist
+      if (!fs.existsSync(workspaceJsonPath) || !fs.existsSync(stateDbPath)) {
+        continue;
+      }
+
+      try {
+        const workspaceData = JSON.parse(fs.readFileSync(workspaceJsonPath, 'utf-8'));
+        const folderUri = workspaceData.folder;
+
+        if (folderUri && typeof folderUri === 'string') {
+          // Decode URI: "file:///c%3A/projects/my-app" -> "c:/projects/my-app"
+          const decodedPath = decodeURIComponent(folderUri.replace('file:///', ''));
+
+          // Extract directory name (last segment of path)
+          // Handle both forward and backslashes
+          const projectName = path.basename(decodedPath.replace(/\\/g, '/'));
+
+          // Map the database path to the project name
+          workspaceMap.set(stateDbPath, projectName);
+        }
+      } catch (error) {
+        // Skip workspaces with invalid JSON or missing data
+        continue;
+      }
+    }
+
+    return workspaceMap;
+  } catch (error) {
+    // Return empty map if we can't access workspace storage
+    return workspaceMap;
+  }
+}
+
+/**
+ * Build a map of composer IDs to project names by reading workspace databases
+ * @returns Map of composer IDs to project directory names
+ */
+function buildComposerToProjectMap(): Map<string, string> {
+  const composerToProject = new Map<string, string>();
+  const workspaceProjectMap = discoverWorkspaceProjects();
+
+  // For each workspace database, read its composer data
+  for (const [dbPath, projectName] of workspaceProjectMap.entries()) {
+    try {
+      if (!fs.existsSync(dbPath)) {
+        continue;
+      }
+
+      const db = new Database(dbPath, { readonly: true });
+
+      try {
+        // Query for composer.composerData key in ItemTable
+        const stmt = db.prepare('SELECT value FROM ItemTable WHERE key = ?');
+        const row = stmt.get('composer.composerData') as { value: string } | undefined;
+
+        if (row) {
+          const composerData = JSON.parse(row.value);
+          const composers = composerData.allComposers || [];
+
+          // Map each composer ID to this project
+          for (const composer of composers) {
+            if (composer.composerId) {
+              composerToProject.set(composer.composerId, projectName);
+            }
+          }
+        }
+      } finally {
+        db.close();
+      }
+    } catch (error) {
+      // Skip workspaces that can't be read
+      continue;
+    }
+  }
+
+  return composerToProject;
+}
+
+/**
  * Check if Cursor is installed on this system (cross-platform)
  * @returns true if Cursor database exists, false otherwise
  */
@@ -117,6 +232,9 @@ export async function getCursorConversations(
 }> {
   const dbPath = getCursorDatabasePath();
   let db: Database.Database | null = null;
+
+  // Build composer-to-project mapping
+  const composerToProject = buildComposerToProjectMap();
 
   try {
     db = new Database(dbPath, { readonly: true });
@@ -202,12 +320,15 @@ export async function getCursorConversations(
 
         // Only include conversations with messages
         if (messages.length > 0) {
+          // Look up project name from composer-to-project map
+          const projectName = composerToProject.get(conversation.composerId);
+
           conversations.push({
             composerId: conversation.composerId,
             messages,
             createdAt: conversation.createdAt || Date.now(),
             lastUpdatedAt: conversation.lastUpdatedAt || conversation.createdAt || Date.now(),
-            workspacePath: undefined // Cursor DB doesn't store this
+            workspacePath: projectName // Now resolved from workspace databases!
           });
           totalMessageCount += messages.length;
         }
