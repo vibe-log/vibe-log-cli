@@ -262,6 +262,12 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
     });
 
     items.push({
+      id: 'cursor-upload',
+      label: `📤 Upload Cursor IDE sessions`,
+      action: 'cursor-upload'
+    });
+
+    items.push({
       id: 'manage-hooks',
       label: `⚙️ Configure auto-sync (Claude Code hooks)`,
       action: 'manage-hooks'

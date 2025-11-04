@@ -364,6 +364,16 @@ async function handleMenuAction(
         await waitForEnter();
       }
       break;
+
+    case 'cursor-upload':
+      try {
+        const { cursorUpload } = await import('../../commands/cursor-upload');
+        await cursorUpload();
+      } catch (error) {
+        displayError(error);
+        await waitForEnter();
+      }
+      break;
       
     case 'status':
       try {

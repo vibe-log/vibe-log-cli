@@ -11,6 +11,7 @@ import { createRefreshPushUpChallengeStatuslineCommand } from './commands/refres
 import { createTestPersonalityCommand } from './commands/test-personality';
 import { createPushUpCommand } from './commands/pushup-challenge';
 import { installAutoSync } from './commands/install-auto-sync';
+import { cursorUpload } from './commands/cursor-upload';
 import { showLogo } from './lib/ui';
 import { handleError } from './utils/errors';
 import { logger } from './utils/logger';
@@ -195,6 +196,21 @@ program
   .action(async () => {
     try {
       await installAutoSync();
+    } catch (error) {
+      handleError(error);
+    }
+  });
+
+// Add cursor-upload command for uploading Cursor IDE sessions
+program
+  .command('cursor-upload', { hidden: true })
+  .description('Upload Cursor IDE sessions to Vibelog')
+  .option('--date-range <range>', 'Date range: all, 7days, 30days (default: prompt)', '7days')
+  .option('-d, --dry', 'Preview without uploading')
+  .option('--silent', 'Run in silent mode')
+  .action(async (options) => {
+    try {
+      await cursorUpload(options);
     } catch (error) {
       handleError(error);
     }
