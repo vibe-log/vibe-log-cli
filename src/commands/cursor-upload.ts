@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import inquirer from 'inquirer';
-import { getCursorMessagesSince } from '../lib/readers/cursor';
-import { CursorSessionConverter, CursorMessage } from '../lib/converters/cursor-session-converter';
+import { getCursorConversations } from '../lib/readers/cursor';
+import { CursorSessionConverter } from '../lib/converters/cursor-session-converter';
 import { SendOrchestrator, SendOptions } from '../lib/orchestrators/send-orchestrator';
 import { SendProgressUI } from '../lib/ui/send/send-progress';
 import { SendSummaryUI } from '../lib/ui/send/send-summary';
@@ -36,11 +36,11 @@ export async function cursorUpload(options: CursorUploadOptions = {}): Promise<v
     // Step 1: Determine date range
     const sinceTimestamp = await determineDateRange(options);
 
-    // Step 2: Read Cursor database
+    // Step 2: Read Cursor database with full conversation metadata
     const spinner = progressUI.createSpinner('Reading Cursor database...');
     spinner.start();
 
-    const cursorResult = await getCursorMessagesSince(sinceTimestamp);
+    const cursorResult = await getCursorConversations(sinceTimestamp);
 
     if (cursorResult.totalCount === 0) {
       spinner.fail('No Cursor conversations found');
@@ -49,24 +49,25 @@ export async function cursorUpload(options: CursorUploadOptions = {}): Promise<v
       return;
     }
 
-    spinner.succeed(`Found ${cursorResult.totalCount} messages in Cursor database`);
+    spinner.succeed(`Found ${cursorResult.conversations.length} conversation(s) with ${cursorResult.totalCount} messages`);
 
-    // Step 3: Group messages by composerId
-    progressUI.showPreparing();
-    const conversations = groupMessagesByComposer(cursorResult.allMessages);
-
-    if (conversations.length === 0) {
-      console.log(chalk.yellow('\n⚠️  No conversations to process'));
-      return;
+    // Debug: Show conversation durations
+    if (process.env.VIBELOG_DEBUG === 'true') {
+      console.log('\n[DEBUG] Conversation durations:');
+      cursorResult.conversations.forEach((conv, idx) => {
+        const durationMin = Math.floor((conv.lastUpdatedAt - conv.createdAt) / 60000);
+        const durationSec = Math.floor((conv.lastUpdatedAt - conv.createdAt) / 1000);
+        console.log(`  ${idx + 1}. ${conv.composerId.slice(0, 8)}: ${conv.messages.length} msgs, ${durationMin} min (${durationSec}s)`);
+      });
     }
 
-    console.log(chalk.dim(`Grouped into ${conversations.length} conversation(s)`));
+    progressUI.showPreparing();
 
-    // Step 4: Convert to SessionData format
+    // Step 3: Convert to SessionData format
     const convertSpinner = progressUI.createSpinner('Converting Cursor sessions...');
     convertSpinner.start();
 
-    const conversionResult = CursorSessionConverter.convertConversations(conversations);
+    const conversionResult = CursorSessionConverter.convertConversations(cursorResult.conversations);
 
     if (conversionResult.skippedSessions.length > 0 && !options.silent) {
       console.log(chalk.yellow(`\n⚠️  Skipped ${conversionResult.skippedSessions.length} session(s) (too short or invalid)`));
@@ -81,7 +82,7 @@ export async function cursorUpload(options: CursorUploadOptions = {}): Promise<v
 
     convertSpinner.succeed(`Converted ${conversionResult.sessions.length} session(s)`);
 
-    // Step 5: Prepare sessions for upload (sanitize + format)
+    // Step 4: Prepare sessions for upload (sanitize + format)
     // 🔄 REUSING: SendOrchestrator.sanitizeSessions()
     const prepareSpinner = progressUI.createSpinner('Preparing sessions...');
     prepareSpinner.start();
@@ -98,7 +99,7 @@ export async function cursorUpload(options: CursorUploadOptions = {}): Promise<v
 
     prepareSpinner.succeed(`Prepared ${apiSessions.length} session(s) for upload`);
 
-    // Step 6: Show upload summary
+    // Step 5: Show upload summary
     // 🔄 REUSING: SendSummaryUI.showUploadSummary()
     const totalRedactions = countTotalRedactions(apiSessions);
     summaryUI.showUploadSummary(apiSessions, totalRedactions);
@@ -109,7 +110,7 @@ export async function cursorUpload(options: CursorUploadOptions = {}): Promise<v
       return;
     }
 
-    // Step 7: Confirm upload
+    // Step 6: Confirm upload
     // 🔄 REUSING: SendConfirmationUI.confirmUpload()
     const action = await confirmationUI.confirmUpload();
 
@@ -118,7 +119,7 @@ export async function cursorUpload(options: CursorUploadOptions = {}): Promise<v
       return;
     }
 
-    // Step 8: Upload sessions with progress
+    // Step 7: Upload sessions with progress
     // 🔄 REUSING: SendOrchestrator.uploadSessions()
     console.log(''); // Add blank line before progress
 
@@ -143,7 +144,7 @@ export async function cursorUpload(options: CursorUploadOptions = {}): Promise<v
       throw uploadError;
     }
 
-    // Step 9: Show results
+    // Step 8: Show results
     // 🔄 REUSING: showUploadResults()
     if (!options.silent) {
       showUploadResults(results);
@@ -188,55 +189,6 @@ async function determineDateRange(options: CursorUploadOptions): Promise<number>
 
   console.log(''); // Blank line after prompt
   return determineDateRange({ ...options, dateRange: range });
-}
-
-/**
- * Group Cursor messages by composerId to create conversations
- */
-function groupMessagesByComposer(messages: CursorMessage[]): Array<{
-  composerId: string;
-  messages: CursorMessage[];
-  workspacePath?: string;
-  createdAt: number;
-  lastUpdatedAt: number;
-}> {
-  // The messages returned from getCursorMessagesSince don't have composerId
-  // We need to handle this by treating all messages as separate conversations
-  // or group by timestamp proximity
-
-  // For now, we'll create a single conversation from all messages
-  // This is a simplified approach - in reality, Cursor DB structure is more complex
-
-  if (messages.length === 0) {
-    return [];
-  }
-
-  // Group messages by time gaps (>1 hour = new conversation)
-  const conversations: any[] = [];
-  let currentConversation: any = null;
-  const MAX_GAP_MS = 60 * 60 * 1000; // 1 hour
-
-  const sortedMessages = [...messages].sort((a, b) => a.timestamp - b.timestamp);
-
-  for (const msg of sortedMessages) {
-    if (!currentConversation || (msg.timestamp - currentConversation.lastUpdatedAt > MAX_GAP_MS)) {
-      // Start new conversation
-      currentConversation = {
-        composerId: msg.bubbleId || `cursor-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-        messages: [msg],
-        workspacePath: undefined, // Cursor reader doesn't provide this
-        createdAt: msg.timestamp,
-        lastUpdatedAt: msg.timestamp,
-      };
-      conversations.push(currentConversation);
-    } else {
-      // Add to current conversation
-      currentConversation.messages.push(msg);
-      currentConversation.lastUpdatedAt = msg.timestamp;
-    }
-  }
-
-  return conversations;
 }
 
 /**

@@ -203,7 +203,7 @@ program
 
 // Add cursor-upload command for uploading Cursor IDE sessions
 program
-  .command('cursor-upload', { hidden: true })
+  .command('cursor-upload')
   .description('Upload Cursor IDE sessions to Vibelog')
   .option('--date-range <range>', 'Date range: all, 7days, 30days (default: prompt)', '7days')
   .option('-d, --dry', 'Preview without uploading')

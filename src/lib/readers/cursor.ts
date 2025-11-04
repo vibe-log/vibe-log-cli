@@ -99,6 +99,134 @@ export interface CursorMessagesResult {
  * Get Cursor messages since a specific timestamp
  * @param sinceTimestamp Unix timestamp in milliseconds (0 = get all messages)
  */
+/**
+ * Get Cursor conversations with full metadata (composerId, timestamps)
+ * This preserves conversation structure instead of flattening messages
+ */
+export async function getCursorConversations(
+  sinceTimestamp: number
+): Promise<{
+  conversations: Array<{
+    composerId: string;
+    messages: CursorMessage[];
+    createdAt: number;
+    lastUpdatedAt: number;
+    workspacePath?: string;
+  }>;
+  totalCount: number;
+}> {
+  const dbPath = getCursorDatabasePath();
+  let db: Database.Database | null = null;
+
+  try {
+    db = new Database(dbPath, { readonly: true });
+
+    const sql = `
+      SELECT value FROM cursorDiskKV
+      WHERE key LIKE 'composerData:%'
+      AND length(value) > 1000
+    `;
+
+    const stmt = db.prepare(sql);
+    const rows = stmt.all() as Array<{ value: string }>;
+
+    const conversations: Array<{
+      composerId: string;
+      messages: CursorMessage[];
+      createdAt: number;
+      lastUpdatedAt: number;
+      workspacePath?: string;
+    }> = [];
+    let totalMessageCount = 0;
+
+    for (const row of rows) {
+      try {
+        const conversation = JSON.parse(row.value) as CursorConversation;
+        const messages: CursorMessage[] = [];
+
+        if (isLegacyConversation(conversation)) {
+          // Legacy format
+          const convMessages = conversation.conversation || [];
+          for (const message of convMessages) {
+            let timestamp: number;
+            if (message.timestamp) {
+              timestamp = new Date(message.timestamp).getTime();
+            } else {
+              timestamp = Date.now();
+            }
+
+            // Filter by sinceTimestamp
+            if (timestamp > sinceTimestamp) {
+              messages.push({
+                text: message.text,
+                type: message.type,
+                timestamp
+              });
+            }
+          }
+        } else if (isModernConversation(conversation)) {
+          // Modern format
+          const composerId = conversation.composerId;
+          const headers = conversation.fullConversationHeadersOnly || [];
+          const conversationTimestamp = conversation.createdAt || conversation.lastUpdatedAt || Date.now();
+
+          // Filter conversation by timestamp
+          if (conversationTimestamp > sinceTimestamp) {
+            for (const header of headers) {
+              // Process both user and assistant messages
+              if (header.bubbleId) {
+                const bubbleKey = `bubbleId:${composerId}:${header.bubbleId}`;
+
+                try {
+                  const bubbleQuery = db!.prepare('SELECT value FROM cursorDiskKV WHERE key = ?');
+                  const bubbleRow = bubbleQuery.get(bubbleKey) as { value: string } | undefined;
+
+                  if (bubbleRow) {
+                    const bubble = JSON.parse(bubbleRow.value);
+                    if (bubble.text) {
+                      messages.push({
+                        text: bubble.text,
+                        type: header.type,
+                        bubbleId: header.bubbleId,
+                        timestamp: conversationTimestamp
+                      });
+                    }
+                  }
+                } catch (bubbleError) {
+                  continue;
+                }
+              }
+            }
+          }
+        }
+
+        // Only include conversations with messages
+        if (messages.length > 0) {
+          conversations.push({
+            composerId: conversation.composerId,
+            messages,
+            createdAt: conversation.createdAt || Date.now(),
+            lastUpdatedAt: conversation.lastUpdatedAt || conversation.createdAt || Date.now(),
+            workspacePath: undefined // Cursor DB doesn't store this
+          });
+          totalMessageCount += messages.length;
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+
+    return {
+      conversations,
+      totalCount: totalMessageCount
+    };
+  } finally {
+    if (db) {
+      db.close();
+    }
+  }
+}
+
 export async function getCursorMessagesSince(
   sinceTimestamp: number
 ): Promise<CursorMessagesResult> {
