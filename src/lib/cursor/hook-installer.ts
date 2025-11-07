@@ -62,9 +62,9 @@ export class CursorHookInstaller {
     }
 
     // Check if our hook is already installed
-    const pushupCommand = 'npx vibe-log-cli cursor-hook-pushup';
+    const pushupCommand = 'npx vibe-log-cli@latest cursor-hook-pushup';
     const alreadyInstalled = config.hooks.afterAgentResponse.some(
-      (hook) => hook.command === pushupCommand
+      (hook) => hook.command === pushupCommand || hook.command === 'npx vibe-log-cli cursor-hook-pushup'
     );
 
     // Add our hook only if not already present

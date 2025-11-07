@@ -568,3 +568,112 @@ export async function countCursorMessages(options?: {
     }
   }
 }
+
+/**
+ * Get the most recent assistant message from Cursor
+ * Used by hooks to check for validation phrases
+ */
+export async function getLatestAssistantMessage(): Promise<string | null> {
+  const dbPath = getCursorDatabasePath();
+  let db: Database.Database | null = null;
+
+  try {
+    db = new Database(dbPath, { readonly: true });
+
+    // Get ALL conversations (no LIMIT) to ensure we don't miss the latest
+    const sql = `
+      SELECT value FROM cursorDiskKV
+      WHERE key LIKE 'composerData:%'
+    `;
+
+    const rows = db.prepare(sql).all() as { value: string }[];
+
+    // First pass: find the conversation with the most recent timestamp
+    let mostRecentConversation: {
+      conversation: CursorConversation;
+      timestamp: number;
+    } | null = null;
+
+    for (const row of rows) {
+      try {
+        const conversation: CursorConversation = JSON.parse(row.value);
+        let conversationTimestamp: number = 0;
+
+        if (isLegacyConversation(conversation)) {
+          // For legacy format, find the latest message timestamp
+          if (conversation.conversation) {
+            for (const msg of conversation.conversation) {
+              if (msg.type === 2 && msg.timestamp) { // Type 2 = assistant
+                const msgTimestamp = new Date(msg.timestamp).getTime();
+                if (msgTimestamp > conversationTimestamp) {
+                  conversationTimestamp = msgTimestamp;
+                }
+              }
+            }
+          }
+        } else if (isModernConversation(conversation)) {
+          // For modern format, use conversation's lastUpdatedAt
+          conversationTimestamp = conversation.lastUpdatedAt || conversation.createdAt || 0;
+        }
+
+        if (conversationTimestamp > 0 && (!mostRecentConversation || conversationTimestamp > mostRecentConversation.timestamp)) {
+          mostRecentConversation = { conversation, timestamp: conversationTimestamp };
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+
+    if (!mostRecentConversation) {
+      return null;
+    }
+
+    // Second pass: get the latest assistant message from the most recent conversation
+    const conversation = mostRecentConversation.conversation;
+
+    if (isLegacyConversation(conversation) && conversation.conversation) {
+      // Find the last assistant message
+      for (let i = conversation.conversation.length - 1; i >= 0; i--) {
+        const msg = conversation.conversation[i];
+        if (msg.type === 2 && msg.text) { // Type 2 = assistant
+          return msg.text;
+        }
+      }
+    } else if (isModernConversation(conversation)) {
+      // Modern format - get last assistant message
+      const composerId = conversation.composerId;
+      const headers = conversation.fullConversationHeadersOnly || [];
+
+      // Iterate backwards to find the last assistant message
+      for (let i = headers.length - 1; i >= 0; i--) {
+        const header = headers[i];
+        // Type 0 or 2 = assistant (different Cursor versions)
+        if ((header.type === 0 || header.type === 2) && header.bubbleId) {
+          const bubbleKey = `bubbleId:${composerId}:${header.bubbleId}`;
+
+          try {
+            const bubbleQuery = db.prepare('SELECT value FROM cursorDiskKV WHERE key = ?');
+            const bubbleRow = bubbleQuery.get(bubbleKey) as { value: string } | undefined;
+
+            if (bubbleRow) {
+              const bubble = JSON.parse(bubbleRow.value);
+              if (bubble.text) {
+                return bubble.text;
+              }
+            }
+          } catch (bubbleError) {
+            continue;
+          }
+        }
+      }
+    }
+
+    return null;
+  } catch (error) {
+    return null;
+  } finally {
+    if (db) {
+      db.close();
+    }
+  }
+}

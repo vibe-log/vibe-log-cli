@@ -5,47 +5,17 @@ import {
 } from '../lib/config';
 import { syncPushUpStats } from '../lib/push-up-sync';
 import { logger } from '../utils/logger';
-
-/**
- * Read stdin with a timeout
- * Reusing the same pattern from analyze-prompt.ts
- */
-async function readStdin(timeoutMs = 1000): Promise<string | null> {
-  return new Promise((resolve) => {
-    let input = '';
-    let hasData = false;
-
-    // Set timeout to check if stdin has data
-    const timeout = setTimeout(() => {
-      if (!hasData) {
-        resolve(null); // No stdin data
-      }
-    }, timeoutMs);
-
-    process.stdin.setEncoding('utf8');
-
-    process.stdin.on('readable', () => {
-      let chunk;
-      while ((chunk = process.stdin.read()) !== null) {
-        hasData = true;
-        input += chunk;
-      }
-    });
-
-    process.stdin.on('end', () => {
-      clearTimeout(timeout);
-      resolve(hasData ? input : null);
-    });
-  });
-}
+import { getLatestAssistantMessage } from '../lib/readers/cursor';
 
 /**
  * Detect validation phrases in text
  * Only checks for "absolutely right" variations
+ * Handles both ASCII apostrophe (') and smart apostrophe (')
  */
 function detectValidationPhrases(text: string): string[] {
   const patterns = [
-    { regex: /you('re|\s+are)\s+absolutely\s+right/i, phrase: "you're absolutely right" },
+    // Matches: "you're", "you're" (smart apostrophe), "you are"
+    { regex: /you(['']re|\s+are)\s+absolutely\s+right/i, phrase: "you're absolutely right" },
   ];
 
   const detected: string[] = [];
@@ -60,50 +30,34 @@ function detectValidationPhrases(text: string): string[] {
 
 /**
  * Hook command for Cursor afterAgentResponse - detects validation phrases
- * Zero computational cost - just local state update
+ * Workaround: Cursor hooks don't send stdin data, so we scan the database
  *
- * Logging: Set VIBE_LOG_OUTPUT environment variable to enable file logging
- * Example: VIBE_LOG_OUTPUT=~/.vibe-log/cursor-hook.log
+ * Logging: Always logs to ~/.vibe-log/cursor-hook.log for debugging
  */
 export async function cursorHookPushup(): Promise<void> {
-  // Silence stdout/stderr for hooks (Cursor expects only JSON/no output)
-  // But allow file logging if VIBE_LOG_OUTPUT is set
-  if (process.env.VIBE_LOG_OUTPUT) {
-    logger.setLevel('debug');
-  } else {
-    logger.setLevel('error');
-  }
+  // Force file logging to hardcoded path (Cursor doesn't pass env vars reliably on Windows)
+  const os = await import('os');
+  const path = await import('path');
+  process.env.VIBE_LOG_OUTPUT = path.join(os.homedir(), '.vibe-log', 'cursor-hook.log');
+
+  // Enable debug logging since we're forcing file output
+  logger.setLevel('debug');
 
   try {
-    // Read hook payload from stdin
-    const stdin = await readStdin();
+    logger.debug('Cursor hook triggered - scanning database for latest message');
 
-    // Debug: Log hook invocation
-    logger.debug('Cursor hook invoked', {
-      hasStdin: !!stdin,
-      stdinLength: stdin?.length || 0,
-      stdinPreview: stdin?.substring(0, 200) || 'NO DATA'
+    // Get latest assistant message from database
+    const latestMessage = await getLatestAssistantMessage();
+
+    logger.debug('Latest message retrieved', {
+      hasMessage: !!latestMessage,
+      messageLength: latestMessage?.length || 0,
+      messagePreview: latestMessage?.substring(0, 200) || 'NO MESSAGE'
     });
 
-    if (!stdin) {
-      logger.debug('No stdin data received');
-      return; // No data to analyze
-    }
-
-    // Parse payload - afterAgentResponse sends {"text": "..."}
-    let payload: { text?: string } = {};
-    try {
-      payload = JSON.parse(stdin);
-      logger.debug('Parsed as JSON', { hasText: !!payload.text });
-    } catch {
-      // If not JSON, treat entire stdin as text
-      payload = { text: stdin };
-      logger.debug('Not JSON, treating as plain text');
-    }
-
-    if (!payload.text) {
-      logger.debug('No text field in payload', { payload });
-      return; // No text to analyze
+    if (!latestMessage) {
+      logger.debug('No latest message found in database');
+      return;
     }
 
     // Check if challenge is enabled
@@ -116,11 +70,11 @@ export async function cursorHookPushup(): Promise<void> {
     }
 
     // Detect validation phrases
-    const detectedPhrases = detectValidationPhrases(payload.text);
+    const detectedPhrases = detectValidationPhrases(latestMessage);
     logger.debug('Detection result', {
       found: detectedPhrases.length,
       phrases: detectedPhrases,
-      textLength: payload.text.length
+      textLength: latestMessage.length
     });
 
     if (detectedPhrases.length === 0) {

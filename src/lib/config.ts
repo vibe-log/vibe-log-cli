@@ -95,7 +95,7 @@ const config = new Conf<ConfigSchema>({
     },
     cliPath: {
       type: 'string',
-      default: 'npx vibe-log-cli',
+      default: 'npx vibe-log-cli@latest',
     },
     token: {
       type: 'string',
@@ -278,7 +278,7 @@ export function getCliPath(): string {
   }
   
   // Use configured path or default to npx command
-  return config.get('cliPath') || 'npx vibe-log-cli';
+  return config.get('cliPath') || 'npx vibe-log-cli@latest';
 }
 
 export function setCliPath(path: string): void {
@@ -527,12 +527,18 @@ export function setPushUpChallengeEnabled(
 export function setCursorIntegrationEnabled(enabled: boolean): void {
   const current = getPushUpChallengeConfig();
 
+  // When enabling Cursor integration for the first time, set timestamp to NOW
+  // This prevents historical validations from being counted
+  const shouldSetTimestamp = enabled && (!current.lastCursorMessageTimestamp || current.lastCursorMessageTimestamp === 0);
+
   config.set('pushUpChallenge', {
     ...current,
-    cursorIntegrationEnabled: enabled
+    cursorIntegrationEnabled: enabled,
+    // Set to current time when enabling for the first time (prevents counting historical validations)
+    lastCursorMessageTimestamp: shouldSetTimestamp ? Date.now() : current.lastCursorMessageTimestamp
   });
 
-  logger.debug(`Cursor integration ${enabled ? 'enabled' : 'disabled'}`);
+  logger.debug(`Cursor integration ${enabled ? 'enabled' : 'disabled'}${shouldSetTimestamp ? ' (starting from now)' : ''}`);
 }
 
 

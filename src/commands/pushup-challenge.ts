@@ -110,7 +110,12 @@ Examples:
 
         // Install Cursor hook if requested
         if (enableCursor) {
+          const { setCursorIntegrationEnabled } = await import('../lib/config');
           const { CursorHookInstaller } = await import('../lib/cursor/hook-installer');
+
+          // Enable Cursor integration (sets timestamp to prevent historical validations)
+          setCursorIntegrationEnabled(true);
+
           // Initialize hooks file first if it doesn't exist
           CursorHookInstaller.initializeHooksFile();
           await CursorHookInstaller.installPushUpHook();
