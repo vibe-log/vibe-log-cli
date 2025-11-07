@@ -87,9 +87,10 @@ program
     }
     // Skip logo in silent mode - check command line args directly since --silent is command-specific
     const isSilent = process.argv.includes('--silent');
-    // Skip logo for hook commands (statusline, statusline-challenge, pushup check-prompt, etc.)
+    // Skip logo for hook commands (statusline, statusline-challenge, pushup check-prompt, cursor-hook-pushup, etc.)
     const isHookCommand = process.argv[2] === 'statusline' ||
                           process.argv[2] === 'statusline-challenge' ||
+                          process.argv[2] === 'cursor-hook-pushup' ||
                           (process.argv[2] === 'pushup' && process.argv[3] === 'check-prompt');
     // Only show logo if a command is specified (not the default interactive menu)
     const hasCommand = process.argv.length > 2 && !process.argv[2].startsWith('-');
@@ -211,6 +212,58 @@ program
   .action(async (options) => {
     try {
       await cursorUpload(options);
+    } catch (error) {
+      handleError(error);
+    }
+  });
+
+// Cursor push-up challenge hook (hidden - for hooks)
+program
+  .command('cursor-hook-pushup', { hidden: true })
+  .description('[HOOK] Push-up challenge for Cursor afterAgentResponse')
+  .action(async () => {
+    try {
+      const { cursorHookPushup } = await import('./commands/cursor-hook-pushup');
+      await cursorHookPushup();
+    } catch (error) {
+      handleError(error);
+    }
+  });
+
+// Cursor hooks status (for verification)
+program
+  .command('cursor-hooks-status')
+  .description('Check Cursor hooks installation status')
+  .action(async () => {
+    try {
+      const { cursorHooksStatus } = await import('./commands/cursor-hooks-status');
+      await cursorHooksStatus();
+    } catch (error) {
+      handleError(error);
+    }
+  });
+
+// Cursor hooks install (manual installation)
+program
+  .command('cursor-hooks-install')
+  .description('Manually install Cursor push-up hook')
+  .action(async () => {
+    try {
+      const { cursorHooksInstall } = await import('./commands/cursor-hooks-install');
+      await cursorHooksInstall();
+    } catch (error) {
+      handleError(error);
+    }
+  });
+
+// Cursor hooks test (hidden - for debugging)
+program
+  .command('cursor-hooks-test', { hidden: true })
+  .description('Test Cursor hooks installation')
+  .action(async () => {
+    try {
+      const { cursorHooksTest } = await import('./commands/cursor-hooks-test');
+      await cursorHooksTest();
     } catch (error) {
       handleError(error);
     }
