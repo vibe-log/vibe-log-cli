@@ -38,6 +38,9 @@ class Logger {
     } else {
       this.level = level;
     }
+
+    // Re-read output file in case it was set after logger initialization
+    this.outputFile = process.env.VIBE_LOG_OUTPUT;
   }
 
   private getLogLevel(): LogLevel {
