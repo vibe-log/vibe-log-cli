@@ -7,20 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2025-11-07
+
 ### Added
+- **Cursor IDE Push-Up Challenge Hook Integration**: Automatic validation phrase detection in Cursor IDE
+  - New `cursor-hook-pushup` command for `afterAgentResponse` hook integration
+  - Automatically detects over-validation phrases (e.g., "you're absolutely right", "perfect", "exactly")
+  - Supports both ASCII apostrophe (') and smart apostrophe (') characters
+  - Modern Cursor format support with bubbleId-based message storage
+  - Seamless integration with existing push-up challenge system
+  - Silent operation to avoid disrupting Cursor IDE workflow
+
+- **Cursor IDE Session Sync**: Manual session upload command for Cursor IDE
+  - New `cursor-upload` command for uploading Cursor conversations to vibe-log
+  - Date range selection options: 7 days, 30 days, or all conversations
+  - Dry-run mode (`--dry-run`) to preview sessions before upload
+  - Silent mode (`--silent`) for automation and scripting
+  - Extracts project names from Cursor workspace databases
+  - Preserves conversation metadata for accurate duration calculation
+  - Optional file logging for troubleshooting (`CURSOR_LOG_FILE` environment variable)
+
 - **Cursor IDE Integration**: Full support for tracking Cursor IDE conversations and validations
   - New "View Cursor IDE stats" menu option shows conversation and message counts
-  - Automatic validation phrase detection in Cursor assistant responses
   - Push-up challenge now tracks validation phrases in both Claude Code AND Cursor IDE
   - Supports both legacy and modern Cursor conversation formats
   - Cross-platform support (macOS, Windows, Linux)
   - Shared validation patterns between Claude Code and Cursor (8 over-validation phrases)
   - Real-time push-up debt tracking when viewing Cursor stats
-  - **Time-Based Statistics**: Cursor push-up stats now show time periods
+  - **Time-Based Statistics**: Cursor push-up stats show time periods
     - This week (Monday-Sunday)
     - Last week
     - This month
     - This year
+
+### Changed
+- **Hook Auto-Update Mechanism**: All hooks now use `npx vibe-log-cli@latest` instead of `npx vibe-log-cli`
+  - Ensures users automatically get latest bug fixes and improvements
+  - Applies to: Claude Code hooks (SessionStart, PreCompact) and Cursor hooks (afterAgentResponse)
+  - No manual updates needed - hooks always run the latest published version
+
+### Fixed
+- **Apostrophe Detection**: Fixed validation phrase detection to support both ASCII (') and smart (') apostrophes
+  - Previously only detected ASCII apostrophes, missing some Cursor IDE validations
+  - Now catches all variations: "you're", "you're", "you're"
+- **Cursor Integration Timestamp Initialization**: Fixed bug where Cursor integration config was initialized without lastCheckTimestamp
+  - Ensures accurate tracking of new validations from first enable
+  - Prevents historical Cursor validations from counting when challenge is first enabled
+- **Cursor Hook Output**: Silenced stdout logging in `cursor-hook-pushup` to prevent JSON parse errors
+  - Hook now only outputs valid JSON response for Cursor IDE
+  - Debug logging available via `CURSOR_LOG_FILE` environment variable
+- **Latest Message Retrieval**: Improved handling of modern Cursor conversation format
+  - Better extraction of latest assistant message from bubbleId-based storage
+  - More reliable validation phrase detection in modern Cursor format
+- **Logger File Output**: Fixed logger to re-read `VIBE_LOG_OUTPUT` environment variable when `setLevel()` is called
+  - Hooks can now dynamically redirect logs to files after logger initialization
+  - Cursor hook logs now properly write to `~/.vibe-log/cursor-hook.log`
+  - Critical for debugging hook execution without polluting stdout
 
 ### Technical
 - Added `better-sqlite3` dependency for Cursor database access
@@ -328,7 +370,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed batching strategy to properly limit parallel agents (MAX 9)
   - 17 sessions now correctly uses 2-3 agents instead of 17
 - **Headless Mode Compatibility**: Restored === REPORT START/END === markers for reliable operation
-- **Sub-Agent Installer UI**: 
+- **Sub-Agent Installer UI**:
   - Shows correct count of 2 sub-agents (not 3)
   - Removed references to deprecated logs-fetcher agent
   - Updated workflow description to reflect simplified 2-phase process
@@ -458,7 +500,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive error type detection and categorization
 - User-friendly network error messages
 
-### Changed  
+### Changed
 - Improved UI text clarity for cloud and local modes
 - Cloud mode now explicitly states "FREE FOREVER"
 - Local mode clarifies it uses "Claude Code with sub-agents"
@@ -475,7 +517,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Refactored
 - Updated 6 files to use centralized network error utilities:
   - `commands/send.ts`
-  - `commands/auth.ts` 
+  - `commands/auth.ts`
   - `utils/errors.ts`
   - `lib/auth/browser.ts`
   - `lib/api-client.ts`
