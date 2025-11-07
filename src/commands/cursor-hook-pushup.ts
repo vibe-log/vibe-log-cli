@@ -61,10 +61,18 @@ function detectValidationPhrases(text: string): string[] {
 /**
  * Hook command for Cursor afterAgentResponse - detects validation phrases
  * Zero computational cost - just local state update
+ *
+ * Logging: Set VIBE_LOG_OUTPUT environment variable to enable file logging
+ * Example: VIBE_LOG_OUTPUT=~/.vibe-log/cursor-hook.log
  */
 export async function cursorHookPushup(): Promise<void> {
-  // Silence all logger output for hooks (Cursor expects only JSON/no stdout)
-  logger.setLevel('error');
+  // Silence stdout/stderr for hooks (Cursor expects only JSON/no output)
+  // But allow file logging if VIBE_LOG_OUTPUT is set
+  if (process.env.VIBE_LOG_OUTPUT) {
+    logger.setLevel('debug');
+  } else {
+    logger.setLevel('error');
+  }
 
   try {
     // Read hook payload from stdin

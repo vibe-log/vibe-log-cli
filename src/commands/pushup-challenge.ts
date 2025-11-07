@@ -50,10 +50,12 @@ Examples:
     .description('Enable the push-up challenge (silent mode)')
     .action(async () => {
       try {
-        // Ask for push-up count
-        console.log(chalk.gray('\n🔍 Debug: About to show 2 prompts...\n'));
+        // Detect available IDEs
+        const { isCursorInstalled } = await import('../lib/readers/cursor');
+        const hasCursor = isCursorInstalled();
 
-        const answers = await (inquirer.prompt as any)([
+        // Build prompts dynamically
+        const prompts: any[] = [
           {
             type: 'number',
             name: 'pushUpsPerTrigger',
@@ -72,12 +74,23 @@ Examples:
             message: 'Install challenge statusline to track progress in Claude Code?',
             default: true
           }
-        ]);
+        ];
 
-        console.log(chalk.gray(`\n🔍 Debug: Received answers - pushUps: ${answers.pushUpsPerTrigger}, statusline: ${answers.installStatusline}\n`));
+        // Add Cursor prompt if Cursor is installed
+        if (hasCursor) {
+          prompts.push({
+            type: 'confirm',
+            name: 'enableCursor',
+            message: 'Enable push-up challenge for Cursor IDE as well?',
+            default: true
+          });
+        }
+
+        const answers = await (inquirer.prompt as any)(prompts);
 
         const pushUpsPerTrigger = answers.pushUpsPerTrigger;
         const installStatusline = answers.installStatusline;
+        const enableCursor = answers.enableCursor ?? false;
 
         // Update config (no mode needed, always silent)
         setPushUpChallengeEnabled(true, pushUpsPerTrigger as number);
@@ -91,9 +104,17 @@ Examples:
           console.log(chalk.yellow('\n⚠️  Warning: Failed to sync to server. Will retry on next session upload.'));
         }
 
-        // Install hook (silent mode only)
+        // Install Claude Code hook (silent mode only)
         const settingsManager = new ClaudeSettingsManager();
         await settingsManager.installPushUpChallengeHook();
+
+        // Install Cursor hook if requested
+        if (enableCursor) {
+          const { CursorHookInstaller } = await import('../lib/cursor/hook-installer');
+          // Initialize hooks file first if it doesn't exist
+          CursorHookInstaller.initializeHooksFile();
+          await CursorHookInstaller.installPushUpHook();
+        }
 
         // Install challenge statusline if requested
         if (installStatusline) {
@@ -104,6 +125,11 @@ Examples:
         }
 
         console.log(chalk.gray(`   Rate: ${pushUpsPerTrigger} push-up(s) per validation`));
+
+        if (enableCursor) {
+          console.log(chalk.green('   ✅ Cursor IDE hook installed'));
+        }
+
         console.log();
         console.log(chalk.cyan('💡 Debt will accumulate silently. Check with `vibe-log pushup stats`'));
 
@@ -143,9 +169,17 @@ Examples:
           console.log(chalk.gray('   Duration: ') + chalk.cyan(duration));
         }
 
-        // Uninstall hook
+        // Uninstall Claude Code hook
         const settingsManager = new ClaudeSettingsManager();
         await settingsManager.uninstallPushUpChallengeHook();
+
+        // Uninstall Cursor hook (if installed)
+        const { CursorHookInstaller } = await import('../lib/cursor/hook-installer');
+        const installed = CursorHookInstaller.getInstalledHooks();
+        if (installed.pushup) {
+          await CursorHookInstaller.uninstallHooks('pushup');
+          logger.debug('Cursor push-up hook uninstalled');
+        }
 
         // Disable in config (preserve stats)
         setPushUpChallengeEnabled(false);

@@ -74,10 +74,6 @@ export async function showPushUpChallengeMenu(firstTime: boolean = false): Promi
       await disableChallenge();
       break;
 
-    case 'toggle-cursor':
-      await toggleCursorIntegration();
-      break;
-
     case 'settle':
       await settleDebt();
       break;
@@ -144,20 +140,11 @@ async function buildEnabledMenuChoices(stats: any): Promise<any[]> {
     }
   }
 
-  // Get cursor integration status
-  const config = getPushUpChallengeConfig();
-  const cursorEnabled = config.cursorIntegrationEnabled || false;
-
   const choices: any[] = [
     ...(stats.debt > 0
       ? [{ name: '💰 Settle debt', value: 'settle' }]
       : []
     ),
-    new inquirer.Separator(),
-    {
-      name: cursorEnabled ? '💬 Disable Cursor detection' : '💬 Enable Cursor detection',
-      value: 'toggle-cursor'
-    },
     new inquirer.Separator(),
     { name: '🔄 Reset challenge', value: 'reset' },
     { name: '❌ Disable', value: 'disable' },
@@ -264,6 +251,18 @@ async function enableChallenge(): Promise<void> {
     }
 
     setCursorIntegrationEnabled(true);
+
+    // Install Cursor hooks
+    if (cursorInstalled) {
+      try {
+        const { CursorHookInstaller } = await import('../cursor/hook-installer');
+        // Initialize hooks file first if it doesn't exist
+        CursorHookInstaller.initializeHooksFile();
+        await CursorHookInstaller.installPushUpHook();
+      } catch (error) {
+        console.log(colors.warning('⚠️  Could not install Cursor hook, but integration is enabled'));
+      }
+    }
   }
 
   await claudeSettingsManager.installPushUpChallengeHook();
@@ -330,8 +329,30 @@ async function disableChallenge(): Promise<void> {
   ]);
 
   if (confirm) {
+    // Disable the challenge
     setPushUpChallengeEnabled(false);
     await claudeSettingsManager.uninstallPushUpChallengeHook();
+
+    // Remove challenge statusline if installed
+    try {
+      await claudeSettingsManager.removeChallengeStatusLineFeature();
+    } catch (error) {
+      // Silently fail - statusline might not be installed
+    }
+
+    // Disable cursor integration
+    setCursorIntegrationEnabled(false);
+
+    // Uninstall Cursor hooks
+    try {
+      const { CursorHookInstaller } = await import('../cursor/hook-installer');
+      const installed = CursorHookInstaller.getInstalledHooks();
+      if (installed.pushup) {
+        await CursorHookInstaller.uninstallHooks('pushup');
+      }
+    } catch (error) {
+      // Silently fail - hook might not be installed
+    }
 
     // Sync to server only if authenticated
     const { isAuthenticated } = await import('../auth/token');
@@ -341,44 +362,6 @@ async function disableChallenge(): Promise<void> {
     }
 
     console.log(colors.success('\n✅ Disabled'));
-  }
-}
-
-async function toggleCursorIntegration(): Promise<void> {
-  const config = getPushUpChallengeConfig();
-  const currentlyEnabled = config.cursorIntegrationEnabled || false;
-  const newState = !currentlyEnabled;
-
-  setCursorIntegrationEnabled(newState);
-
-  if (newState) {
-    // Check if Cursor is actually installed (cross-platform)
-    const cursorInstalled = isCursorInstalled();
-
-    if (!cursorInstalled) {
-      console.log(colors.warning('\n⚠️  Cursor IDE not detected on this system'));
-      console.log(chalk.gray('   Cursor integration enabled, but no validations will be tracked'));
-      console.log(chalk.gray('   Install Cursor at https://cursor.sh and restart to start tracking\n'));
-      return;
-    }
-
-    console.log(colors.success('\n✅ Cursor IDE integration enabled!'));
-    console.log(chalk.cyan('💡 Validations from Cursor will now be tracked automatically\n'));
-
-    // Immediately scan for new messages
-    try {
-      const result = await checkAndUpdateCursorPushUps();
-      if (result.pushUpsAdded > 0) {
-        console.log(colors.info(`💬 Found ${result.validationPhrasesDetected?.length || 0} validation(s) - added ${result.pushUpsAdded} push-ups to debt\n`));
-      } else if (result.newMessages > 0) {
-        console.log(colors.muted(`💬 Scanned ${result.newMessages} new message(s) - no validations found\n`));
-      }
-    } catch (error) {
-      console.log(colors.warning('⚠️  Could not scan Cursor messages\n'));
-    }
-  } else {
-    console.log(colors.success('\n✅ Cursor IDE integration disabled'));
-    console.log(chalk.gray('   Only Claude Code validations will be tracked\n'));
   }
 }
 
