@@ -29,7 +29,7 @@
 
 ## What is Vibe-Log?
 
-vibe-log-cli is an open-source command-line tool that analyzes your Claude Code sessions to extract productivity insights and generate reports. All analyses can run completely locally on your machine using Claude Code's capabilities. It also encompasses a statusline that help you get more from your sessions.  
+Vibe-log-cli is an open-source command-line tool that analyzes your Claude Code sessions to extract productivity insights and generate reports. All analyses can run completely locally on your machine using Claude Code's capabilities. It also encompasses a statusline that help you get more from your sessions.  
 
 ## Getting Started fast
 Just run: 
