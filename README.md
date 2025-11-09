@@ -1,7 +1,8 @@
 
 <div align="center">
 
-<img width="628" height="176" alt="image" src="https://github.com/user-attachments/assets/1e468c1f-8228-46ad-a441-1b0926edfbc9" />
+ <img width="280" height="257" alt="og-image" src="https://github.com/user-attachments/assets/ff8a996f-6292-44eb-b6f4-a07737db7d6d" />
+
 
 <p></p>
 <h3>Open-source CLI for analyzing Claude Code sessions locally and generating productivity reports</h3>
