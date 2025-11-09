@@ -17,9 +17,8 @@
 <a href="https://github.com/vibe-log/vibe-log-cli/actions/workflows/npm-publish.yml"><img src="https://github.com/vibe-log/vibe-log-cli/actions/workflows/npm-publish.yml/badge.svg" alt="NPM Publish"></a>
 <a href="https://github.com/vibe-log/vibe-log-cli/actions/workflows/build-verification.yml"><img src="https://github.com/vibe-log/vibe-log-cli/actions/workflows/build-verification.yml/badge.svg" alt="Build Verification"></a>
 <a href="SECURITY.md"><img src="https://img.shields.io/badge/Security-Policy-blue.svg" alt="Security Policy"></a>
-<a href="https://www.npmjs.com/package/vibe-log-cli"><img src="https://img.shields.io/badge/npm-provenance-green" alt="npm provenance"></a>
-<a href="https://github.com/vibe-log/vibe-log-cli"><img src="https://img.shields.io/badge/source-verified-brightgreen" alt="Source Verified"></a>
-<a href="#-security--transparency"><img src="https://img.shields.io/badge/build-transparent-blue" alt="Transparent Build"></a>
+
+<a href="https://github.com/vibe-log/vibe-log-cli?tab=readme-ov-file#-privacy--security"><img src="https://img.shields.io/badge/build-transparent-blue" alt="Transparent Build"></a>
   <a href="https://github.com/vibe-log/vibe-log-cli">
   <img src="https://img.shields.io/badge/⭐_Star-this_repo-22C55E?labelColor=000000" alt="Star this repo">
 </a>  
