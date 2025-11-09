@@ -46,7 +46,7 @@ New: Be prepared in 2-3 minutes for your daily standup meeting!
 <img width="1270" height="512" alt="Screenshot 2025-10-02 163102" src="https://github.com/user-attachments/assets/b0e2bd55-618e-4b9e-b1c0-f2d7069e76aa" />
 
 
-### 3. 📊 Claude Code Productivity Report Generation (Local) 
+### 2. 📊 Claude Code Productivity Report Generation (Local) 
 Generate comprehensive productivity reports using Claude Code's sub-agents to analyze your sessions in parallel. No data leaves your machine.
 See example of locally generated report here: https://vibe-log.dev/example-daily-report
  
