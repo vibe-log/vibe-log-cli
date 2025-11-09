@@ -53,7 +53,7 @@ Generate comprehensive productivity reports using Claude Code's sub-agents to an
 See example of locally generated report here: https://vibe-log.dev/example-daily-report
  
 
-### 3. 💬 Claude Status Line - Strategic Co-pilot / Advisor (Local)
+### 3. 🧠 Claude Code Co-pilot Statusline 
 Strategic product advisor in Claude Code. Your prompts are analyzed locally (via CC) to provide actionable guidance that pushes you to ship faster. Feedback appears in your Claude Code status line with concrete next steps.
 <img width="612" height="227" alt="image" src="https://github.com/user-attachments/assets/b2f7f10b-8a29-429b-921a-d0fc0bc45183" />
 
