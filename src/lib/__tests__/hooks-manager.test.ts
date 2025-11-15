@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { promises as fs } from 'fs';
 import {
-  installVibeLogHooks,
   uninstallVibeLogHooks,
   getHookStatus,
-  areHooksInstalled
+  areHooksInstalled,
+  validateHookCommands,
+  readClaudeSettings
 } from '../hooks-manager';
 
 // Mock dependencies
@@ -28,9 +29,7 @@ vi.mock('../config', () => ({
 }));
 
 vi.mock('../hooks/hooks-controller', () => ({
-  isVibeLogCommand: (cmd: string) => cmd.includes('vibe-log'),
-  buildHookCommand: (cliPath: string, trigger: string) =>
-    `${cliPath} send --silent --background --hook-trigger=${trigger} --hook-version=1.0.0`
+  isVibeLogCommand: (cmd: string) => cmd.includes('vibe-log')
 }));
 
 describe('hooks-manager - Hook Preservation Tests', () => {
@@ -42,137 +41,6 @@ describe('hooks-manager - Hook Preservation Tests', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
-  });
-
-  describe('installVibeLogHooks', () => {
-    it('should create new hooks when no existing hooks exist', async () => {
-      const emptySettings = { hooks: {} };
-
-      (fs.readFile as any).mockResolvedValue(JSON.stringify(emptySettings));
-      (fs.writeFile as any).mockResolvedValue(undefined);
-      (fs.rename as any).mockResolvedValue(undefined);
-      (fs.mkdir as any).mockResolvedValue(undefined);
-
-      await installVibeLogHooks(true);
-
-      // Verify writeFile was called
-      expect(fs.writeFile).toHaveBeenCalled();
-      const writeCall = (fs.writeFile as any).mock.calls[0];
-      const writtenSettings = JSON.parse(writeCall[1]);
-
-      // Should have PreCompact hook
-      expect(writtenSettings.hooks.PreCompact).toBeDefined();
-      expect(writtenSettings.hooks.PreCompact).toHaveLength(1);
-      expect(writtenSettings.hooks.PreCompact[0].hooks).toHaveLength(1);
-      expect(writtenSettings.hooks.PreCompact[0].hooks[0].command).toContain('vibe-log');
-    });
-
-    it('should PRESERVE existing non-vibe-log hooks when installing', async () => {
-      const existingSettings = {
-        hooks: {
-          PreCompact: [{
-            matcher: '',
-            hooks: [{
-              type: 'command' as const,
-              command: 'echo "existing hook"'
-            }]
-          }]
-        }
-      };
-
-      (fs.readFile as any).mockResolvedValue(JSON.stringify(existingSettings));
-      (fs.writeFile as any).mockResolvedValue(undefined);
-      (fs.rename as any).mockResolvedValue(undefined);
-      (fs.mkdir as any).mockResolvedValue(undefined);
-
-      await installVibeLogHooks(true);
-
-      const writeCall = (fs.writeFile as any).mock.calls[0];
-      const writtenSettings = JSON.parse(writeCall[1]);
-
-      // Should have BOTH hooks
-      expect(writtenSettings.hooks.PreCompact).toBeDefined();
-      expect(writtenSettings.hooks.PreCompact[0].hooks).toHaveLength(2);
-
-      // Original hook preserved
-      expect(writtenSettings.hooks.PreCompact[0].hooks[0].command).toBe('echo "existing hook"');
-
-      // New vibe-log hook appended
-      expect(writtenSettings.hooks.PreCompact[0].hooks[1].command).toContain('vibe-log');
-    });
-
-    it('should NOT create duplicates when vibe-log hook already exists', async () => {
-      const existingSettings = {
-        hooks: {
-          PreCompact: [{
-            matcher: '',
-            hooks: [{
-              type: 'command' as const,
-              command: '/usr/local/bin/vibe-log send --silent --background --hook-trigger=precompact'
-            }]
-          }]
-        }
-      };
-
-      (fs.readFile as any).mockResolvedValue(JSON.stringify(existingSettings));
-
-      await expect(installVibeLogHooks(false)).rejects.toThrow('Hooks already installed');
-    });
-
-    it('should handle multiple existing hooks correctly', async () => {
-      const existingSettings = {
-        hooks: {
-          PreCompact: [{
-            matcher: '',
-            hooks: [
-              { type: 'command' as const, command: 'echo "hook 1"' },
-              { type: 'command' as const, command: 'echo "hook 2"' },
-              { type: 'command' as const, command: 'echo "hook 3"' }
-            ]
-          }]
-        }
-      };
-
-      (fs.readFile as any).mockResolvedValue(JSON.stringify(existingSettings));
-      (fs.writeFile as any).mockResolvedValue(undefined);
-      (fs.rename as any).mockResolvedValue(undefined);
-      (fs.mkdir as any).mockResolvedValue(undefined);
-
-      await installVibeLogHooks(true);
-
-      const writeCall = (fs.writeFile as any).mock.calls[0];
-      const writtenSettings = JSON.parse(writeCall[1]);
-
-      // Should have ALL 4 hooks (3 existing + 1 new)
-      expect(writtenSettings.hooks.PreCompact[0].hooks).toHaveLength(4);
-      expect(writtenSettings.hooks.PreCompact[0].hooks[0].command).toBe('echo "hook 1"');
-      expect(writtenSettings.hooks.PreCompact[0].hooks[1].command).toBe('echo "hook 2"');
-      expect(writtenSettings.hooks.PreCompact[0].hooks[2].command).toBe('echo "hook 3"');
-      expect(writtenSettings.hooks.PreCompact[0].hooks[3].command).toContain('vibe-log');
-    });
-
-    it('should handle empty PreCompact array', async () => {
-      const existingSettings = {
-        hooks: {
-          PreCompact: []
-        }
-      };
-
-      (fs.readFile as any).mockResolvedValue(JSON.stringify(existingSettings));
-      (fs.writeFile as any).mockResolvedValue(undefined);
-      (fs.rename as any).mockResolvedValue(undefined);
-      (fs.mkdir as any).mockResolvedValue(undefined);
-
-      await installVibeLogHooks(true);
-
-      const writeCall = (fs.writeFile as any).mock.calls[0];
-      const writtenSettings = JSON.parse(writeCall[1]);
-
-      // Should create new hook config
-      expect(writtenSettings.hooks.PreCompact).toHaveLength(1);
-      expect(writtenSettings.hooks.PreCompact[0].hooks).toHaveLength(1);
-      expect(writtenSettings.hooks.PreCompact[0].hooks[0].command).toContain('vibe-log');
-    });
   });
 
   describe('uninstallVibeLogHooks', () => {
@@ -375,6 +243,126 @@ describe('hooks-manager - Hook Preservation Tests', () => {
       const installed = await areHooksInstalled();
 
       expect(installed).toBe(false);
+    });
+  });
+
+  describe('validateHookCommands', () => {
+    it('should return valid when hooks are installed and CLI path exists', async () => {
+      const existingSettings = {
+        hooks: {
+          PreCompact: [{
+            matcher: '',
+            hooks: [
+              { type: 'command' as const, command: '/usr/local/bin/vibe-log send --hook-trigger=precompact' }
+            ]
+          }]
+        }
+      };
+
+      (fs.readFile as any).mockResolvedValue(JSON.stringify(existingSettings));
+      (fs.access as any).mockResolvedValue(undefined); // File exists
+
+      const result = await validateHookCommands();
+
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it('should return error when no hooks are installed', async () => {
+      const existingSettings = {
+        hooks: {}
+      };
+
+      (fs.readFile as any).mockResolvedValue(JSON.stringify(existingSettings));
+
+      const result = await validateHookCommands();
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain('No hooks installed');
+    });
+
+    it('should return error when CLI command not found', async () => {
+      const existingSettings = {
+        hooks: {
+          PreCompact: [{
+            matcher: '',
+            hooks: [
+              { type: 'command' as const, command: '/usr/local/bin/vibe-log send' }
+            ]
+          }]
+        }
+      };
+
+      (fs.readFile as any).mockResolvedValue(JSON.stringify(existingSettings));
+      (fs.access as any).mockRejectedValue(new Error('ENOENT: no such file'));
+
+      const result = await validateHookCommands();
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain('CLI command not found: /usr/local/bin/vibe-log');
+    });
+
+    it('should return error when hook uses different CLI path', async () => {
+      const existingSettings = {
+        hooks: {
+          PreCompact: [{
+            matcher: '',
+            hooks: [
+              { type: 'command' as const, command: '/different/path/vibe-log send' }
+            ]
+          }]
+        }
+      };
+
+      (fs.readFile as any).mockResolvedValue(JSON.stringify(existingSettings));
+      (fs.access as any).mockResolvedValue(undefined);
+
+      const result = await validateHookCommands();
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain('PreCompact hook uses different CLI path: /different/path/vibe-log send');
+    });
+  });
+
+  describe('readClaudeSettings', () => {
+    it('should read settings and return in expected format', async () => {
+      const mockSettings = {
+        hooks: {
+          PreCompact: [{
+            matcher: '',
+            hooks: [{ type: 'command' as const, command: 'test' }]
+          }]
+        },
+        otherSetting: 'value'
+      };
+
+      (fs.readFile as any).mockResolvedValue(JSON.stringify(mockSettings));
+
+      const result = await readClaudeSettings();
+
+      expect(result.global).toEqual(mockSettings);
+      expect(result.local).toBeNull();
+      expect(result.merged).toEqual(mockSettings);
+    });
+
+    it('should return empty merged object when settings file does not exist', async () => {
+      (fs.readFile as any).mockRejectedValue(new Error('ENOENT: no such file'));
+
+      const result = await readClaudeSettings();
+
+      expect(result.global).toBeNull();
+      expect(result.local).toBeNull();
+      expect(result.merged).toEqual({});
+    });
+
+    it('should handle invalid JSON gracefully', async () => {
+      (fs.readFile as any).mockResolvedValue('invalid json {');
+
+      const result = await readClaudeSettings();
+
+      expect(result.global).toBeNull();
+      expect(result.local).toBeNull();
+      expect(result.merged).toEqual({});
     });
   });
 });

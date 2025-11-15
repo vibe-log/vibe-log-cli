@@ -155,10 +155,11 @@ Legacy camelCase formats (`preCompact`, `stop`) are no longer supported.
   - Prevents duplicate uploads
   - Manages manual vs automatic sync
 
-- **`hooks-manager.ts`** - Legacy hook management:
-  - Basic install/uninstall functionality
-  - Settings.json manipulation
-  - Path validation
+- **`hooks-manager.ts`** - Hook status and cleanup utilities:
+  - Hook status checking (getHookStatus, areHooksInstalled)
+  - Uninstall functionality (uninstallVibeLogHooks)
+  - Settings.json reading and validation
+  - Note: Installation now handled by hooks-controller.ts
 
 ### UI Components (`/src/lib/ui/`)
 

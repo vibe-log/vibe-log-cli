@@ -3,7 +3,7 @@ import path from 'path';
 import { homedir } from 'os';
 import { logger } from '../utils/logger';
 import { getCliPath } from './config';
-import { isVibeLogCommand, buildHookCommand } from './hooks/hooks-controller';
+import { isVibeLogCommand } from './hooks/hooks-controller';
 
 
 /**
@@ -164,81 +164,6 @@ export async function getHookStatus(): Promise<HookStatus> {
 export async function areHooksInstalled(): Promise<boolean> {
   const status = await getHookStatus();
   return status.installed;
-}
-
-/**
- * Install vibe-log hooks
- * Uses settings.json only (not settings.local.json)
- */
-export async function installVibeLogHooks(force: boolean = false): Promise<void> {
-  const settingsPath = getSettingsPath();
-  const settingsDir = path.dirname(settingsPath);
-  
-  // Read existing settings
-  const settings = await readSettingsFile(settingsPath) || {};
-  
-  // Check if hooks already exist
-  if (!force) {
-    const status = await getHookStatus();
-    if (status.installed) {
-      throw new Error('Hooks already installed. Use --force to overwrite.');
-    }
-  }
-  
-  // Initialize hooks object if it doesn't exist
-  if (!settings.hooks) {
-    settings.hooks = {};
-  }
-  
-  // Clean up old format hooks if they exist
-  if (settings.hooks.stop) delete settings.hooks.stop;
-  if (settings.hooks.preCompact) delete settings.hooks.preCompact;
-  
-  // Get the CLI command path
-  const cliCommand = getCliPath();
-
-  // Ensure PreCompact hook structure exists
-  if (!settings.hooks.PreCompact) {
-    settings.hooks.PreCompact = [];
-  }
-
-  // Check if vibe-log hook already exists (prevent duplicates)
-  const existingVibeLogHook = settings.hooks.PreCompact.some(config =>
-    config.hooks?.some(hook => isVibeLogCommand(hook.command))
-  );
-
-  if (existingVibeLogHook && !force) {
-    throw new Error('Vibe-log PreCompact hook already exists. Use --force to overwrite.');
-  }
-
-  // Build the hook command
-  const hookCommand: HookCommand = {
-    type: 'command',
-    command: buildHookCommand(cliCommand, 'precompact'),
-    timeout: 30000
-  };
-
-  // Check if there's already a PreCompact config with hooks array
-  if (settings.hooks.PreCompact.length > 0 && settings.hooks.PreCompact[0].hooks) {
-    // Append to existing hooks array - PRESERVES EXISTING HOOKS
-    settings.hooks.PreCompact[0].hooks.push(hookCommand);
-  } else {
-    // Create new config with hooks array
-    settings.hooks.PreCompact.push({
-      matcher: '',
-      hooks: [hookCommand]
-    });
-  }
-  
-  // Ensure directory exists
-  await fs.mkdir(settingsDir, { recursive: true });
-  
-  // Write settings atomically
-  const tempPath = `${settingsPath}.tmp`;
-  await fs.writeFile(tempPath, JSON.stringify(settings, null, 2));
-  await fs.rename(tempPath, settingsPath);
-  
-  logger.debug(`Hooks installed to ${settingsPath}`);
 }
 
 /**
