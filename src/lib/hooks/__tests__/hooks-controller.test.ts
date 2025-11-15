@@ -4,7 +4,6 @@ import {
   installSelectedHooks,
   installGlobalHooks,
   uninstallAllHooks,
-  toggleHook,
   type HookSelection
 } from '../hooks-controller';
 
@@ -409,68 +408,6 @@ describe('hooks-controller - Hook Preservation Tests', () => {
       (claudeSettingsReader.readGlobalSettings as any).mockResolvedValue(existingSettings);
 
       await expect(uninstallAllHooks()).rejects.toThrow('No vibe-log hooks found');
-    });
-  });
-
-  describe('toggleHook', () => {
-    it('should enable hook without affecting other hooks', async () => {
-      const existingSettings = {
-        hooks: {
-          PreCompact: [{
-            matcher: 'auto',
-            hooks: [
-              { type: 'command' as const, command: 'echo "other"' },
-              { type: 'command' as const, command: '/usr/local/bin/vibe-log send --disabled' }
-            ]
-          }]
-        }
-      };
-
-      (claudeSettingsReader.readGlobalSettings as any).mockResolvedValue(existingSettings);
-      (claudeSettingsReader.writeGlobalSettings as any).mockResolvedValue(undefined);
-
-      await toggleHook('precompact', true);
-
-      const writeCall = (claudeSettingsReader.writeGlobalSettings as any).mock.calls[0][0];
-
-      // Both hooks should still exist
-      expect(writeCall.hooks.PreCompact[0].hooks).toHaveLength(2);
-
-      // First hook unchanged
-      expect(writeCall.hooks.PreCompact[0].hooks[0].command).toBe('echo "other"');
-
-      // Second hook should not have --disabled flag
-      expect(writeCall.hooks.PreCompact[0].hooks[1].command).not.toContain('--disabled');
-    });
-
-    it('should disable hook without affecting other hooks', async () => {
-      const existingSettings = {
-        hooks: {
-          SessionStart: [{
-            matcher: 'startup|clear',
-            hooks: [
-              { type: 'command' as const, command: '/usr/local/bin/vibe-log send' },
-              { type: 'command' as const, command: 'echo "other"' }
-            ]
-          }]
-        }
-      };
-
-      (claudeSettingsReader.readGlobalSettings as any).mockResolvedValue(existingSettings);
-      (claudeSettingsReader.writeGlobalSettings as any).mockResolvedValue(undefined);
-
-      await toggleHook('sessionstart', false);
-
-      const writeCall = (claudeSettingsReader.writeGlobalSettings as any).mock.calls[0][0];
-
-      // Both hooks should still exist
-      expect(writeCall.hooks.SessionStart[0].hooks).toHaveLength(2);
-
-      // First hook should have --disabled flag
-      expect(writeCall.hooks.SessionStart[0].hooks[0].command).toContain('--disabled');
-
-      // Second hook unchanged
-      expect(writeCall.hooks.SessionStart[0].hooks[1].command).toBe('echo "other"');
     });
   });
 });

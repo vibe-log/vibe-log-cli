@@ -417,39 +417,6 @@ export async function installSelectedHooks(selection: HookSelection): Promise<vo
 }
 
 /**
- * Enable or disable a specific hook
- */
-export async function toggleHook(hookType: 'sessionstart' | 'precompact' | 'sessionend', enable: boolean): Promise<void> {
-  const settings = await readSettings();
-  if (!settings || !settings.hooks) {
-    throw new Error('No hooks installed');
-  }
-
-  const hookKey = hookType === 'sessionstart' ? 'SessionStart' :
-                  hookType === 'precompact' ? 'PreCompact' : 'SessionEnd';
-  const hookConfig = settings.hooks[hookKey];
-  
-  if (!hookConfig || !hookConfig[0]?.hooks?.[0]) {
-    throw new Error(`${hookKey} hook not installed`);
-  }
-  
-  const hook = hookConfig[0].hooks[0];
-  
-  if (enable) {
-    // Remove --disabled flag if present
-    hook.command = hook.command.replace(' --disabled', '');
-  } else {
-    // Add --disabled flag if not present
-    if (!hook.command.includes('--disabled')) {
-      hook.command += ' --disabled';
-    }
-  }
-  
-  await writeSettings(settings);
-  logger.info(`${hookKey} hook ${enable ? 'enabled' : 'disabled'}`);
-}
-
-/**
  * Uninstall all vibe-log hooks from both global and project-local settings
  */
 export async function uninstallAllHooks(): Promise<{ removedCount: number }> {
