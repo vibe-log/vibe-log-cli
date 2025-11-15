@@ -815,4 +815,443 @@ describe('SendOrchestrator', () => {
         .toThrow(/All 2 session.*shorter than 4 minutes/);
     });
   });
+
+  describe('readSelectedSessions', () => {
+    it('should read and parse valid JSONL session files', async () => {
+      const selectedInfo = [
+        {
+          projectPath: '/Users/test/project',
+          sessionFile: 'session.jsonl',
+          sessionId: 'test-session',
+        },
+      ];
+
+      const jsonlContent = [
+        JSON.stringify({
+          sessionId: 'test-session',
+          cwd: '/Users/test/project',
+          timestamp: '2024-01-15T10:00:00Z',
+          gitBranch: 'main',
+        }),
+        JSON.stringify({
+          message: {
+            role: 'user',
+            content: 'Hello',
+          },
+          timestamp: '2024-01-15T10:00:00Z',
+        }),
+        JSON.stringify({
+          message: {
+            role: 'assistant',
+            content: 'Hi there',
+            model: 'claude-3-5-sonnet-20241022',
+          },
+          timestamp: '2024-01-15T10:05:00Z',
+        }),
+      ].join('\n');
+
+      mockFs.readFile.mockResolvedValue(jsonlContent);
+
+      const sessions = await orchestrator.readSelectedSessions(selectedInfo);
+
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0].claudeSessionId).toBe('test-session');
+      expect(sessions[0].messages).toHaveLength(2);
+      expect(sessions[0].duration).toBeGreaterThan(0);
+    });
+
+    it('should extract git branch from session data', async () => {
+      const selectedInfo = [
+        {
+          projectPath: '/Users/test/project',
+          sessionFile: 'session.jsonl',
+          sessionId: 'test-session',
+        },
+      ];
+
+      const jsonlContent = [
+        JSON.stringify({
+          sessionId: 'test-session',
+          cwd: '/Users/test/project',
+          timestamp: '2024-01-15T10:00:00Z',
+          gitBranch: 'feature/test-branch',
+        }),
+        JSON.stringify({
+          message: { role: 'user', content: 'Test' },
+          timestamp: '2024-01-15T10:00:00Z',
+        }),
+        JSON.stringify({
+          message: { role: 'assistant', content: 'Response' },
+          timestamp: '2024-01-15T10:01:00Z',
+        }),
+      ].join('\n');
+
+      mockFs.readFile.mockResolvedValue(jsonlContent);
+
+      const sessions = await orchestrator.readSelectedSessions(selectedInfo);
+
+      expect(sessions[0].gitBranch).toBe('feature/test-branch');
+    });
+
+    it('should track model usage and switches', async () => {
+      const selectedInfo = [
+        {
+          projectPath: '/Users/test/project',
+          sessionFile: 'session.jsonl',
+          sessionId: 'test-session',
+        },
+      ];
+
+      const jsonlContent = [
+        JSON.stringify({
+          sessionId: 'test-session',
+          cwd: '/Users/test/project',
+          timestamp: '2024-01-15T10:00:00Z',
+        }),
+        JSON.stringify({
+          message: { role: 'user', content: 'Test' },
+          timestamp: '2024-01-15T10:00:00Z',
+        }),
+        JSON.stringify({
+          message: {
+            role: 'assistant',
+            content: 'Response 1',
+            model: 'claude-3-5-sonnet-20241022',
+          },
+          timestamp: '2024-01-15T10:01:00Z',
+        }),
+        JSON.stringify({
+          message: {
+            role: 'assistant',
+            content: 'Response 2',
+            model: 'claude-3-5-sonnet-20241022',
+          },
+          timestamp: '2024-01-15T10:02:00Z',
+        }),
+        JSON.stringify({
+          message: {
+            role: 'assistant',
+            content: 'Response 3',
+            model: 'claude-3-opus-20240229',
+          },
+          timestamp: '2024-01-15T10:03:00Z',
+        }),
+      ].join('\n');
+
+      mockFs.readFile.mockResolvedValue(jsonlContent);
+
+      const sessions = await orchestrator.readSelectedSessions(selectedInfo);
+
+      expect(sessions[0].modelInfo).toBeDefined();
+      expect(sessions[0].modelInfo?.models).toHaveLength(2);
+      expect(sessions[0].modelInfo?.primaryModel).toBe('claude-3-5-sonnet-20241022');
+      expect(sessions[0].modelInfo?.modelSwitches).toBe(1);
+    });
+
+    it('should skip invalid JSON lines', async () => {
+      const selectedInfo = [
+        {
+          projectPath: '/Users/test/project',
+          sessionFile: 'session.jsonl',
+          sessionId: 'test-session',
+        },
+      ];
+
+      const jsonlContent = [
+        JSON.stringify({
+          sessionId: 'test-session',
+          cwd: '/Users/test/project',
+          timestamp: '2024-01-15T10:00:00Z',
+        }),
+        'invalid json line',
+        '',
+        JSON.stringify({
+          message: { role: 'user', content: 'Test' },
+          timestamp: '2024-01-15T10:00:00Z',
+        }),
+        '{broken',
+        JSON.stringify({
+          message: { role: 'assistant', content: 'Response' },
+          timestamp: '2024-01-15T10:01:00Z',
+        }),
+      ].join('\n');
+
+      mockFs.readFile.mockResolvedValue(jsonlContent);
+
+      const sessions = await orchestrator.readSelectedSessions(selectedInfo);
+
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0].messages).toHaveLength(2);
+    });
+
+    it('should handle empty or whitespace-only lines', async () => {
+      const selectedInfo = [
+        {
+          projectPath: '/Users/test/project',
+          sessionFile: 'session.jsonl',
+          sessionId: 'test-session',
+        },
+      ];
+
+      const jsonlContent = [
+        JSON.stringify({
+          sessionId: 'test-session',
+          cwd: '/Users/test/project',
+          timestamp: '2024-01-15T10:00:00Z',
+        }),
+        '   ',
+        '\n',
+        '',
+        JSON.stringify({
+          message: { role: 'user', content: 'Test' },
+          timestamp: '2024-01-15T10:00:00Z',
+        }),
+        '     \t   ',
+        JSON.stringify({
+          message: { role: 'assistant', content: 'Response' },
+          timestamp: '2024-01-15T10:01:00Z',
+        }),
+      ].join('\n');
+
+      mockFs.readFile.mockResolvedValue(jsonlContent);
+
+      const sessions = await orchestrator.readSelectedSessions(selectedInfo);
+
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0].messages).toHaveLength(2);
+    });
+
+    it('should handle sessions without messages', async () => {
+      const selectedInfo = [
+        {
+          projectPath: '/Users/test/project',
+          sessionFile: 'session.jsonl',
+          sessionId: 'test-session',
+        },
+      ];
+
+      const jsonlContent = JSON.stringify({
+        sessionId: 'test-session',
+        cwd: '/Users/test/project',
+        timestamp: '2024-01-15T10:00:00Z',
+      });
+
+      mockFs.readFile.mockResolvedValue(jsonlContent);
+
+      const sessions = await orchestrator.readSelectedSessions(selectedInfo);
+
+      // Should not include sessions without messages
+      expect(sessions).toHaveLength(0);
+    });
+
+    it('should handle file read errors gracefully', async () => {
+      const selectedInfo = [
+        {
+          projectPath: '/Users/test/project',
+          sessionFile: 'session.jsonl',
+          sessionId: 'test-session',
+        },
+      ];
+
+      mockFs.readFile.mockRejectedValue(new Error('ENOENT: file not found'));
+
+      const sessions = await orchestrator.readSelectedSessions(selectedInfo);
+
+      // Should skip failed files and return empty array
+      expect(sessions).toHaveLength(0);
+    });
+
+    it('should extract languages from session content', async () => {
+      const selectedInfo = [
+        {
+          projectPath: '/Users/test/project',
+          sessionFile: 'session.jsonl',
+          sessionId: 'test-session',
+        },
+      ];
+
+      const jsonlContent = [
+        JSON.stringify({
+          sessionId: 'test-session',
+          cwd: '/Users/test/project',
+          timestamp: '2024-01-15T10:00:00Z',
+        }),
+        JSON.stringify({
+          message: { role: 'user', content: 'Write Python code' },
+          timestamp: '2024-01-15T10:00:00Z',
+        }),
+        // Tool use event for editing a Python file
+        JSON.stringify({
+          toolUse: {
+            name: 'Edit',
+            params: {
+              file_path: '/Users/test/project/main.py',
+              old_string: 'old code',
+              new_string: 'new code',
+            },
+          },
+          timestamp: '2024-01-15T10:01:00Z',
+        }),
+        // Tool use event for editing a TypeScript file
+        JSON.stringify({
+          toolUse: {
+            name: 'Write',
+            params: {
+              file_path: '/Users/test/project/index.ts',
+              content: 'console.log("hello")',
+            },
+          },
+          timestamp: '2024-01-15T10:02:00Z',
+        }),
+      ].join('\n');
+
+      mockFs.readFile.mockResolvedValue(jsonlContent);
+
+      const sessions = await orchestrator.readSelectedSessions(selectedInfo);
+
+      expect(sessions[0].metadata?.languages).toBeDefined();
+      expect(sessions[0].metadata?.languages).toContain('Python');
+      expect(sessions[0].metadata?.languages).toContain('TypeScript');
+    });
+
+    it('should calculate session duration from message timestamps', async () => {
+      const selectedInfo = [
+        {
+          projectPath: '/Users/test/project',
+          sessionFile: 'session.jsonl',
+          sessionId: 'test-session',
+        },
+      ];
+
+      const startTime = '2024-01-15T10:00:00Z';
+      const endTime = '2024-01-15T10:10:00Z'; // 10 minutes later
+
+      const jsonlContent = [
+        JSON.stringify({
+          sessionId: 'test-session',
+          cwd: '/Users/test/project',
+          timestamp: startTime,
+        }),
+        JSON.stringify({
+          message: { role: 'user', content: 'Start' },
+          timestamp: startTime,
+        }),
+        JSON.stringify({
+          message: { role: 'assistant', content: 'End' },
+          timestamp: endTime,
+        }),
+      ].join('\n');
+
+      mockFs.readFile.mockResolvedValue(jsonlContent);
+
+      const sessions = await orchestrator.readSelectedSessions(selectedInfo);
+
+      expect(sessions[0].duration).toBe(600); // 10 minutes = 600 seconds
+    });
+
+    it('should handle multiple session files', async () => {
+      const selectedInfo = [
+        {
+          projectPath: '/Users/test/project1',
+          sessionFile: 'session1.jsonl',
+          sessionId: 'session-1',
+        },
+        {
+          projectPath: '/Users/test/project2',
+          sessionFile: 'session2.jsonl',
+          sessionId: 'session-2',
+        },
+      ];
+
+      mockFs.readFile
+        .mockResolvedValueOnce([
+          JSON.stringify({
+            sessionId: 'session-1',
+            cwd: '/Users/test/project1',
+            timestamp: '2024-01-15T10:00:00Z',
+          }),
+          JSON.stringify({
+            message: { role: 'user', content: 'Test 1' },
+            timestamp: '2024-01-15T10:00:00Z',
+          }),
+          JSON.stringify({
+            message: { role: 'assistant', content: 'Response 1' },
+            timestamp: '2024-01-15T10:01:00Z',
+          }),
+        ].join('\n'))
+        .mockResolvedValueOnce([
+          JSON.stringify({
+            sessionId: 'session-2',
+            cwd: '/Users/test/project2',
+            timestamp: '2024-01-15T11:00:00Z',
+          }),
+          JSON.stringify({
+            message: { role: 'user', content: 'Test 2' },
+            timestamp: '2024-01-15T11:00:00Z',
+          }),
+          JSON.stringify({
+            message: { role: 'assistant', content: 'Response 2' },
+            timestamp: '2024-01-15T11:01:00Z',
+          }),
+        ].join('\n'));
+
+      const sessions = await orchestrator.readSelectedSessions(selectedInfo);
+
+      expect(sessions).toHaveLength(2);
+      expect(sessions[0].claudeSessionId).toBe('session-1');
+      expect(sessions[1].claudeSessionId).toBe('session-2');
+    });
+
+    it('should track edited files from toolUseResult events', async () => {
+      const selectedInfo = [
+        {
+          projectPath: '/Users/test/project',
+          sessionFile: 'session.jsonl',
+          sessionId: 'test-session',
+        },
+      ];
+
+      const jsonlContent = [
+        JSON.stringify({
+          sessionId: 'test-session',
+          cwd: '/Users/test/project',
+          timestamp: '2024-01-15T10:00:00Z',
+        }),
+        JSON.stringify({
+          message: { role: 'user', content: 'Edit files' },
+          timestamp: '2024-01-15T10:00:00Z',
+        }),
+        // toolUseResult with create type
+        JSON.stringify({
+          toolUseResult: {
+            type: 'create',
+            filePath: '/Users/test/project/newfile.js',
+          },
+          timestamp: '2024-01-15T10:01:00Z',
+        }),
+        // toolUseResult with update type
+        JSON.stringify({
+          toolUseResult: {
+            type: 'update',
+            filePath: '/Users/test/project/existing.ts',
+          },
+          timestamp: '2024-01-15T10:02:00Z',
+        }),
+        // toolUseResult without filePath (should be ignored)
+        JSON.stringify({
+          toolUseResult: {
+            type: 'create',
+          },
+          timestamp: '2024-01-15T10:03:00Z',
+        }),
+      ].join('\n');
+
+      mockFs.readFile.mockResolvedValue(jsonlContent);
+
+      const sessions = await orchestrator.readSelectedSessions(selectedInfo);
+
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0].metadata?.files_edited).toBe(2); // Two files tracked
+    });
+  });
 });
