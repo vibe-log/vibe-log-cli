@@ -114,9 +114,14 @@ Each command is a standalone module that handles specific CLI operations:
 
 #### Hook System
 
+**Hook Naming Convention**: All hooks use PascalCase format (e.g., `PreCompact`, `SessionStart`, `SessionEnd`, `Stop`).
+Legacy camelCase formats (`preCompact`, `stop`) are no longer supported.
+
+**Note**: The `Stop` hook (PascalCase) is reserved for the Push-Up Challenge feature and should not be used by vibe-log hooks.
+
 ##### Core Hook Management (`/src/lib/hooks/`)
 - **`hooks-controller.ts`** - Selective hook management:
-  - Install/configure individual hooks (SessionStart, PreCompact)
+  - Install/configure individual hooks (SessionStart, PreCompact, SessionEnd)
   - Version tracking and update detection (v2.0.0+)
   - Enable/disable hooks without uninstalling
   - Configuration options (timeout, debug mode, CLI path)

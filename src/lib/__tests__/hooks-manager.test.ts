@@ -298,7 +298,6 @@ describe('hooks-manager - Hook Preservation Tests', () => {
 
       expect(status.installed).toBe(true);
       expect(status.preCompactHook).toBe(true);
-      expect(status.stopHook).toBe(false);
       expect(status.hookCommands.preCompact).toContain('vibe-log');
     });
 

@@ -229,17 +229,6 @@ function buildHookConfiguration(
 // Export to avoid unused warning (may be used in future)
 export { buildHookConfiguration };
 
-/**
- * Clean up legacy hook formats
- */
-function cleanupLegacyHooks(settings: ClaudeSettings): void {
-  if (settings.hooks) {
-    // Remove old format hooks
-    delete settings.hooks.Stop;
-    delete settings.hooks.stop;
-    delete settings.hooks.preCompact;
-  }
-}
 
 /**
  * Ensure directory exists
@@ -380,10 +369,6 @@ async function installHooksToSettings(
       logger.debug(`${hook.type} hook removed`);
     }
   }
-  
-  // Clean up legacy hooks
-  cleanupLegacyHooks(settings);
-  
   // Remove empty hooks object
   if (Object.keys(settings.hooks).length === 0) {
     delete settings.hooks;
@@ -435,23 +420,6 @@ export async function uninstallAllHooks(): Promise<{ removedCount: number }> {
 
     // Remove only vibe-log hooks from SessionEnd, preserving other hooks
     globalRemoved += removeVibeLogHook(globalSettings, 'SessionEnd');
-    
-    // Clean up old Stop hook if it exists
-    if (globalSettings.hooks.Stop) {
-      delete globalSettings.hooks.Stop;
-      globalRemoved++;
-    }
-    
-    // Clean up old format hooks
-    if (globalSettings.hooks.stop) {
-      delete globalSettings.hooks.stop;
-      globalRemoved++;
-    }
-    
-    if (globalSettings.hooks.preCompact) {
-      delete globalSettings.hooks.preCompact;
-      globalRemoved++;
-    }
     
     if (globalRemoved > 0) {
       // Remove empty hooks object
