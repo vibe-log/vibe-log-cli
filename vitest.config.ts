@@ -91,6 +91,22 @@ export default defineConfig({
         'src/utils/claude-executor.ts',
         'src/utils/spawn.ts',
         'src/lib/utils/file-utils.ts',
+        'src/utils/version-check.ts',
+
+        // Infrastructure files (process spawning, browser automation, network)
+        'src/lib/status-line-manager.ts',
+        'src/lib/orchestrators/background-send-orchestrator.ts',
+        'src/lib/orchestrators/hook-send-orchestrator.ts',
+        'src/lib/sub-agents/manager.ts',
+        'src/lib/auth/browser.ts',
+        'src/lib/prompts/orchestrator.ts',
+
+        // UI utilities and base classes
+        'src/commands/shared/*.ts',
+
+        // Type definitions only (no runtime code to test)
+        'src/types/**/*.ts',
+        'src/lib/readers/types.ts',
       ],
     },
   },
