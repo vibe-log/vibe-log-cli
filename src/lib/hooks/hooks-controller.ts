@@ -206,6 +206,8 @@ interface HookDefinition {
 
 /**
  * Build hook configuration for a specific hook type
+ * NOTE: This function is kept for future use but currently replaced by appendHookConfiguration
+ * @deprecated Use appendHookConfiguration instead
  */
 function buildHookConfiguration(
   hookType: 'SessionStart' | 'PreCompact' | 'SessionEnd',
@@ -224,23 +226,112 @@ function buildHookConfiguration(
   }];
 }
 
-/**
- * Clean up legacy hook formats
- */
-function cleanupLegacyHooks(settings: ClaudeSettings): void {
-  if (settings.hooks) {
-    // Remove old format hooks
-    delete settings.hooks.Stop;
-    delete settings.hooks.stop;
-    delete settings.hooks.preCompact;
-  }
-}
+// Export to avoid unused warning (may be used in future)
+export { buildHookConfiguration };
+
 
 /**
  * Ensure directory exists
  */
 async function ensureDirectory(dir: string): Promise<void> {
   await fs.mkdir(dir, { recursive: true });
+}
+
+/**
+ * Append hook configuration without overwriting existing hooks
+ */
+function appendHookConfiguration(
+  settings: ClaudeSettings,
+  hookType: 'SessionStart' | 'PreCompact' | 'SessionEnd',
+  cliPath: string,
+  mode?: 'all' | 'selected'
+): void {
+  const triggerType = hookType === 'SessionStart' ? 'sessionstart' :
+                      hookType === 'PreCompact' ? 'precompact' : 'sessionend';
+  const command = buildHookCommand(cliPath, triggerType, mode);
+  const matcher = HOOK_MATCHERS[hookType];
+
+  // Ensure hooks object exists
+  if (!settings.hooks) {
+    settings.hooks = {};
+  }
+
+  // Ensure hook structure exists
+  if (!settings.hooks[hookType]) {
+    settings.hooks[hookType] = [];
+  }
+
+  // Check if vibe-log hook already exists (prevent duplicates)
+  const existingHooks = settings.hooks[hookType];
+  if (existingHooks) {
+    for (const config of existingHooks) {
+      for (const hook of config.hooks || []) {
+        if (isVibeLogCommand(hook.command) && hook.command.includes(`--hook-trigger=${triggerType}`)) {
+          logger.debug(`${hookType} vibe-log hook already exists, skipping`);
+          return;
+        }
+      }
+    }
+  }
+
+  // Check if there's already a config with hooks array
+  if (existingHooks && existingHooks.length > 0 && existingHooks[0].hooks) {
+    // Append to existing hooks array - PRESERVES EXISTING HOOKS
+    existingHooks[0].hooks.push({
+      type: 'command',
+      command: command
+    });
+  } else if (existingHooks) {
+    // Create new config with hooks array
+    existingHooks.push({
+      matcher: matcher,
+      hooks: [{
+        type: 'command',
+        command: command
+      }]
+    });
+  }
+}
+
+/**
+ * Remove only vibe-log hooks from a specific hook type, preserving other hooks
+ */
+function removeVibeLogHook(
+  settings: ClaudeSettings,
+  hookType: 'SessionStart' | 'PreCompact' | 'SessionEnd'
+): number {
+  if (!settings.hooks || !settings.hooks[hookType]) {
+    return 0;
+  }
+
+  const existingHooks = settings.hooks[hookType];
+  if (!existingHooks) {
+    return 0;
+  }
+
+  // Count total hooks before filtering
+  const totalBefore = existingHooks.reduce((sum: number, config: HookConfigWithMatcher) => sum + config.hooks.length, 0);
+
+  // Filter out vibe-log commands while preserving other hooks
+  const filteredConfigs = existingHooks
+    .map((config: HookConfigWithMatcher) => ({
+      ...config,
+      hooks: config.hooks.filter((hook: HookConfig) => !isVibeLogCommand(hook.command))
+    }))
+    .filter((config: HookConfigWithMatcher) => config.hooks.length > 0);
+
+  // Count total hooks after filtering
+  const totalAfter = filteredConfigs.reduce((sum: number, config: HookConfigWithMatcher) => sum + config.hooks.length, 0);
+
+  if (filteredConfigs.length > 0) {
+    settings.hooks[hookType] = filteredConfigs;
+  } else {
+    // No hooks left, delete the hook type
+    delete settings.hooks[hookType];
+  }
+
+  // Return number of removed hooks
+  return totalBefore - totalAfter;
 }
 
 /**
@@ -269,17 +360,15 @@ async function installHooksToSettings(
   // Install/remove each hook based on configuration
   for (const hook of hooks) {
     if (hook.enabled) {
-      settings.hooks[hook.type] = buildHookConfiguration(hook.type, cliPath, mode);
+      // Use append pattern to preserve existing hooks
+      appendHookConfiguration(settings, hook.type, cliPath, mode);
       logger.debug(`${hook.type} hook configured`);
     } else {
-      delete settings.hooks[hook.type];
+      // Remove only vibe-log hooks, preserve others
+      removeVibeLogHook(settings, hook.type);
       logger.debug(`${hook.type} hook removed`);
     }
   }
-  
-  // Clean up legacy hooks
-  cleanupLegacyHooks(settings);
-  
   // Remove empty hooks object
   if (Object.keys(settings.hooks).length === 0) {
     delete settings.hooks;
@@ -313,39 +402,6 @@ export async function installSelectedHooks(selection: HookSelection): Promise<vo
 }
 
 /**
- * Enable or disable a specific hook
- */
-export async function toggleHook(hookType: 'sessionstart' | 'precompact' | 'sessionend', enable: boolean): Promise<void> {
-  const settings = await readSettings();
-  if (!settings || !settings.hooks) {
-    throw new Error('No hooks installed');
-  }
-
-  const hookKey = hookType === 'sessionstart' ? 'SessionStart' :
-                  hookType === 'precompact' ? 'PreCompact' : 'SessionEnd';
-  const hookConfig = settings.hooks[hookKey];
-  
-  if (!hookConfig || !hookConfig[0]?.hooks?.[0]) {
-    throw new Error(`${hookKey} hook not installed`);
-  }
-  
-  const hook = hookConfig[0].hooks[0];
-  
-  if (enable) {
-    // Remove --disabled flag if present
-    hook.command = hook.command.replace(' --disabled', '');
-  } else {
-    // Add --disabled flag if not present
-    if (!hook.command.includes('--disabled')) {
-      hook.command += ' --disabled';
-    }
-  }
-  
-  await writeSettings(settings);
-  logger.info(`${hookKey} hook ${enable ? 'enabled' : 'disabled'}`);
-}
-
-/**
  * Uninstall all vibe-log hooks from both global and project-local settings
  */
 export async function uninstallAllHooks(): Promise<{ removedCount: number }> {
@@ -355,41 +411,15 @@ export async function uninstallAllHooks(): Promise<{ removedCount: number }> {
   const globalSettings = await readSettings();
   if (globalSettings && globalSettings.hooks) {
     let globalRemoved = 0;
-    
-    // Remove SessionStart hook
-    if (globalSettings.hooks.SessionStart) {
-      delete globalSettings.hooks.SessionStart;
-      globalRemoved++;
-    }
 
-    // Remove PreCompact hook
-    if (globalSettings.hooks.PreCompact) {
-      delete globalSettings.hooks.PreCompact;
-      globalRemoved++;
-    }
+    // Remove only vibe-log hooks from SessionStart, preserving other hooks
+    globalRemoved += removeVibeLogHook(globalSettings, 'SessionStart');
 
-    // Remove SessionEnd hook
-    if (globalSettings.hooks.SessionEnd) {
-      delete globalSettings.hooks.SessionEnd;
-      globalRemoved++;
-    }
-    
-    // Clean up old Stop hook if it exists
-    if (globalSettings.hooks.Stop) {
-      delete globalSettings.hooks.Stop;
-      globalRemoved++;
-    }
-    
-    // Clean up old format hooks
-    if (globalSettings.hooks.stop) {
-      delete globalSettings.hooks.stop;
-      globalRemoved++;
-    }
-    
-    if (globalSettings.hooks.preCompact) {
-      delete globalSettings.hooks.preCompact;
-      globalRemoved++;
-    }
+    // Remove only vibe-log hooks from PreCompact, preserving other hooks
+    globalRemoved += removeVibeLogHook(globalSettings, 'PreCompact');
+
+    // Remove only vibe-log hooks from SessionEnd, preserving other hooks
+    globalRemoved += removeVibeLogHook(globalSettings, 'SessionEnd');
     
     if (globalRemoved > 0) {
       // Remove empty hooks object
