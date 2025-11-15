@@ -310,15 +310,18 @@ function appendHookConfiguration(
 function removeVibeLogHook(
   settings: ClaudeSettings,
   hookType: 'SessionStart' | 'PreCompact' | 'SessionEnd'
-): void {
+): number {
   if (!settings.hooks || !settings.hooks[hookType]) {
-    return;
+    return 0;
   }
 
   const existingHooks = settings.hooks[hookType];
   if (!existingHooks) {
-    return;
+    return 0;
   }
+
+  // Count total hooks before filtering
+  const totalBefore = existingHooks.reduce((sum: number, config: HookConfigWithMatcher) => sum + config.hooks.length, 0);
 
   // Filter out vibe-log commands while preserving other hooks
   const filteredConfigs = existingHooks
@@ -328,12 +331,18 @@ function removeVibeLogHook(
     }))
     .filter((config: HookConfigWithMatcher) => config.hooks.length > 0);
 
+  // Count total hooks after filtering
+  const totalAfter = filteredConfigs.reduce((sum: number, config: HookConfigWithMatcher) => sum + config.hooks.length, 0);
+
   if (filteredConfigs.length > 0) {
     settings.hooks[hookType] = filteredConfigs;
   } else {
     // No hooks left, delete the hook type
     delete settings.hooks[hookType];
   }
+
+  // Return number of removed hooks
+  return totalBefore - totalAfter;
 }
 
 /**
@@ -450,24 +459,15 @@ export async function uninstallAllHooks(): Promise<{ removedCount: number }> {
   const globalSettings = await readSettings();
   if (globalSettings && globalSettings.hooks) {
     let globalRemoved = 0;
-    
-    // Remove SessionStart hook
-    if (globalSettings.hooks.SessionStart) {
-      delete globalSettings.hooks.SessionStart;
-      globalRemoved++;
-    }
 
-    // Remove PreCompact hook
-    if (globalSettings.hooks.PreCompact) {
-      delete globalSettings.hooks.PreCompact;
-      globalRemoved++;
-    }
+    // Remove only vibe-log hooks from SessionStart, preserving other hooks
+    globalRemoved += removeVibeLogHook(globalSettings, 'SessionStart');
 
-    // Remove SessionEnd hook
-    if (globalSettings.hooks.SessionEnd) {
-      delete globalSettings.hooks.SessionEnd;
-      globalRemoved++;
-    }
+    // Remove only vibe-log hooks from PreCompact, preserving other hooks
+    globalRemoved += removeVibeLogHook(globalSettings, 'PreCompact');
+
+    // Remove only vibe-log hooks from SessionEnd, preserving other hooks
+    globalRemoved += removeVibeLogHook(globalSettings, 'SessionEnd');
     
     // Clean up old Stop hook if it exists
     if (globalSettings.hooks.Stop) {

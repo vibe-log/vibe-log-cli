@@ -400,7 +400,7 @@ describe('hooks-controller - Hook Preservation Tests', () => {
           PreCompact: [{
             matcher: 'auto',
             hooks: [
-              { type: 'command' as const, command: 'echo "not vibe-log"' }
+              { type: 'command' as const, command: 'echo "other hook"' }
             ]
           }]
         }
