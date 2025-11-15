@@ -1,14 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { promises as fs } from 'fs';
-import path from 'path';
-import os from 'os';
 import {
   installVibeLogHooks,
   uninstallVibeLogHooks,
   getHookStatus,
   areHooksInstalled
 } from '../hooks-manager';
-import * as config from '../config';
 
 // Mock dependencies
 vi.mock('fs', () => ({

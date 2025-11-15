@@ -248,6 +248,19 @@ export async function installVibeLogHooks(force: boolean = false): Promise<void>
 }
 
 /**
+ * Helper function to filter out vibe-log commands from hook configurations
+ * Preserves non-vibe-log hooks in the array
+ */
+function filterVibeLogHooks(hookConfigs: HookConfig[]): HookConfig[] {
+  return hookConfigs
+    .map(config => ({
+      ...config,
+      hooks: config.hooks.filter(hook => !isVibeLogCommand(hook.command))
+    }))
+    .filter(config => config.hooks.length > 0);
+}
+
+/**
  * Uninstall vibe-log hooks
  * Only removes from settings.json (not settings.local.json)
  */
@@ -270,10 +283,7 @@ export async function uninstallVibeLogHooks(): Promise<void> {
   // Filter out vibe-log commands from PreCompact hook (preserves non-vibe-log hooks)
   if (settings.hooks.PreCompact) {
     const originalPreCompact = settings.hooks.PreCompact;
-    const filteredConfigs = originalPreCompact.map(config => ({
-      ...config,
-      hooks: config.hooks.filter(hook => !isVibeLogCommand(hook.command))
-    })).filter(config => config.hooks.length > 0);
+    const filteredConfigs = filterVibeLogHooks(originalPreCompact);
 
     if (filteredConfigs.length !== originalPreCompact.length ||
         filteredConfigs.some((config, i) => config.hooks.length !== originalPreCompact[i].hooks.length)) {
@@ -290,10 +300,7 @@ export async function uninstallVibeLogHooks(): Promise<void> {
   // Filter out vibe-log commands from preCompact hook (old format)
   if (settings.hooks.preCompact) {
     const originalPreCompact = settings.hooks.preCompact;
-    const filteredConfigs = originalPreCompact.map(config => ({
-      ...config,
-      hooks: config.hooks.filter(hook => !isVibeLogCommand(hook.command))
-    })).filter(config => config.hooks.length > 0);
+    const filteredConfigs = filterVibeLogHooks(originalPreCompact);
 
     if (filteredConfigs.length !== originalPreCompact.length ||
         filteredConfigs.some((config, i) => config.hooks.length !== originalPreCompact[i].hooks.length)) {
