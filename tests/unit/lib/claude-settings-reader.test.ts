@@ -429,4 +429,258 @@ describe('Claude Settings Reader', () => {
       await expect(writeGlobalSettings(settings)).rejects.toThrow('Write failed');
     });
   });
+
+  describe('readProjectSettings', () => {
+    it('should read project-specific shared settings', async () => {
+      const mockSettings = {
+        hooks: {
+          SessionStart: [{
+            matcher: 'startup',
+            hooks: [{ type: 'command' as const, command: 'npm test' }]
+          }]
+        }
+      };
+
+      mockClaudeCore.getProjectSettingsPath.mockReturnValue('/project/.claude/settings.json');
+      mockFs.readFile.mockResolvedValue(JSON.stringify(mockSettings));
+
+      const { readProjectSettings } = await import('../../../src/lib/claude-settings-reader');
+      const settings = await readProjectSettings('/project');
+
+      expect(settings).toEqual(mockSettings);
+      expect(mockClaudeCore.getProjectSettingsPath).toHaveBeenCalledWith('/project');
+    });
+
+    it('should return null when project settings file does not exist', async () => {
+      mockClaudeCore.getProjectSettingsPath.mockReturnValue('/project/.claude/settings.json');
+      const error: any = new Error('File not found');
+      error.code = 'ENOENT';
+      mockFs.readFile.mockRejectedValue(error);
+
+      const { readProjectSettings } = await import('../../../src/lib/claude-settings-reader');
+      const settings = await readProjectSettings('/project');
+
+      expect(settings).toBeNull();
+    });
+  });
+
+  describe('readProjectLocalSettings', () => {
+    it('should read project-local settings', async () => {
+      const mockSettings = {
+        hooks: {
+          PreCompact: [{
+            matcher: 'auto',
+            hooks: [{ type: 'command' as const, command: 'npx vibe-log-cli send' }]
+          }]
+        }
+      };
+
+      mockClaudeCore.getProjectLocalSettingsPath.mockReturnValue('/project/.claude/settings.local.json');
+      mockFs.readFile.mockResolvedValue(JSON.stringify(mockSettings));
+
+      const { readProjectLocalSettings } = await import('../../../src/lib/claude-settings-reader');
+      const settings = await readProjectLocalSettings('/project');
+
+      expect(settings).toEqual(mockSettings);
+      expect(mockClaudeCore.getProjectLocalSettingsPath).toHaveBeenCalledWith('/project');
+    });
+  });
+
+  describe('readEnterpriseManagedSettings', () => {
+    it('should read enterprise managed settings when path exists', async () => {
+      const mockSettings = {
+        hooks: {
+          SessionStart: [{
+            hooks: [{ type: 'command' as const, command: 'enterprise-hook' }]
+          }]
+        }
+      };
+
+      mockClaudeCore.getEnterpriseManagedSettingsPath.mockReturnValue('/enterprise/settings.json');
+      mockFs.readFile.mockResolvedValue(JSON.stringify(mockSettings));
+
+      const { readEnterpriseManagedSettings } = await import('../../../src/lib/claude-settings-reader');
+      const settings = await readEnterpriseManagedSettings();
+
+      expect(settings).toEqual(mockSettings);
+    });
+
+    it('should return null when enterprise path is not configured', async () => {
+      mockClaudeCore.getEnterpriseManagedSettingsPath.mockReturnValue(null);
+
+      const { readEnterpriseManagedSettings } = await import('../../../src/lib/claude-settings-reader');
+      const settings = await readEnterpriseManagedSettings();
+
+      expect(settings).toBeNull();
+    });
+  });
+
+  describe('getMergedSettingsForProject', () => {
+    it('should merge settings with correct precedence (enterprise > local > project > global)', async () => {
+      // Global settings (lowest precedence)
+      const globalSettings = {
+        hooks: {
+          SessionStart: [{
+            hooks: [{ type: 'command' as const, command: 'global-command' }]
+          }]
+        },
+        someGlobalKey: 'global-value'
+      };
+
+      // Project shared settings
+      const projectSettings = {
+        hooks: {
+          SessionStart: [{
+            hooks: [{ type: 'command' as const, command: 'project-command' }]
+          }]
+        },
+        someProjectKey: 'project-value'
+      };
+
+      // Project local settings
+      const localSettings = {
+        hooks: {
+          PreCompact: [{
+            hooks: [{ type: 'command' as const, command: 'local-command' }]
+          }]
+        },
+        someLocalKey: 'local-value'
+      };
+
+      // Enterprise settings (highest precedence)
+      const enterpriseSettings = {
+        hooks: {
+          SessionStart: [{
+            hooks: [{ type: 'command' as const, command: 'enterprise-command' }]
+          }]
+        },
+        someEnterpriseKey: 'enterprise-value'
+      };
+
+      mockClaudeCore.getGlobalSettingsPath.mockReturnValue('/global/settings.json');
+      mockClaudeCore.getProjectSettingsPath.mockReturnValue('/project/settings.json');
+      mockClaudeCore.getProjectLocalSettingsPath.mockReturnValue('/project/settings.local.json');
+      mockClaudeCore.getEnterpriseManagedSettingsPath.mockReturnValue('/enterprise/settings.json');
+
+      mockFs.readFile.mockImplementation((path: string) => {
+        if (path === '/global/settings.json') {
+          return Promise.resolve(JSON.stringify(globalSettings));
+        }
+        if (path === '/project/settings.json') {
+          return Promise.resolve(JSON.stringify(projectSettings));
+        }
+        if (path === '/project/settings.local.json') {
+          return Promise.resolve(JSON.stringify(localSettings));
+        }
+        if (path === '/enterprise/settings.json') {
+          return Promise.resolve(JSON.stringify(enterpriseSettings));
+        }
+        const error: any = new Error('Not found');
+        error.code = 'ENOENT';
+        return Promise.reject(error);
+      });
+
+      const { getMergedSettingsForProject } = await import('../../../src/lib/claude-settings-reader');
+      const merged = await getMergedSettingsForProject('/project');
+
+      // Enterprise hooks should override all others
+      expect(merged.hooks?.SessionStart).toEqual(enterpriseSettings.hooks.SessionStart);
+      // Local PreCompact should be present (only in local)
+      expect(merged.hooks?.PreCompact).toEqual(localSettings.hooks.PreCompact);
+      // All keys from all levels should be present
+      expect(merged.someGlobalKey).toBe('global-value');
+      expect(merged.someProjectKey).toBe('project-value');
+      expect(merged.someLocalKey).toBe('local-value');
+      expect(merged.someEnterpriseKey).toBe('enterprise-value');
+    });
+
+    it('should handle missing settings files gracefully', async () => {
+      // Only global settings exist
+      const globalSettings = {
+        hooks: {
+          SessionStart: [{
+            hooks: [{ type: 'command' as const, command: 'global-only' }]
+          }]
+        }
+      };
+
+      mockClaudeCore.getGlobalSettingsPath.mockReturnValue('/global/settings.json');
+      mockClaudeCore.getProjectSettingsPath.mockReturnValue('/project/settings.json');
+      mockClaudeCore.getProjectLocalSettingsPath.mockReturnValue('/project/settings.local.json');
+      mockClaudeCore.getEnterpriseManagedSettingsPath.mockReturnValue(null);
+
+      mockFs.readFile.mockImplementation((path: string) => {
+        if (path === '/global/settings.json') {
+          return Promise.resolve(JSON.stringify(globalSettings));
+        }
+        const error: any = new Error('Not found');
+        error.code = 'ENOENT';
+        return Promise.reject(error);
+      });
+
+      const { getMergedSettingsForProject } = await import('../../../src/lib/claude-settings-reader');
+      const merged = await getMergedSettingsForProject('/project');
+
+      // Should only have global settings
+      expect(merged.hooks?.SessionStart).toEqual(globalSettings.hooks.SessionStart);
+    });
+  });
+
+  describe('getProjectHookStatus', () => {
+    it('should detect hooks at different levels', async () => {
+      // Set up project with local hooks
+      const localSettings = {
+        hooks: {
+          SessionStart: [{
+            hooks: [{ type: 'command' as const, command: 'npx vibe-log-cli send --silent' }]
+          }]
+        }
+      };
+
+      mockClaudeCore.getGlobalSettingsPath.mockReturnValue('/global/settings.json');
+      mockClaudeCore.getProjectSettingsPath.mockReturnValue('/project/settings.json');
+      mockClaudeCore.getProjectLocalSettingsPath.mockReturnValue('/project/settings.local.json');
+      mockClaudeCore.getEnterpriseManagedSettingsPath.mockReturnValue(null);
+
+      mockFs.readFile.mockImplementation((path: string) => {
+        if (path === '/project/settings.local.json') {
+          return Promise.resolve(JSON.stringify(localSettings));
+        }
+        const error: any = new Error('Not found');
+        error.code = 'ENOENT';
+        return Promise.reject(error);
+      });
+
+      // Mock getHookMode and getTrackedProjects
+      mockClaudeCore.discoverProjects.mockResolvedValue([]);
+
+      const { getProjectHookStatus } = await import('../../../src/lib/claude-settings-reader');
+      const status = await getProjectHookStatus('/project');
+
+      expect(status.hasLocalHooks).toBe(true);
+      expect(status.hasProjectHooks).toBe(false);
+      expect(status.hasEffectiveHooks).toBe(true);
+    });
+
+    it('should correctly identify when no hooks are installed', async () => {
+      mockClaudeCore.getGlobalSettingsPath.mockReturnValue('/global/settings.json');
+      mockClaudeCore.getProjectSettingsPath.mockReturnValue('/project/settings.json');
+      mockClaudeCore.getProjectLocalSettingsPath.mockReturnValue('/project/settings.local.json');
+      mockClaudeCore.getEnterpriseManagedSettingsPath.mockReturnValue(null);
+
+      const error: any = new Error('Not found');
+      error.code = 'ENOENT';
+      mockFs.readFile.mockRejectedValue(error);
+
+      mockClaudeCore.discoverProjects.mockResolvedValue([]);
+
+      const { getProjectHookStatus } = await import('../../../src/lib/claude-settings-reader');
+      const status = await getProjectHookStatus('/project');
+
+      expect(status.hasGlobalHooks).toBe(false);
+      expect(status.hasLocalHooks).toBe(false);
+      expect(status.hasProjectHooks).toBe(false);
+      expect(status.hasEffectiveHooks).toBe(false);
+    });
+  });
 });
