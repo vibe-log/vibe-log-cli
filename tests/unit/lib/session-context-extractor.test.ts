@@ -147,4 +147,184 @@ describe('Session Context Extractor', () => {
       expect(result).toBeNull();
     });
   });
+
+  describe('extractSessionMetadata', () => {
+    it('should extract metadata for first prompt in session', async () => {
+      const sessionContent = `{"sessionId":"test-123","cwd":"/Users/test/project","timestamp":"2025-08-27T00:00:00.000Z"}`;
+
+      const mockFs = {
+        readSessionFile: vi.fn().mockResolvedValue(sessionContent)
+      };
+      vi.mocked(ClaudeFileSystem).mockImplementation(() => mockFs as any);
+
+      // Import the function
+      const { extractSessionMetadata } = await import('../../../src/lib/session-context-extractor');
+
+      const result = await extractSessionMetadata('/tmp/test.jsonl', 'My first question');
+
+      expect(result.isFirstPrompt).toBe(true);
+      expect(result.messageNumber).toBe(1);
+      expect(result.totalMessages).toBe(0);
+      expect(result.hasImages).toBe(false);
+      expect(result.imageCount).toBe(0);
+      expect(result.lastAssistantEndsWithQuestion).toBe(false);
+    });
+
+    it('should count messages correctly in ongoing conversation', async () => {
+      const sessionContent = `{"sessionId":"test-123","cwd":"/Users/test/project","timestamp":"2025-08-27T00:00:00.000Z"}
+{"message":{"role":"user","content":"First question","timestamp":"2025-08-27T00:00:01.000Z"},"timestamp":"2025-08-27T00:00:01.000Z"}
+{"message":{"role":"assistant","content":"First answer","timestamp":"2025-08-27T00:00:02.000Z"},"timestamp":"2025-08-27T00:00:02.000Z"}
+{"message":{"role":"user","content":"Second question","timestamp":"2025-08-27T00:00:03.000Z"},"timestamp":"2025-08-27T00:00:03.000Z"}
+{"message":{"role":"assistant","content":"Second answer","timestamp":"2025-08-27T00:00:04.000Z"},"timestamp":"2025-08-27T00:00:04.000Z"}`;
+
+      const mockFs = {
+        readSessionFile: vi.fn().mockResolvedValue(sessionContent)
+      };
+      vi.mocked(ClaudeFileSystem).mockImplementation(() => mockFs as any);
+
+      const { extractSessionMetadata } = await import('../../../src/lib/session-context-extractor');
+
+      const result = await extractSessionMetadata('/tmp/test.jsonl', 'Third question');
+
+      expect(result.isFirstPrompt).toBe(false);
+      expect(result.messageNumber).toBe(3);
+      expect(result.totalMessages).toBe(4);
+    });
+
+    it('should detect when last assistant message ends with question', async () => {
+      const sessionContent = `{"sessionId":"test-123","cwd":"/Users/test/project","timestamp":"2025-08-27T00:00:00.000Z"}
+{"message":{"role":"user","content":"Help me","timestamp":"2025-08-27T00:00:01.000Z"},"timestamp":"2025-08-27T00:00:01.000Z"}
+{"message":{"role":"assistant","content":"Sure! What would you like me to do?","timestamp":"2025-08-27T00:00:02.000Z"},"timestamp":"2025-08-27T00:00:02.000Z"}`;
+
+      const mockFs = {
+        readSessionFile: vi.fn().mockResolvedValue(sessionContent)
+      };
+      vi.mocked(ClaudeFileSystem).mockImplementation(() => mockFs as any);
+
+      const { extractSessionMetadata } = await import('../../../src/lib/session-context-extractor');
+
+      const result = await extractSessionMetadata('/tmp/test.jsonl', 'Next prompt');
+
+      expect(result.lastAssistantEndsWithQuestion).toBe(true);
+    });
+
+    it('should detect images in current prompt', async () => {
+      const sessionContent = `{"sessionId":"test-123","cwd":"/Users/test/project","timestamp":"2025-08-27T00:00:00.000Z"}`;
+
+      const mockFs = {
+        readSessionFile: vi.fn().mockResolvedValue(sessionContent)
+      };
+      vi.mocked(ClaudeFileSystem).mockImplementation(() => mockFs as any);
+
+      const { extractSessionMetadata } = await import('../../../src/lib/session-context-extractor');
+
+      const result = await extractSessionMetadata('/tmp/test.jsonl', '[2 image attachments] See the image above');
+
+      expect(result.hasImages).toBe(true);
+      expect(result.imageCount).toBe(2);
+    });
+
+    it('should detect single image indicator', async () => {
+      const sessionContent = `{"sessionId":"test-123","cwd":"/Users/test/project","timestamp":"2025-08-27T00:00:00.000Z"}`;
+
+      const mockFs = {
+        readSessionFile: vi.fn().mockResolvedValue(sessionContent)
+      };
+      vi.mocked(ClaudeFileSystem).mockImplementation(() => mockFs as any);
+
+      const { extractSessionMetadata } = await import('../../../src/lib/session-context-extractor');
+
+      const result = await extractSessionMetadata('/tmp/test.jsonl', 'As shown in the screenshot');
+
+      expect(result.hasImages).toBe(true);
+      expect(result.imageCount).toBe(1);
+    });
+
+    it('should count truncated messages', async () => {
+      const sessionContent = `{"sessionId":"test-123","cwd":"/Users/test/project","timestamp":"2025-08-27T00:00:00.000Z"}
+{"message":{"role":"assistant","content":"This is a very long message that was truncated... ${'x'.repeat(400)}","timestamp":"2025-08-27T00:00:01.000Z"},"timestamp":"2025-08-27T00:00:01.000Z"}`;
+
+      const mockFs = {
+        readSessionFile: vi.fn().mockResolvedValue(sessionContent)
+      };
+      vi.mocked(ClaudeFileSystem).mockImplementation(() => mockFs as any);
+
+      const { extractSessionMetadata } = await import('../../../src/lib/session-context-extractor');
+
+      const result = await extractSessionMetadata('/tmp/test.jsonl', 'Next prompt');
+
+      expect(result.truncatedMessages).toBeGreaterThan(0);
+    });
+
+    it('should skip meta messages when counting', async () => {
+      const sessionContent = `{"sessionId":"test-123","cwd":"/Users/test/project","timestamp":"2025-08-27T00:00:00.000Z"}
+{"message":{"role":"user","content":"Real message 1","timestamp":"2025-08-27T00:00:01.000Z"},"timestamp":"2025-08-27T00:00:01.000Z"}
+{"message":{"role":"user","content":"Meta message","timestamp":"2025-08-27T00:00:02.000Z"},"isMeta":true,"timestamp":"2025-08-27T00:00:02.000Z"}
+{"message":{"role":"assistant","content":"Real reply","timestamp":"2025-08-27T00:00:03.000Z"},"timestamp":"2025-08-27T00:00:03.000Z"}`;
+
+      const mockFs = {
+        readSessionFile: vi.fn().mockResolvedValue(sessionContent)
+      };
+      vi.mocked(ClaudeFileSystem).mockImplementation(() => mockFs as any);
+
+      const { extractSessionMetadata } = await import('../../../src/lib/session-context-extractor');
+
+      const result = await extractSessionMetadata('/tmp/test.jsonl', 'Next');
+
+      // Should only count real messages (1 user + 1 assistant = 2 total)
+      expect(result.totalMessages).toBe(2);
+      expect(result.messageNumber).toBe(2);
+    });
+
+    it('should handle array content in assistant messages', async () => {
+      const sessionContent = `{"sessionId":"test-123","cwd":"/Users/test/project","timestamp":"2025-08-27T00:00:00.000Z"}
+{"message":{"role":"assistant","content":[{"type":"text","text":"Do you want option A or option B?"}],"timestamp":"2025-08-27T00:00:01.000Z"},"timestamp":"2025-08-27T00:00:01.000Z"}`;
+
+      const mockFs = {
+        readSessionFile: vi.fn().mockResolvedValue(sessionContent)
+      };
+      vi.mocked(ClaudeFileSystem).mockImplementation(() => mockFs as any);
+
+      const { extractSessionMetadata } = await import('../../../src/lib/session-context-extractor');
+
+      const result = await extractSessionMetadata('/tmp/test.jsonl', 'Next');
+
+      expect(result.lastAssistantEndsWithQuestion).toBe(true);
+    });
+
+    it('should return default metadata on error', async () => {
+      const mockFs = {
+        readSessionFile: vi.fn().mockRejectedValue(new Error('File not found'))
+      };
+      vi.mocked(ClaudeFileSystem).mockImplementation(() => mockFs as any);
+
+      const { extractSessionMetadata } = await import('../../../src/lib/session-context-extractor');
+
+      const result = await extractSessionMetadata('/tmp/nonexistent.jsonl', 'Test');
+
+      // Should return default metadata
+      expect(result.isFirstPrompt).toBe(true);
+      expect(result.messageNumber).toBe(1);
+      expect(result.totalMessages).toBe(0);
+    });
+
+    it('should handle malformed JSON lines gracefully', async () => {
+      const sessionContent = `{"sessionId":"test-123","cwd":"/Users/test/project","timestamp":"2025-08-27T00:00:00.000Z"}
+{"message":{"role":"user","content":"Valid message","timestamp":"2025-08-27T00:00:01.000Z"},"timestamp":"2025-08-27T00:00:01.000Z"}
+{invalid json here}
+{"message":{"role":"assistant","content":"Valid reply","timestamp":"2025-08-27T00:00:02.000Z"},"timestamp":"2025-08-27T00:00:02.000Z"}`;
+
+      const mockFs = {
+        readSessionFile: vi.fn().mockResolvedValue(sessionContent)
+      };
+      vi.mocked(ClaudeFileSystem).mockImplementation(() => mockFs as any);
+
+      const { extractSessionMetadata } = await import('../../../src/lib/session-context-extractor');
+
+      const result = await extractSessionMetadata('/tmp/test.jsonl', 'Next');
+
+      // Should still count valid messages
+      expect(result.totalMessages).toBe(2);
+    });
+  });
 });
