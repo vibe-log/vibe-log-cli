@@ -230,8 +230,144 @@ npm run build
 
 ---
 
+## Session 4 (COMPLETED): Hook System Utilities - Quick Wins
+
+### What Was Accomplished ✅
+
+**Test Coverage for Hook Utilities**
+- Created 3 new comprehensive test files with 66 tests total
+- Achieved exceptional coverage across all 3 target files:
+
+| File | Before | After | Tests Added | Status |
+|------|--------|-------|-------------|---------|
+| **hook-lock.ts** | 19.64% | **100%** | 16 tests | ✅ EXCEEDED target (80%+) |
+| **hook-utils.ts** | 7.57% | **100%** | 28 tests | ✅ EXCEEDED target (75%+) |
+| **detector.ts** | 28.2% | **91.02%** | 22 tests | ✅ EXCEEDED target (70%+) |
+
+**Overall Coverage:** 51.8% → **54.78%** (+3% improvement)
+
+### Test Files Created
+
+1. **tests/unit/lib/hook-lock.test.ts** (270 lines)
+   - 16 comprehensive tests for HookLock class
+   - Test categories: acquire(), release(), forceClear(), concurrent operations, timeout behavior
+   - Coverage: 100% (statements, branches, functions, lines)
+
+2. **tests/unit/lib/hook-utils.test.ts** (395 lines)
+   - 28 comprehensive tests for 6 utility functions
+   - Test categories: withTimeout(), logHookError(), silentErrorWrapper(), getHooksLogPath(), clearHooksLog(), readHooksLog(), integration scenarios
+   - Coverage: 100% (statements, branches, functions, lines)
+
+3. **tests/unit/lib/detector.test.ts** (460 lines)
+   - 22 comprehensive tests for setup state detection
+   - Test categories: All 7 setup states, tracking modes, status line, sync info, warnings/errors, helper functions
+   - Coverage: 91.02% (uncovered: edge cases in project counting)
+
+### Key Test Patterns Established
+
+1. **File-based locking**: Tested concurrent lock attempts, stale lock detection (60s timeout), error handling
+2. **Timeout management**: Tested operation timeouts, graceful failure, error logging
+3. **State detection**: Tested complex state machine with 7 states (FIRST_TIME, LOCAL_ONLY, CLOUD_AUTO, CLOUD_MANUAL, CLOUD_ONLY, PUSHUP_ONLY, PARTIAL_SETUP)
+4. **Mock management**: Learned to explicitly mock fs operations in each test to avoid persistence issues
+
+### Challenges Overcome
+
+**Mock Persistence Issue**: Initial detector tests failed because fs.access and fs.readdir mocks from earlier tests persisted despite vi.restoreAllMocks(). Solved by explicitly mocking fs in each test that requires specific behavior.
+
+**Estimated Time:** 4-6 hours total
+**Actual Time:** ~4 hours
+**Expected Coverage Gain:** 51.8% → ~62-64% overall
+**Actual Coverage Gain:** 51.8% → 54.78% overall
+
+---
+
+## Session 5 TODO: State Management
+
+### Priority Files (Medium Effort, High Impact)
+
+| File | Current Coverage | Target | Functions | Tests Needed |
+|------|-----------------|--------|-----------|--------------|
+| **session-context-extractor.ts** | **51.67%** | 85%+ | 2 | ~5-6 |
+| **api-client.ts** | **68.2%** | 85%+ | 25 | ~12-15 |
+
+**Estimated Time:** 8-10 hours
+
+### 1. session-context-extractor.ts (51.67% → 85%+)
+
+**Test Cases Needed:**
+- Extract context from various session types
+- Handle missing/incomplete sessions
+- Edge cases (empty context, malformed data)
+
+### 2. api-client.ts (68.2% → 85%+)
+
+**Test Cases Needed:**
+- Untested API endpoints
+- Rate limiting scenarios
+- Retry logic with exponential backoff
+- Error handling for network failures
+- Token refresh flows
+
+---
+
+## Session 6-7 TODO: Settings Management (Long-term Investment)
+
+### Priority Files (High Effort, High Impact)
+
+| File | Current Coverage | Target | Functions | Tests Needed |
+|------|-----------------|--------|-----------|--------------|
+| **claude-settings-reader.ts** | **39.31%** | 75%+ | 14 | ~10-12 |
+| **claude-settings-manager.ts** | **17.16%** | 60%+ | 30 | ~40-50 |
+
+**Estimated Time:** 13-19 hours total
+
+### 1. claude-settings-reader.ts (39.31% → 75%+)
+
+**Test Cases Needed:**
+- Settings validation (global, local, shared)
+- Settings precedence handling
+- Error cases (invalid JSON, missing files)
+- Edge cases (empty settings, malformed data)
+
+### 2. claude-settings-manager.ts (17.16% → 60%+)
+
+**Test Cases Needed:**
+- Hook installation/removal in settings files
+- Settings file manipulation
+- Multi-project scenarios
+- Error handling and recovery
+- Edge cases (permissions, file locks)
+
+---
+
+## Updated Coverage Goals
+
+**Current Status (as of Session 4):**
+- Overall Project Coverage: **54.78%** (was 51.8%)
+- Critical Files (hooks): ✅ 80%+ (Sessions 1 & 2 complete)
+- Quick Win Files: ✅ 100%/100%/91% (Session 4 complete)
+
+**Session Progress:**
+- **Session 1 Complete**: hooks-manager.ts → 86.71% ✅
+- **Session 2 Complete**: hooks-controller.ts → 82.63% ✅
+- **Session 3 TODO**: send-orchestrator.ts (41% → 75%+)
+- **Session 4 Complete**: hook-lock, hook-utils, detector → 100%/100%/91% ✅
+- **Session 5 TODO**: session-context-extractor, api-client
+- **Session 6-7 TODO**: claude-settings-reader, claude-settings-manager
+
+**Target Coverage by Session:**
+- **Session 3 Complete**: ~56-58% overall (when completed)
+- **Session 4 Complete**: ✅ 54.78% overall (QUICK WINS ACHIEVED)
+- **Session 5 Complete**: ~58-62% overall
+- **Session 6-7 Complete**: ~65-70% overall
+
+**Realistic Overall Target:** 65-70% (given UI/interactive exclusions)
+
+---
+
 ## Contact/Reference
 
 - PR being reviewed: https://github.com/vibe-log/vibe-log-cli/pull/10
 - Focus: Hook preservation during install/uninstall operations
 - Context: Removed legacy installVibeLogHooks, improved test coverage
+- **Latest**: Coverage badge automation added, Node 18.x removed from CI
