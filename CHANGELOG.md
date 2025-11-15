@@ -5,6 +5,55 @@ All notable changes to the vibe-log-cli project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1] - 2025-11-15
+
+### Fixed
+- **CRITICAL**: Fixed hooks overwrite bug that deleted users' custom Claude Code hooks during install/uninstall operations
+  - Installing vibe-log hooks now appends to existing hooks array instead of replacing them
+  - Uninstalling vibe-log hooks now filters out only vibe-log commands instead of deleting entire hook type
+  - Added duplicate prevention to avoid multiple installations
+
+### Improved
+- Added comprehensive test coverage for hooks-controller (36 unit tests)
+- Removed legacy camelCase hook format support for cleaner codebase
+
+### Refactored
+- Code cleanup and improved maintainability throughout hooks system
+
+## [0.8.0] - 2025-11-07
+
+### Added
+- **Cursor IDE Push-Up Challenge Integration**: New hook integration for Cursor IDE's `afterAgentResponse` trigger
+  - Automatically detects over-validation phrases in Cursor conversations
+  - Supports both ASCII apostrophe (') and smart apostrophe (') characters
+  - Modern Cursor format support with bubbleId-based message storage
+  - Silent operation to avoid disrupting Cursor IDE workflow
+- **Cursor IDE Session Sync**: New `cursor-upload` command for uploading Cursor conversations to vibe-log
+  - Date range selection options: 7 days, 30 days, or all conversations
+  - Dry-run mode (`--dry-run`) to preview sessions before upload
+  - Silent mode (`--silent`) for automation and scripting
+  - Extracts project names from Cursor workspace databases
+  - Optional file logging for troubleshooting
+- **Full Cursor IDE Integration**:
+  - New "View Cursor IDE stats" menu option
+  - Push-up challenge tracks validation phrases in both Claude Code AND Cursor IDE
+  - Supports both legacy and modern Cursor conversation formats
+  - Cross-platform support (macOS, Windows, Linux)
+  - Time-based statistics: Shows stats for this week, last week, this month, this year
+- Added `better-sqlite3` dependency for Cursor database access
+
+### Changed
+- **Hook Auto-Update Mechanism**: All hooks now use `npx vibe-log-cli@latest` instead of `npx vibe-log-cli`
+  - Ensures users automatically get latest bug fixes and improvements
+  - Applies to both Claude Code hooks and Cursor hooks
+
+### Fixed
+- Apostrophe detection for validation phrases (supports both ASCII and smart apostrophes)
+- Cursor integration timestamp initialization for accurate tracking from first enable
+- Cursor hook stdout logging silenced to prevent JSON parse errors
+- Latest message retrieval improved for modern Cursor conversation format
+- Logger file output now dynamically redirects logs after initialization
+
 ## [0.7.6] - 2025-10-31
 
 ### Added
