@@ -302,4 +302,517 @@ describe('SendOrchestrator', () => {
       expect(mockUpdateProjectSyncBoundaries).not.toHaveBeenCalled();
     });
   });
+
+  describe('sanitizeSessions - session filtering', () => {
+    it('should filter out sessions shorter than 4 minutes', async () => {
+      const sessions = [
+        {
+          id: 'session1',
+          tool: 'claude_code' as const,
+          projectPath: '/home/user/projects/my-app',
+          timestamp: new Date(),
+          duration: 120, // 2 minutes - too short
+          messages: [
+            { role: 'user' as const, content: 'Hello', timestamp: new Date() }
+          ],
+          metadata: {}
+        },
+        {
+          id: 'session2',
+          tool: 'claude_code' as const,
+          projectPath: '/home/user/projects/my-app',
+          timestamp: new Date(),
+          duration: 300, // 5 minutes - valid
+          messages: [
+            { role: 'user' as const, content: 'Hello', timestamp: new Date() }
+          ],
+          metadata: {}
+        }
+      ];
+
+      const result = await orchestrator.sanitizeSessions(sessions);
+
+      // Should only include the longer session
+      expect(result).toHaveLength(1);
+      expect(result[0].duration).toBe(300);
+    });
+
+    it('should throw error when all sessions are too short (non-initial sync)', async () => {
+      const shortSessions = [
+        {
+          id: 'session1',
+          tool: 'claude_code' as const,
+          projectPath: '/home/user/projects/my-app',
+          timestamp: new Date(),
+          duration: 180, // 3 minutes - too short
+          messages: [
+            { role: 'user' as const, content: 'Hello', timestamp: new Date() }
+          ],
+          metadata: {}
+        }
+      ];
+
+      await expect(orchestrator.sanitizeSessions(shortSessions))
+        .rejects
+        .toThrow(/All 1 session.*shorter than 4 minutes/);
+    });
+
+    it('should NOT throw error when all sessions are too short during initial sync', async () => {
+      const shortSessions = [
+        {
+          id: 'session1',
+          tool: 'claude_code' as const,
+          projectPath: '/home/user/projects/my-app',
+          timestamp: new Date(),
+          duration: 180, // 3 minutes - too short
+          messages: [
+            { role: 'user' as const, content: 'Hello', timestamp: new Date() }
+          ],
+          metadata: {}
+        }
+      ];
+
+      const result = await orchestrator.sanitizeSessions(shortSessions, { isInitialSync: true });
+
+      // Should return empty array without throwing
+      expect(result).toHaveLength(0);
+    });
+  });
+
+  describe('uploadSessions - error handling', () => {
+    it('should log errors in silent mode', async () => {
+      const apiSessions = [{
+        tool: 'claude_code' as const,
+        timestamp: new Date().toISOString(),
+        duration: 300,
+        data: {
+          projectName: 'my-app',
+          messageSummary: '[]',
+          messageCount: 1,
+          metadata: {}
+        }
+      }];
+
+      const uploadError = new Error('Network failure');
+      mockApiClient.uploadSessions = vi.fn().mockRejectedValue(uploadError);
+
+      await expect(
+        orchestrator.uploadSessions(apiSessions, { silent: true })
+      ).rejects.toThrow('Network failure');
+
+      // Error should have been logged
+      expect(mockApiClient.uploadSessions).toHaveBeenCalledWith(apiSessions, undefined);
+    });
+
+    it('should propagate upload errors in non-silent mode', async () => {
+      const apiSessions = [{
+        tool: 'claude_code' as const,
+        timestamp: new Date().toISOString(),
+        duration: 300,
+        data: {
+          projectName: 'my-app',
+          messageSummary: '[]',
+          messageCount: 1,
+          metadata: {}
+        }
+      }];
+
+      const uploadError = new Error('API Error');
+      mockApiClient.uploadSessions = vi.fn().mockRejectedValue(uploadError);
+
+      await expect(
+        orchestrator.uploadSessions(apiSessions, {})
+      ).rejects.toThrow('API Error');
+    });
+
+    it('should handle successful upload with progress callback', async () => {
+      const apiSessions = [{
+        tool: 'claude_code' as const,
+        timestamp: new Date().toISOString(),
+        duration: 300,
+        data: {
+          projectName: 'my-app',
+          messageSummary: '[]',
+          messageCount: 1,
+          metadata: {}
+        }
+      }];
+
+      const progressCallback = vi.fn();
+      mockApiClient.uploadSessions = vi.fn().mockResolvedValue({
+        success: true,
+        sessionsProcessed: 1
+      });
+
+      const result = await orchestrator.uploadSessions(apiSessions, {}, progressCallback);
+
+      expect(result.success).toBe(true);
+      expect(mockApiClient.uploadSessions).toHaveBeenCalledWith(apiSessions, progressCallback);
+    });
+  });
+
+  describe('execute - full workflow', () => {
+    beforeEach(() => {
+      // Mock syncPushUpStats to avoid errors
+      vi.mock('../../../../src/lib/push-up-sync', () => ({
+        syncPushUpStats: vi.fn().mockResolvedValue(undefined)
+      }));
+    });
+
+    it('should handle no sessions found (silent mode)', async () => {
+      mockReadClaudeSessions.mockResolvedValue([]);
+
+      // Should not throw
+      await orchestrator.execute({ silent: true });
+
+      // Should have checked auth
+      expect(mockGetToken).toHaveBeenCalled();
+
+      // Should not have uploaded
+      expect(mockApiClient.uploadSessions).not.toHaveBeenCalled();
+    });
+
+    it('should handle no sessions found (non-silent mode)', async () => {
+      mockReadClaudeSessions.mockResolvedValue([]);
+
+      await orchestrator.execute({});
+
+      // Should have checked auth
+      expect(mockRequireAuth).toHaveBeenCalled();
+
+      // Should not have uploaded
+      expect(mockApiClient.uploadSessions).not.toHaveBeenCalled();
+    });
+
+    it('should handle dry run mode (silent)', async () => {
+      const mockSessions = [{
+        id: 'session1',
+        tool: 'claude_code' as const,
+        projectPath: '/home/user/projects/my-app',
+        timestamp: new Date(),
+        duration: 300,
+        messages: [
+          { role: 'user' as const, content: 'Test', timestamp: new Date() }
+        ],
+        metadata: {}
+      }];
+
+      mockReadClaudeSessions.mockResolvedValue(mockSessions);
+
+      await orchestrator.execute({ dry: true, silent: true });
+
+      // Should not upload in dry run
+      expect(mockApiClient.uploadSessions).not.toHaveBeenCalled();
+    });
+
+    it('should handle dry run mode (non-silent)', async () => {
+      const mockSessions = [{
+        id: 'session1',
+        tool: 'claude_code' as const,
+        projectPath: '/home/user/projects/my-app',
+        timestamp: new Date(),
+        duration: 300,
+        messages: [
+          { role: 'user' as const, content: 'Test', timestamp: new Date() }
+        ],
+        metadata: {}
+      }];
+
+      mockReadClaudeSessions.mockResolvedValue(mockSessions);
+
+      await orchestrator.execute({ dry: true });
+
+      // Should not upload in dry run
+      expect(mockApiClient.uploadSessions).not.toHaveBeenCalled();
+    });
+
+    it('should log results in silent mode with points', async () => {
+      const mockSessions = [{
+        id: 'session1',
+        tool: 'claude_code' as const,
+        projectPath: '/home/user/projects/my-app',
+        timestamp: new Date(),
+        duration: 300,
+        messages: [
+          { role: 'user' as const, content: 'Test', timestamp: new Date() }
+        ],
+        metadata: {}
+      }];
+
+      mockReadClaudeSessions.mockResolvedValue(mockSessions);
+      mockApiClient.uploadSessions = vi.fn().mockResolvedValue({
+        success: true,
+        sessionsProcessed: 1,
+        pointsEarned: {
+          total: 15,
+          streak: 10,
+          volume: 5
+        }
+      });
+
+      await orchestrator.execute({ silent: true });
+
+      expect(mockApiClient.uploadSessions).toHaveBeenCalled();
+      expect(mockSetLastSyncSummary).toHaveBeenCalled();
+    });
+
+    it('should log results in silent mode without points', async () => {
+      const mockSessions = [{
+        id: 'session1',
+        tool: 'claude_code' as const,
+        projectPath: '/home/user/projects/my-app',
+        timestamp: new Date(),
+        duration: 300,
+        messages: [
+          { role: 'user' as const, content: 'Test', timestamp: new Date() }
+        ],
+        metadata: {}
+      }];
+
+      mockReadClaudeSessions.mockResolvedValue(mockSessions);
+      mockApiClient.uploadSessions = vi.fn().mockResolvedValue({
+        success: true,
+        sessionsProcessed: 1
+      });
+
+      await orchestrator.execute({ silent: true });
+
+      expect(mockApiClient.uploadSessions).toHaveBeenCalled();
+      expect(mockSetLastSyncSummary).toHaveBeenCalled();
+    });
+
+    it('should throw error in silent mode when not authenticated', async () => {
+      mockGetToken.mockResolvedValue(null);
+
+      await expect(orchestrator.execute({ silent: true }))
+        .rejects
+        .toThrow('Not authenticated');
+    });
+  });
+
+  describe('authenticate', () => {
+    it('should use requireAuth in non-silent mode', async () => {
+      await orchestrator.authenticate({});
+
+      expect(mockRequireAuth).toHaveBeenCalled();
+      expect(mockGetToken).not.toHaveBeenCalled();
+    });
+
+    it('should check token in silent mode', async () => {
+      mockGetToken.mockResolvedValue('valid-token');
+
+      await orchestrator.authenticate({ silent: true });
+
+      expect(mockGetToken).toHaveBeenCalled();
+      expect(mockRequireAuth).not.toHaveBeenCalled();
+    });
+
+    it('should throw error in silent mode when no token', async () => {
+      mockGetToken.mockResolvedValue(null);
+
+      await expect(orchestrator.authenticate({ silent: true }))
+        .rejects
+        .toThrow('Not authenticated');
+    });
+  });
+
+  describe('uploadSessions - debug mode', () => {
+    let originalEnv: string | undefined;
+
+    beforeEach(() => {
+      originalEnv = process.env.VIBELOG_DEBUG;
+    });
+
+    afterEach(() => {
+      if (originalEnv !== undefined) {
+        process.env.VIBELOG_DEBUG = originalEnv;
+      } else {
+        delete process.env.VIBELOG_DEBUG;
+      }
+    });
+
+    it('should log debug info when VIBELOG_DEBUG=true', async () => {
+      process.env.VIBELOG_DEBUG = 'true';
+
+      const apiSessions = [{
+        tool: 'claude_code' as const,
+        timestamp: new Date().toISOString(),
+        duration: 300,
+        data: {
+          projectName: 'my-app',
+          messageSummary: '[]',
+          messageCount: 1,
+          metadata: {}
+        }
+      }];
+
+      mockApiClient.uploadSessions = vi.fn().mockResolvedValue({
+        success: true,
+        sessionsProcessed: 1
+      });
+
+      const consoleSpy = vi.spyOn(console, 'log');
+
+      await orchestrator.uploadSessions(apiSessions, {});
+
+      // Should have logged debug info
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[DEBUG]'),
+        expect.anything(),
+        expect.anything()
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should log debug error when upload fails in debug mode', async () => {
+      process.env.VIBELOG_DEBUG = 'true';
+
+      const apiSessions = [{
+        tool: 'claude_code' as const,
+        timestamp: new Date().toISOString(),
+        duration: 300,
+        data: {
+          projectName: 'my-app',
+          messageSummary: '[]',
+          messageCount: 1,
+          metadata: {}
+        }
+      }];
+
+      const uploadError = new Error('Debug test error');
+      mockApiClient.uploadSessions = vi.fn().mockRejectedValue(uploadError);
+
+      const consoleSpy = vi.spyOn(console, 'log');
+
+      await expect(
+        orchestrator.uploadSessions(apiSessions, {})
+      ).rejects.toThrow('Debug test error');
+
+      // Should have logged debug error
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[DEBUG]'),
+        expect.anything()
+      );
+
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('execute - debug logging in results', () => {
+    let originalEnv: string | undefined;
+
+    beforeEach(() => {
+      originalEnv = process.env.VIBELOG_DEBUG;
+    });
+
+    afterEach(() => {
+      if (originalEnv !== undefined) {
+        process.env.VIBELOG_DEBUG = originalEnv;
+      } else {
+        delete process.env.VIBELOG_DEBUG;
+      }
+    });
+
+    it('should log results with debug info in non-silent mode', async () => {
+      const mockSessions = [{
+        id: 'session1',
+        tool: 'claude_code' as const,
+        projectPath: '/home/user/projects/my-app',
+        timestamp: new Date(),
+        duration: 300,
+        messages: [
+          { role: 'user' as const, content: 'Test', timestamp: new Date() }
+        ],
+        metadata: {}
+      }];
+
+      mockReadClaudeSessions.mockResolvedValue(mockSessions);
+      mockApiClient.uploadSessions = vi.fn().mockResolvedValue({
+        success: true,
+        sessionsProcessed: 1
+      });
+
+      await orchestrator.execute({});
+
+      expect(mockApiClient.uploadSessions).toHaveBeenCalled();
+    });
+  });
+
+  describe('sanitizeSessions - multiple filtered sessions', () => {
+    it('should filter multiple short sessions and keep valid ones', async () => {
+      const sessions = [
+        {
+          id: 'session1',
+          tool: 'claude_code' as const,
+          projectPath: '/home/user/projects/my-app',
+          timestamp: new Date(),
+          duration: 120, // Too short
+          messages: [
+            { role: 'user' as const, content: 'Hello', timestamp: new Date() }
+          ],
+          metadata: {}
+        },
+        {
+          id: 'session2',
+          tool: 'claude_code' as const,
+          projectPath: '/home/user/projects/my-app',
+          timestamp: new Date(),
+          duration: 180, // Too short
+          messages: [
+            { role: 'user' as const, content: 'Hello', timestamp: new Date() }
+          ],
+          metadata: {}
+        },
+        {
+          id: 'session3',
+          tool: 'claude_code' as const,
+          projectPath: '/home/user/projects/my-app',
+          timestamp: new Date(),
+          duration: 300, // Valid
+          messages: [
+            { role: 'user' as const, content: 'Hello', timestamp: new Date() }
+          ],
+          metadata: {}
+        }
+      ];
+
+      const result = await orchestrator.sanitizeSessions(sessions);
+
+      // Should only include the valid session
+      expect(result).toHaveLength(1);
+      expect(result[0].duration).toBe(300);
+    });
+
+    it('should throw error with correct count when multiple sessions filtered', async () => {
+      const shortSessions = [
+        {
+          id: 'session1',
+          tool: 'claude_code' as const,
+          projectPath: '/home/user/projects/my-app',
+          timestamp: new Date(),
+          duration: 180,
+          messages: [
+            { role: 'user' as const, content: 'Hello', timestamp: new Date() }
+          ],
+          metadata: {}
+        },
+        {
+          id: 'session2',
+          tool: 'claude_code' as const,
+          projectPath: '/home/user/projects/my-app',
+          timestamp: new Date(),
+          duration: 200,
+          messages: [
+            { role: 'user' as const, content: 'Hello', timestamp: new Date() }
+          ],
+          metadata: {}
+        }
+      ];
+
+      await expect(orchestrator.sanitizeSessions(shortSessions))
+        .rejects
+        .toThrow(/All 2 session.*shorter than 4 minutes/);
+    });
+  });
 });
