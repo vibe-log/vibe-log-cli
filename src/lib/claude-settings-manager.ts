@@ -439,10 +439,13 @@ export class ClaudeSettingsManager {
     // Install SessionStart hook if requested
     if (config.installSessionStart) {
       if (!settings.hooks.SessionStart) settings.hooks.SessionStart = [];
-      
+
       // Remove existing vibe-log SessionStart hooks
       this.removeAutoSyncHook(settings, 'SessionStart');
-      
+
+      // Re-initialize if removed (removeAutoSyncHook deletes empty arrays)
+      if (!settings.hooks.SessionStart) settings.hooks.SessionStart = [];
+
       const command = this.buildAutoSyncCommand(cliPath, 'sessionstart', config.mode);
       settings.hooks.SessionStart.push({
         matcher: 'startup|clear',
@@ -451,17 +454,20 @@ export class ClaudeSettingsManager {
           command
         }]
       });
-      
+
       logger.debug(`Added SessionStart hook: ${command}`);
     }
     
     // Install PreCompact hook if requested
     if (config.installPreCompact) {
       if (!settings.hooks.PreCompact) settings.hooks.PreCompact = [];
-      
+
       // Remove existing vibe-log PreCompact hooks
       this.removeAutoSyncHook(settings, 'PreCompact');
-      
+
+      // Re-initialize if removed (removeAutoSyncHook deletes empty arrays)
+      if (!settings.hooks.PreCompact) settings.hooks.PreCompact = [];
+
       const command = this.buildAutoSyncCommand(cliPath, 'precompact', config.mode);
       settings.hooks.PreCompact.push({
         matcher: 'auto',
@@ -470,7 +476,7 @@ export class ClaudeSettingsManager {
           command
         }]
       });
-      
+
       logger.debug(`Added PreCompact hook: ${command}`);
     }
     

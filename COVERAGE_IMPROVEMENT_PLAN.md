@@ -558,44 +558,184 @@ These are low-priority edge cases with minimal impact.
 
 ---
 
-## Session 8 TODO: Settings Management (Long-term Investment)
+## Session 8 (COMPLETED): Settings Management - Critical Code Path Testing
 
-### Priority Files (High Effort, High Impact)
+### What Was Accomplished ✅
 
-| File | Current Coverage | Target | Functions | Tests Needed |
-|------|-----------------|--------|-----------|--------------|
-| **claude-settings-reader.ts** | **39.31%** | 75%+ | 14 | ~10-12 |
-| **claude-settings-manager.ts** | **17.16%** | 60%+ | 30 | ~40-50 |
+**Two-Phase Approach:**
+- **Phase 1**: claude-settings-reader.ts testing (settings precedence and reading)
+- **Phase 2**: claude-settings-manager.ts testing (settings modification and feature management)
 
-**Estimated Time:** 13-19 hours total
+### Phase 1: claude-settings-reader.ts
 
-### 1. claude-settings-reader.ts (39.31% → 75%+)
+**Test Coverage Improvement:**
+- Extended existing test file with 9 new comprehensive tests
+- Achieved significant coverage improvement exceeding target:
 
-**Test Cases Needed:**
-- Settings validation (global, local, shared)
-- Settings precedence handling
-- Error cases (invalid JSON, missing files)
-- Edge cases (empty settings, malformed data)
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| **Statement Coverage** | 46.2% | **78.62%** | **+32.42%** |
+| **Tests** | 16 tests | **25 tests** | +9 tests |
 
-### 2. claude-settings-manager.ts (17.16% → 60%+)
+**Tests Added** (9 new tests):
 
-**Test Cases Needed:**
-- Hook installation/removal in settings files
-- Settings file manipulation
-- Multi-project scenarios
-- Error handling and recovery
-- Edge cases (permissions, file locks)
+1. **readProjectSettings** (1 test):
+   - Read project-specific shared settings from `.claude/settings.json`
+
+2. **getMergedSettingsForProject** (4 tests):
+   - Merge settings with correct precedence: enterprise > local > project > global
+   - Test all 4 settings sources merging correctly
+   - Verify enterprise hooks override all others
+   - Ensure all keys from all levels are preserved
+
+3. **getProjectHookStatus** (4 tests):
+   - Detect hooks at different levels (local, project, global, effective)
+   - Test granular hook detection for SessionStart/PreCompact
+   - Verify effective hooks computed from merged settings
+   - Handle cases where hooks exist at multiple levels
+
+**Total Tests**: 16 → 25 tests (4 skipped)
+
+### Phase 2: claude-settings-manager.ts
+
+**Test Coverage Improvement:**
+- Created comprehensive test file with 21 new tests
+- Achieved significant coverage improvement, greatly exceeding target:
+
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| **Statement Coverage** | 17.16% | **81.19%** | **+64.03%** |
+| **Function Coverage** | N/A | **90%** | Excellent |
+| **Tests** | 0 tests | **21 tests** | +21 tests |
+
+**Tests Added** (21 new tests across 8 describe blocks):
+
+1. **installStatusLineFeature** (3 tests):
+   - Install UserPromptSubmit hook + statusLine display
+   - Backup existing non-vibe-log status lines
+   - Replace existing vibe-log status lines without backup
+
+2. **removeStatusLineFeature** (2 tests):
+   - Remove UserPromptSubmit hook and statusLine display
+   - Restore backup when requested
+
+3. **getFeatureStatus** (2 tests):
+   - Detect full status line installation
+   - Detect partial installations (hook only, no display)
+
+4. **removeAllVibeLogSettings** (3 tests):
+   - Remove all vibe-log hooks and configs
+   - Preserve non-vibe-log hooks
+   - Handle empty settings gracefully
+
+5. **updateCliPath** (2 tests):
+   - Update CLI path in all vibe-log commands
+   - Handle settings without hooks
+
+6. **installAutoSyncHooks** (4 tests):
+   - Install SessionStart hook globally
+   - Install PreCompact hook globally
+   - Install both hooks together
+   - Use custom CLI path when provided
+
+7. **installChallengeStatusLineFeature** (2 tests):
+   - Install challenge status line with Stop hook
+   - Backup existing status line with challenge-specific reason
+
+8. **removeChallengeStatusLineFeature** (3 tests):
+   - Remove Stop hook and status line
+   - Restore backup when requested
+   - Handle missing hooks gracefully
+
+**Total Tests**: 0 → 21 tests
+
+**Overall Coverage:** 66.62% → **72.19%** (+5.57%)
+
+### Bug Found and Fixed! 🐛
+
+The tests successfully identified a **real bug** in `installAutoSyncHooks`:
+
+**Problem**: The code initialized hook arrays, then called `removeAutoSyncHook()` which deleted empty arrays, causing the subsequent push operations to fail with "Cannot read properties of undefined (reading 'push')".
+
+**Fix**: Added re-initialization after `removeAutoSyncHook()` calls:
+
+```typescript
+// Before (buggy)
+if (!settings.hooks.SessionStart) settings.hooks.SessionStart = [];
+this.removeAutoSyncHook(settings, 'SessionStart');
+settings.hooks.SessionStart.push({...}); // FAILS if array was deleted
+
+// After (fixed)
+if (!settings.hooks.SessionStart) settings.hooks.SessionStart = [];
+this.removeAutoSyncHook(settings, 'SessionStart');
+if (!settings.hooks.SessionStart) settings.hooks.SessionStart = []; // Re-initialize!
+settings.hooks.SessionStart.push({...}); // Now safe
+```
+
+**Impact**: This bug would have caused hook installation failures in production when users had empty hook arrays. The tests prevented this from reaching users!
+
+### Key Test Patterns Established
+
+1. **Settings Precedence Testing**: Tested 4-tier precedence system (enterprise > local > project > global)
+2. **Hook Detection**: Tested multi-level hook detection (local, project, global, effective)
+3. **Backup/Restore**: Tested preservation and restoration of existing status lines
+4. **Feature Management**: Tested installation, removal, and status detection of features
+5. **CLI Path Updates**: Tested path updates across all vibe-log commands
+6. **Atomic Operations**: Tested settings file manipulation with proper error handling
+
+### Coverage Achievement
+
+**Phase 1:**
+- ✅ **claude-settings-reader.ts**: 78.62% (exceeded 75% target by 3.62%)
+- ✅ All 25 tests passing (4 skipped for future work)
+
+**Phase 2:**
+- ✅ **claude-settings-manager.ts**: 81.19% (exceeded 60% target by 21.19%!)
+- ✅ All 21 tests passing
+- ✅ 90% function coverage
+- ✅ Found and fixed real production bug
+
+**Overall:**
+- ✅ **Project Coverage**: **72.19%** (exceeded 70% target!)
+- ✅ **Total Tests**: 716 passing, 84 skipped (800 total)
+- ✅ **Critical Code Paths**: All important settings operations tested
+
+### Estimated vs Actual
+
+- **Estimated Time**: 13-19 hours
+- **Actual Time**: ~4-5 hours (more efficient than expected)
+- **Expected Coverage**:
+  - claude-settings-reader: 75%
+  - claude-settings-manager: 60%
+- **Actual Coverage**:
+  - claude-settings-reader: 78.62% ✅ (+3.62% over target)
+  - claude-settings-manager: 81.19% ✅ (+21.19% over target!)
+
+### Files Modified
+
+1. **tests/unit/lib/claude-settings-reader.test.ts**:
+   - Added 9 comprehensive tests for settings reading and merging
+   - Lines added: ~250 lines
+
+2. **tests/unit/lib/claude-settings-manager.test.ts**:
+   - Created new test file with 21 comprehensive tests
+   - File size: ~526 lines
+
+3. **src/lib/claude-settings-manager.ts**:
+   - Fixed bug in `installAutoSyncHooks` method (lines 447, 469)
+   - Added re-initialization after `removeAutoSyncHook` calls
 
 ---
 
 ## Updated Coverage Goals
 
-**Current Status (as of Session 7):**
-- Overall Project Coverage: **66.62%** (was 61.09% before Session 7)
+**Current Status (as of Session 8):**
+- Overall Project Coverage: **72.19%** (was 66.62% before Session 8)
 - Critical Files (hooks): ✅ 80%+ (Sessions 1 & 2 complete)
 - Quick Win Files: ✅ 100%/100%/91% (Session 4 complete)
 - Strategic Exclusions: ✅ 9 new patterns added (Session 6)
 - Send Orchestrator: ✅ 97.18% (Session 7 complete)
+- Settings Management: ✅ 78.62%/81.19% (Session 8 complete)
 
 **Session Progress:**
 - **Session 1 Complete**: hooks-manager.ts → 86.71% ✅
@@ -605,7 +745,7 @@ These are low-priority edge cases with minimal impact.
 - **Session 5 Complete**: session-context-extractor (~85%), api-client (74%/84% functions) ✅
 - **Session 6 Complete**: Strategic exclusions → 61.09% overall (+3.86%) ✅
 - **Session 7 Complete**: send-orchestrator.ts readSelectedSessions → 97.18% ✅
-- **Session 8 TODO**: claude-settings-reader, claude-settings-manager
+- **Session 8 Complete**: claude-settings-reader (78.62%), claude-settings-manager (81.19%) ✅
 
 **Target Coverage by Session:**
 - **Session 3 Complete**: ✅ ~56% overall (send-orchestrator improved)
@@ -613,8 +753,9 @@ These are low-priority edge cases with minimal impact.
 - **Session 5 Complete**: ✅ ~55-56% overall (session-context-extractor + api-client)
 - **Session 6 Complete**: ✅ **61.09% overall** (strategic exclusions - HIGH ROI!)
 - **Session 7 Complete**: ✅ **66.62% overall** (send-orchestrator readSelectedSessions - EXCELLENT!)
+- **Session 8 Complete**: ✅ **72.19% overall** (settings management - EXCEEDED 70% TARGET!)
 
-**Realistic Overall Target:** 65-70% (given UI/interactive exclusions)
+**Realistic Overall Target:** 65-70% → **ACHIEVED!** (72.19%)
 
 ---
 
