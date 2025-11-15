@@ -20,8 +20,6 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            node: '18.x'
-          - os: ubuntu-latest
             node: '20.x'
           - os: windows-latest
             node: '20.x'
