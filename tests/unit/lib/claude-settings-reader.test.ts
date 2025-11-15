@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as fs from 'fs/promises';
 import {
   getHookMode,
   getTrackedProjects,
@@ -11,9 +10,18 @@ import * as claudeCore from '../../../src/lib/claude-core';
 import * as settingsReader from '../../../src/lib/claude-settings-reader';
 
 // Mock fs and claude-core modules
-vi.mock('fs/promises');
+vi.mock('fs', () => ({
+  promises: {
+    readFile: vi.fn(),
+    writeFile: vi.fn(),
+    rename: vi.fn(),
+  }
+}));
 vi.mock('../../../src/lib/claude-core');
 vi.mock('../../../src/utils/logger');
+
+// Import fs after mocking
+import { promises as fs } from 'fs';
 
 describe('Claude Settings Reader', () => {
   const mockFs = vi.mocked(fs);
@@ -343,6 +351,82 @@ describe('Claude Settings Reader', () => {
 
     it('should return false for null settings', () => {
       expect(hasVibeLogHooks(null)).toBe(false);
+    });
+  });
+
+  describe('readGlobalSettings', () => {
+    it('should read and parse global settings file', async () => {
+      const mockSettings = {
+        hooks: {
+          SessionStart: [{
+            matcher: 'startup',
+            hooks: [{ type: 'command' as const, command: 'echo test' }]
+          }]
+        }
+      };
+
+      mockFs.readFile.mockResolvedValue(JSON.stringify(mockSettings));
+
+      const settings = await readGlobalSettings();
+
+      expect(settings).toEqual(mockSettings);
+      expect(mockFs.readFile).toHaveBeenCalledWith(
+        '/home/user/.claude/settings.json',
+        'utf-8'
+      );
+    });
+
+    it('should return null when settings file does not exist', async () => {
+      const error: any = new Error('File not found');
+      error.code = 'ENOENT';
+      mockFs.readFile.mockRejectedValue(error);
+
+      const settings = await readGlobalSettings();
+
+      expect(settings).toBeNull();
+    });
+
+    it('should return null on JSON parse errors', async () => {
+      mockFs.readFile.mockResolvedValue('invalid json {{{');
+
+      const settings = await readGlobalSettings();
+
+      expect(settings).toBeNull();
+    });
+  });
+
+  describe('writeGlobalSettings', () => {
+    it('should write settings to global location using atomic write', async () => {
+      const settings = {
+        hooks: {
+          PreCompact: [{
+            matcher: 'auto',
+            hooks: [{ type: 'command' as const, command: 'test command' }]
+          }]
+        }
+      };
+
+      mockFs.writeFile.mockResolvedValue(undefined);
+      mockFs.rename.mockResolvedValue(undefined);
+
+      await writeGlobalSettings(settings);
+
+      expect(mockFs.writeFile).toHaveBeenCalledWith(
+        '/home/user/.claude/settings.json.tmp',
+        JSON.stringify(settings, null, 2)
+      );
+      expect(mockFs.rename).toHaveBeenCalledWith(
+        '/home/user/.claude/settings.json.tmp',
+        '/home/user/.claude/settings.json'
+      );
+    });
+
+    it('should propagate write errors', async () => {
+      const settings = { hooks: {} };
+      const error = new Error('Write failed');
+      mockFs.writeFile.mockRejectedValue(error);
+
+      await expect(writeGlobalSettings(settings)).rejects.toThrow('Write failed');
     });
   });
 });
