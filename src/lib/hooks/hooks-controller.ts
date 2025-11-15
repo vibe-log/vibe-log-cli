@@ -206,6 +206,8 @@ interface HookDefinition {
 
 /**
  * Build hook configuration for a specific hook type
+ * NOTE: This function is kept for future use but currently replaced by appendHookConfiguration
+ * @deprecated Use appendHookConfiguration instead
  */
 function buildHookConfiguration(
   hookType: 'SessionStart' | 'PreCompact' | 'SessionEnd',
@@ -224,6 +226,9 @@ function buildHookConfiguration(
   }];
 }
 
+// Export to avoid unused warning (may be used in future)
+export { buildHookConfiguration };
+
 /**
  * Clean up legacy hook formats
  */
@@ -241,6 +246,94 @@ function cleanupLegacyHooks(settings: ClaudeSettings): void {
  */
 async function ensureDirectory(dir: string): Promise<void> {
   await fs.mkdir(dir, { recursive: true });
+}
+
+/**
+ * Append hook configuration without overwriting existing hooks
+ */
+function appendHookConfiguration(
+  settings: ClaudeSettings,
+  hookType: 'SessionStart' | 'PreCompact' | 'SessionEnd',
+  cliPath: string,
+  mode?: 'all' | 'selected'
+): void {
+  const triggerType = hookType === 'SessionStart' ? 'sessionstart' :
+                      hookType === 'PreCompact' ? 'precompact' : 'sessionend';
+  const command = buildHookCommand(cliPath, triggerType, mode);
+  const matcher = HOOK_MATCHERS[hookType];
+
+  // Ensure hooks object exists
+  if (!settings.hooks) {
+    settings.hooks = {};
+  }
+
+  // Ensure hook structure exists
+  if (!settings.hooks[hookType]) {
+    settings.hooks[hookType] = [];
+  }
+
+  // Check if vibe-log hook already exists (prevent duplicates)
+  const existingHooks = settings.hooks[hookType];
+  if (existingHooks) {
+    for (const config of existingHooks) {
+      for (const hook of config.hooks || []) {
+        if (isVibeLogCommand(hook.command) && hook.command.includes(`--hook-trigger=${triggerType}`)) {
+          logger.debug(`${hookType} vibe-log hook already exists, skipping`);
+          return;
+        }
+      }
+    }
+  }
+
+  // Check if there's already a config with hooks array
+  if (existingHooks && existingHooks.length > 0 && existingHooks[0].hooks) {
+    // Append to existing hooks array - PRESERVES EXISTING HOOKS
+    existingHooks[0].hooks.push({
+      type: 'command',
+      command: command
+    });
+  } else if (existingHooks) {
+    // Create new config with hooks array
+    existingHooks.push({
+      matcher: matcher,
+      hooks: [{
+        type: 'command',
+        command: command
+      }]
+    });
+  }
+}
+
+/**
+ * Remove only vibe-log hooks from a specific hook type, preserving other hooks
+ */
+function removeVibeLogHook(
+  settings: ClaudeSettings,
+  hookType: 'SessionStart' | 'PreCompact' | 'SessionEnd'
+): void {
+  if (!settings.hooks || !settings.hooks[hookType]) {
+    return;
+  }
+
+  const existingHooks = settings.hooks[hookType];
+  if (!existingHooks) {
+    return;
+  }
+
+  // Filter out vibe-log commands while preserving other hooks
+  const filteredConfigs = existingHooks
+    .map((config: HookConfigWithMatcher) => ({
+      ...config,
+      hooks: config.hooks.filter((hook: HookConfig) => !isVibeLogCommand(hook.command))
+    }))
+    .filter((config: HookConfigWithMatcher) => config.hooks.length > 0);
+
+  if (filteredConfigs.length > 0) {
+    settings.hooks[hookType] = filteredConfigs;
+  } else {
+    // No hooks left, delete the hook type
+    delete settings.hooks[hookType];
+  }
 }
 
 /**
@@ -269,10 +362,12 @@ async function installHooksToSettings(
   // Install/remove each hook based on configuration
   for (const hook of hooks) {
     if (hook.enabled) {
-      settings.hooks[hook.type] = buildHookConfiguration(hook.type, cliPath, mode);
+      // Use append pattern to preserve existing hooks
+      appendHookConfiguration(settings, hook.type, cliPath, mode);
       logger.debug(`${hook.type} hook configured`);
     } else {
-      delete settings.hooks[hook.type];
+      // Remove only vibe-log hooks, preserve others
+      removeVibeLogHook(settings, hook.type);
       logger.debug(`${hook.type} hook removed`);
     }
   }

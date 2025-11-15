@@ -202,20 +202,39 @@ export async function installVibeLogHooks(force: boolean = false): Promise<void>
   
   // Get the CLI command path
   const cliCommand = getCliPath();
-  
-  // Add vibe-log hooks in Pascal case format (current Claude Code format)
-  settings.hooks.PreCompact = [
-    {
+
+  // Ensure PreCompact hook structure exists
+  if (!settings.hooks.PreCompact) {
+    settings.hooks.PreCompact = [];
+  }
+
+  // Check if vibe-log hook already exists (prevent duplicates)
+  const existingVibeLogHook = settings.hooks.PreCompact.some(config =>
+    config.hooks?.some(hook => isVibeLogCommand(hook.command))
+  );
+
+  if (existingVibeLogHook && !force) {
+    throw new Error('Vibe-log PreCompact hook already exists. Use --force to overwrite.');
+  }
+
+  // Build the hook command
+  const hookCommand: HookCommand = {
+    type: 'command',
+    command: buildHookCommand(cliCommand, 'precompact'),
+    timeout: 30000
+  };
+
+  // Check if there's already a PreCompact config with hooks array
+  if (settings.hooks.PreCompact.length > 0 && settings.hooks.PreCompact[0].hooks) {
+    // Append to existing hooks array - PRESERVES EXISTING HOOKS
+    settings.hooks.PreCompact[0].hooks.push(hookCommand);
+  } else {
+    // Create new config with hooks array
+    settings.hooks.PreCompact.push({
       matcher: '',
-      hooks: [
-        {
-          type: 'command',
-          command: buildHookCommand(cliCommand, 'precompact'),
-          timeout: 30000
-        }
-      ]
-    }
-  ];
+      hooks: [hookCommand]
+    });
+  }
   
   // Ensure directory exists
   await fs.mkdir(settingsDir, { recursive: true });
@@ -241,21 +260,53 @@ export async function uninstallVibeLogHooks(): Promise<void> {
   }
   
   let modified = false;
-  
-  // Remove hooks in both formats
+
+  // Remove hooks in both formats by filtering out vibe-log commands
   if (settings.hooks.stop) {
     delete settings.hooks.stop;
     modified = true;
   }
+
+  // Filter out vibe-log commands from PreCompact hook (preserves non-vibe-log hooks)
   if (settings.hooks.PreCompact) {
-    delete settings.hooks.PreCompact;
-    modified = true;
+    const originalPreCompact = settings.hooks.PreCompact;
+    const filteredConfigs = originalPreCompact.map(config => ({
+      ...config,
+      hooks: config.hooks.filter(hook => !isVibeLogCommand(hook.command))
+    })).filter(config => config.hooks.length > 0);
+
+    if (filteredConfigs.length !== originalPreCompact.length ||
+        filteredConfigs.some((config, i) => config.hooks.length !== originalPreCompact[i].hooks.length)) {
+      modified = true;
+    }
+
+    if (filteredConfigs.length > 0) {
+      settings.hooks.PreCompact = filteredConfigs;
+    } else {
+      delete settings.hooks.PreCompact;
+    }
   }
+
+  // Filter out vibe-log commands from preCompact hook (old format)
   if (settings.hooks.preCompact) {
-    delete settings.hooks.preCompact;
-    modified = true;
+    const originalPreCompact = settings.hooks.preCompact;
+    const filteredConfigs = originalPreCompact.map(config => ({
+      ...config,
+      hooks: config.hooks.filter(hook => !isVibeLogCommand(hook.command))
+    })).filter(config => config.hooks.length > 0);
+
+    if (filteredConfigs.length !== originalPreCompact.length ||
+        filteredConfigs.some((config, i) => config.hooks.length !== originalPreCompact[i].hooks.length)) {
+      modified = true;
+    }
+
+    if (filteredConfigs.length > 0) {
+      settings.hooks.preCompact = filteredConfigs;
+    } else {
+      delete settings.hooks.preCompact;
+    }
   }
-  
+
   if (!modified) {
     throw new Error('No vibe-log hooks found to uninstall.');
   }
