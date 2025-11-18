@@ -1,55 +1,63 @@
 
 <div align="center">
 
-<img width="628" height="176" alt="image" src="https://github.com/user-attachments/assets/1e468c1f-8228-46ad-a441-1b0926edfbc9" />
+ <img width="280" height="257" alt="og-image" src="https://github.com/user-attachments/assets/ff8a996f-6292-44eb-b6f4-a07737db7d6d" />
+
 
 <p></p>
 <h3>Open-source CLI for analyzing Claude Code sessions locally and generating productivity reports</h3>
 <p></p>
 
-<a href="https://vibe-log.dev">
-  <img src="https://img.shields.io/badge/by-vibe--log.dev-16A34A" alt="by vibe-log.dev"></a>
-  <a href="https://www.npmjs.com/package/vibe-log-cli"><img src="https://img.shields.io/npm/v/vibe-log-cli.svg" alt="npm version"></a>
-  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
-  <a href="https://nodejs.org"><img src="https://img.shields.io/node/v/vibe-log-cli.svg" alt="Node.js Version"></a>
-  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"></a>
+<a href="https://vibe-log.dev"><img src="https://img.shields.io/badge/by-vibe--log.dev-16A34A" alt="by vibe-log.dev"></a>
+<a href="https://www.npmjs.com/package/vibe-log-cli"><img src="https://img.shields.io/npm/v/vibe-log-cli.svg" alt="npm version"></a>
+<a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+<a href="https://nodejs.org"><img src="https://img.shields.io/node/v/vibe-log-cli.svg" alt="Node.js Version"></a>
+
 <a href="https://github.com/vibe-log/vibe-log-cli/actions/workflows/tests.yml"><img src="https://github.com/vibe-log/vibe-log-cli/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
 <a href="https://github.com/vibe-log/vibe-log-cli/actions/workflows/npm-publish.yml"><img src="https://github.com/vibe-log/vibe-log-cli/actions/workflows/npm-publish.yml/badge.svg" alt="NPM Publish"></a>
 <a href="https://github.com/vibe-log/vibe-log-cli/actions/workflows/build-verification.yml"><img src="https://github.com/vibe-log/vibe-log-cli/actions/workflows/build-verification.yml/badge.svg" alt="Build Verification"></a>
+<img src="./coverage/badges.svg" alt="Coverage">
+
 <a href="SECURITY.md"><img src="https://img.shields.io/badge/Security-Policy-blue.svg" alt="Security Policy"></a>
-<a href="https://www.npmjs.com/package/vibe-log-cli"><img src="https://img.shields.io/badge/npm-provenance-green" alt="npm provenance"></a>
-<a href="https://github.com/vibe-log/vibe-log-cli"><img src="https://img.shields.io/badge/source-verified-brightgreen" alt="Source Verified"></a>
-<a href="#-security--transparency"><img src="https://img.shields.io/badge/build-transparent-blue" alt="Transparent Build"></a>
-  <a href="https://github.com/vibe-log/vibe-log-cli">
-  <img src="https://img.shields.io/badge/⭐_Star-this_repo-22C55E?labelColor=000000" alt="Star this repo">
-</a>  
+<a href="https://github.com/vibe-log/vibe-log-cli?tab=readme-ov-file#-privacy--security"><img src="https://img.shields.io/badge/build-transparent-blue" alt="Transparent Build"></a>
+
+<a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"></a>
+<a href="https://x.com/Vibe_Log/"><img alt="X  Follow" src="https://img.shields.io/twitter/follow/Vibe_Log"></a>
+<a href="https://github.com/vibe-log/vibe-log-cli"><img src="https://img.shields.io/badge/⭐_Star-this_repo-22C55E?labelColor=000000" alt="Star this repo"></a>  
+ 
+</p>
 </p>
 
 [Website](https://vibe-log.dev) • [Report Bug](https://github.com/vibe-log/vibe-log-cli/issues) • [Request Feature](https://github.com/vibe-log/vibe-log-cli/issues)
 </div>
 
-![vibe-log-cli](https://github.com/user-attachments/assets/d72bebde-f90d-432f-92dd-6f7f0e4ec480)
 
 ## What is Vibe-Log?
 
-vibe-log-cli is an open-source command-line tool that analyzes your Claude Code sessions to extract productivity insights and generate reports. All analyses can run completely locally on your machine using Claude Code's capabilities. It also encompasses a statusline that help you get more from your sessions.  
+Vibe-log-cli is an open-source command-line tool that analyzes your Claude Code sessions to extract productivity insights and generate reports. All analyses can run completely locally on your machine using Claude Code's capabilities. It also encompasses a statusline that help you get more from your sessions.  
+
+## Getting Started fast
+Just run: 
+```bash
+npx vibe-log-cli@latest
+```
+ 
+
 ## Main features 
 ### 1. 📋 Today's standup 
 New: Be prepared in 2-3 minutes for your daily standup meeting! 
 <img width="1270" height="512" alt="Screenshot 2025-10-02 163102" src="https://github.com/user-attachments/assets/b0e2bd55-618e-4b9e-b1c0-f2d7069e76aa" />
 
- npx vibe-log-cli@latest
 
-### 3. 📊 Claude Code Productivity Report Generation (Local) 
+### 2. 📊 Claude Code Productivity Report Generation (Local) 
 Generate comprehensive productivity reports using Claude Code's sub-agents to analyze your sessions in parallel. No data leaves your machine.
 See example of locally generated report here: https://vibe-log.dev/example-daily-report
  
 
-## 3. 💬 Claude Status Line - Strategic Co-pilot / Advisor (Local)
+### 3. 🧠 Claude Code Co-pilot Statusline 
 Strategic product advisor in Claude Code. Your prompts are analyzed locally (via CC) to provide actionable guidance that pushes you to ship faster. Feedback appears in your Claude Code status line with concrete next steps.
 <img width="612" height="227" alt="image" src="https://github.com/user-attachments/assets/b2f7f10b-8a29-429b-921a-d0fc0bc45183" />
-## Getting Started
- just  run: npx vibe-log-cli@latest
+
 ## Updates 
 
 ### What's New in v0.7.x

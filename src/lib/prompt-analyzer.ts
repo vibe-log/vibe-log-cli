@@ -258,6 +258,30 @@ CONTEXT AWARENESS:
 - Balance: Sometimes shipping fast is right (experiments), sometimes quality matters (user-facing features)
 - You see only this session: Ask questions to understand their broader context when needed
 
+MODERN CLAUDE CODE WORKFLOWS (Hybrid Detection):
+- Slash commands (/command-name): Complete workflows, score 85-95
+  Examples: "/review-pr 123", "/deploy staging", "/test"
+- Brief + specific (clear action + target): Score 80-90
+  ✅ "Generate commit message for staged changes" (specific action + target)
+  ✅ "Review for security vulnerabilities" (clear action + target)
+  ✅ "Deploy to staging environment" (specific action + target)
+- Skill-triggering patterns (brief + domain match): Score 75-85
+  ✅ "Run test coverage" (testing domain)
+  ✅ "Generate documentation" (docs domain)
+  ✅ "Check performance issues" (performance domain)
+- Brief + vague (lazy prompts): Score 30-45
+  ❌ "fix it" (vague action, no target)
+  ❌ "make this better" (unclear action, no specifics)
+  ❌ "help" (no context, no action)
+  ❌ "you know what I mean" (assumes context)
+
+DETECTION RULES:
+1. If starts with "/" → Slash command → Score 85-95
+2. Else if brief (<40 words) AND has clear action verb (generate, review, deploy, analyze, test, create, update, check) AND specific target → Score 80-90
+3. Else if brief AND matches skill patterns (commit, security, deploy, test, docs, performance) → Score 75-85
+4. Else if brief AND vague (fix, better, help, it, this) → Score 30-45
+5. Else use traditional criteria (context, detail, success criteria)
+
 You must respond with ONLY a JSON object in this exact format:
 {
   "quality": "poor" | "fair" | "good" | "excellent",

@@ -47,9 +47,15 @@ desktop.ini
 
 # Testing
 coverage/
+!coverage/badges.svg
 .nyc_output/
 test-results/
 *.lcov
+
+# Test scripts and artifacts (root level only)
+/test-*.js
+/test-*.bat
+/test-*.html
 
 # TypeScript
 *.tsbuildinfo

@@ -1,20 +1,18 @@
 import chalk from 'chalk';
-import inquirer from 'inquirer';
 import { requireAuth } from '../lib/auth/token';
 import { VibelogError } from '../utils/errors';
 import { logger } from '../utils/logger';
-import { showSuccess, showWarning, showInfo } from '../lib/ui';
+import { showSuccess, showInfo } from '../lib/ui';
 import { getCliPath } from '../lib/config';
-import { 
-  getHookStatus, 
-  installVibeLogHooks, 
+import {
+  getHookStatus,
   uninstallVibeLogHooks
 } from '../lib/hooks-manager';
+import { installSelectedHooks } from '../lib/hooks/hooks-controller';
 import { getGlobalSettingsPath } from '../lib/claude-core';
 
 interface InstallHooksOptions {
   uninstall?: boolean;
-  force?: boolean;
   silent?: boolean;
 }
 
@@ -51,29 +49,19 @@ export async function installHooks(options: InstallHooksOptions = {}): Promise<v
       return;
     }
     
-    // Check if hooks already exist
+    // Check if hooks already exist (for informational purposes)
     const hookStatus = await getHookStatus();
-    if (hookStatus.installed && !options.force) {
-      showWarning('Hooks already installed!');
-      showInfo('Use --force to overwrite existing hooks');
-      
-      const { proceed } = await inquirer.prompt([
-        {
-          type: 'confirm',
-          name: 'proceed',
-          message: 'Overwrite existing hooks?',
-          default: false,
-        },
-      ]);
-      
-      if (!proceed) {
-        console.log(chalk.yellow('Installation cancelled.'));
-        return;
-      }
+    if (hookStatus.installed && !options.silent) {
+      showInfo('Hooks already installed - will update if needed');
     }
-    
-    // Install hooks using the centralized manager
-    await installVibeLogHooks(options.force);
+
+    // Install hooks using the modern implementation (idempotent)
+    // This installs PreCompact hook only (legacy behavior)
+    await installSelectedHooks({
+      sessionStartHook: false,
+      preCompactHook: true,
+      sessionEndHook: false
+    });
     
     // Log the file being modified
     console.log('');
@@ -94,7 +82,6 @@ export async function installHooks(options: InstallHooksOptions = {}): Promise<v
     showSuccess('Global hooks installed successfully!');
     console.log('');
     console.log(chalk.cyan('📋 Installed hooks (globally):'));
-    console.log(chalk.gray('  • Stop       - Syncs sessions when Claude Code stops'));
     console.log(chalk.gray('  • PreCompact - Syncs sessions before context compression'));
     console.log('');
     
@@ -118,7 +105,7 @@ export async function installHooks(options: InstallHooksOptions = {}): Promise<v
     
   } catch (error) {
     logger.error('Failed to install hooks', error);
-    
+
     if (error instanceof Error) {
       if (error.message.includes('EACCES')) {
         throw new VibelogError(
@@ -126,13 +113,8 @@ export async function installHooks(options: InstallHooksOptions = {}): Promise<v
           'PERMISSION_DENIED'
         );
       }
-      
-      // Pass through error messages from hooks-manager
-      if (error.message.includes('already installed')) {
-        throw new VibelogError(error.message, 'HOOKS_ALREADY_INSTALLED');
-      }
     }
-    
+
     throw new VibelogError(
       'Failed to install hooks. Please try again.',
       'INSTALL_FAILED'
