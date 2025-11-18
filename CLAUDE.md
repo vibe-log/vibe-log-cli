@@ -9,6 +9,7 @@ vibelog-cli is a TypeScript-based CLI application designed to track and analyze 
 - **Commander.js** - CLI command parsing and routing
 - **Inquirer.js** - Interactive terminal UI components
 - **Axios** - HTTP client for API communication
+- **Better-SQLite3** - Fast SQLite database access for Cursor IDE integration
 - **Chalk** - Terminal string styling
 - **Ora** - Elegant terminal spinners
 - **Conf** - Encrypted configuration storage
@@ -45,7 +46,8 @@ Each command is a standalone module that handles specific CLI operations:
   - **IMPORTANT**: Always use `sendWithTimeout({ selectedSessions })` when uploading pre-selected sessions
   - Never call `apiClient.uploadSessions()` directly - the send command handles all session processing
   - The `selectedSessions` parameter expects `SelectedSessionInfo[]` from session-selector
-- **`status.ts`** - Display user streak, points, and statistics
+- **`status.ts`** - Display user streak, points, and statistics (includes Cursor IDE stats)
+- **`cursor-stats.ts`** - Display dedicated Cursor IDE statistics view with push-up tracking integration
 - **`auth.ts`** - Re-authentication for expired/invalid tokens
   - Supports `wizardMode` parameter to suppress menu-related messages during guided flows
 - **`config.ts`** - Manage CLI configuration settings
@@ -54,6 +56,11 @@ Each command is a standalone module that handles specific CLI operations:
 - **`hooks-log.ts`** - View and manage hook execution logs
 - **`hooks-manage.ts`** - Comprehensive hooks management interface
 - **`verify-hooks.ts`** - Verify hook installation and configuration
+- **`pushup-challenge.ts`** - Push-up challenge gamification system
+  - Tracks validation phrases in Claude Code responses
+  - Adds push-ups to debt for over-validation patterns
+  - Automatically scans Cursor IDE messages for same validation phrases when enabled
+  - Subcommands: `enable`, `disable`, `stats`, `summary`, `statusline`
 
 ### Core Libraries (`/src/lib/`)
 
@@ -99,6 +106,13 @@ Each command is a standalone module that handles specific CLI operations:
   - Extracts messages, timestamps, and metadata
   - Filters by date and project
   - Handles encoded project directory names
+
+- **`readers/cursor.ts`** - Cursor IDE message counter:
+  - Reads from Cursor's SQLite database (`state.vscdb`)
+  - Supports both legacy and modern conversation formats
+  - Counts total messages, user messages, and assistant messages
+  - Cross-platform support (macOS, Windows, Linux)
+  - Used in status command to show Cursor IDE statistics
 
 #### Claude Code Integration
 - **`sub-agents/manager.ts`** - Sub-agent lifecycle management:
@@ -288,57 +302,19 @@ npm run lint      # ESLint checking
 
 ## Release Process
 
-### How to Release a New Version
+See skill: `/cli-release-process` for the complete release workflow.
 
-1. **Update CHANGELOG.md**
-   ```bash
-   # Add release notes with version number, date, and changes
-   # Follow the existing format in CHANGELOG.md
-   ```
+**Quick steps**:
+1. Update CHANGELOG.md with release notes
+2. Bump version: `npm version patch` (or minor/major)
+3. Build and test: `npm run check-all`
+4. Publish: `npm publish`
+5. Push changes: `git push origin main --tags`
 
-2. **Bump Version**
-   ```bash
-   # For patch release (bug fixes): 0.3.14 -> 0.3.15
-   npm version patch
-   
-   # For minor release (new features): 0.3.14 -> 0.4.0
-   npm version minor
-   
-   # For major release (breaking changes): 0.3.14 -> 1.0.0
-   npm version major
-   ```
-
-3. **Build and Test**
-   ```bash
-   npm run build
-   npm run test
-   npm run check-all  # Runs lint, typecheck, test, and security audit
-   ```
-
-4. **Publish to NPM**
-   ```bash
-   npm publish
-   ```
-
-5. **Push Changes**
-   ```bash
-   git push origin main --tags
-   ```
-
-### Release Checklist
-- [ ] CHANGELOG.md updated with release notes
-- [ ] Version bumped appropriately (patch/minor/major)
-- [ ] All tests passing (`npm run test`)
-- [ ] Build successful (`npm run build`)
-- [ ] Linting passed (`npm run lint`)
-- [ ] Type checking passed (`npm run type-check`)
-- [ ] Package published to npm
-- [ ] Git tags pushed to repository
-
-### Version Guidelines
-- **Patch (0.0.x)**: Bug fixes, small improvements, documentation updates
+**Version Guidelines**:
+- **Patch (0.0.x)**: Bug fixes, small improvements
 - **Minor (0.x.0)**: New features, non-breaking changes
-- **Major (x.0.0)**: Breaking changes, major refactors (not used pre-1.0.0)
+- **Major (x.0.0)**: Breaking changes (not used pre-1.0.0)
 
 ---
 

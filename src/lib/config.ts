@@ -19,8 +19,16 @@ export interface PushUpPendingPrompt {
   phrase: string;
 }
 
+export interface ValidationDetection {
+  phrase: string;
+  timestamp: string; // ISO date string
+  source: 'claude' | 'cursor';
+  pushUpsAdded: number;
+}
+
 export interface PushUpChallengeConfig {
   enabled: boolean;
+  cursorIntegrationEnabled?: boolean; // Enable/disable Cursor IDE validation tracking
   pushUpsPerTrigger: number;
   totalDebt: number;
   totalCompleted: number;
@@ -30,6 +38,11 @@ export interface PushUpChallengeConfig {
   todayDebt: number;
   todayCompleted: number;
   lastResetDate?: string;
+  // Cursor IDE tracking
+  lastCursorMessageTimestamp?: number; // Unix timestamp in milliseconds
+  lastCursorCheckDate?: string;
+  // Validation history (for Claude Code stats - Cursor calculates from database directly)
+  validationHistory?: ValidationDetection[];
 }
 
 interface ConfigSchema {
@@ -485,7 +498,9 @@ export function getPushUpChallengeConfig(): PushUpChallengeConfig {
     totalCompleted: 0,
     streakDays: 0,
     todayDebt: 0,
-    todayCompleted: 0
+    todayCompleted: 0,
+    lastCursorMessageTimestamp: 0,
+    lastCursorCheckDate: undefined
   };
 }
 
@@ -507,6 +522,17 @@ export function setPushUpChallengeEnabled(
   });
 
   logger.debug(`Push-up challenge ${enabled ? 'enabled' : 'disabled'}`);
+}
+
+export function setCursorIntegrationEnabled(enabled: boolean): void {
+  const current = getPushUpChallengeConfig();
+
+  config.set('pushUpChallenge', {
+    ...current,
+    cursorIntegrationEnabled: enabled
+  });
+
+  logger.debug(`Cursor integration ${enabled ? 'enabled' : 'disabled'}`);
 }
 
 
@@ -616,4 +642,211 @@ export function resetPushUpStats(): void {
     lastCompletedDate: undefined,
     enabledDate: current.enabledDate || today
   });
+}
+
+// Cursor IDE Push-Up Tracking
+// Note: Cursor tracking is automatically enabled when push-up challenge is enabled
+// Detects same validation phrases as Claude Code
+
+// Shared validation patterns for push-up challenge
+export const VALIDATION_PATTERNS = [
+  { regex: /you('re|\s+are)\s+absolutely\s+right/i, phrase: "you're absolutely right" },
+  { regex: /you('re|\s+are)\s+totally\s+right/i, phrase: "you're totally right" },
+  { regex: /you('re|\s+are)\s+completely\s+correct/i, phrase: "you're completely correct" },
+  { regex: /that('s|\s+is)\s+absolutely\s+correct/i, phrase: "that's absolutely correct" },
+  { regex: /absolutely\s+right/i, phrase: "absolutely right" },
+  { regex: /perfect(ly)?\s+(right|correct)/i, phrase: "perfectly correct" },
+  { regex: /you\s+nailed\s+it/i, phrase: "you nailed it" },
+  { regex: /spot\s+on/i, phrase: "spot on" },
+];
+
+/**
+ * Calculate time-based statistics from validation history
+ */
+export function calculateTimeStats(source?: 'claude' | 'cursor'): TimeBasedStats {
+  const current = getPushUpChallengeConfig();
+  const history = current.validationHistory || [];
+
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  // Calculate week boundaries (Monday to Sunday)
+  const dayOfWeek = now.getDay();
+  const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sunday is 0, Monday is 1
+  const thisWeekStart = new Date(todayStart);
+  thisWeekStart.setDate(todayStart.getDate() - daysToMonday);
+
+  const lastWeekStart = new Date(thisWeekStart);
+  lastWeekStart.setDate(thisWeekStart.getDate() - 7);
+  const lastWeekEnd = new Date(thisWeekStart);
+
+  // Calculate month boundaries
+  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  // Calculate year boundaries
+  const thisYearStart = new Date(now.getFullYear(), 0, 1);
+
+  // Filter by source if specified
+  const filteredHistory = source
+    ? history.filter(v => v.source === source)
+    : history;
+
+  return {
+    thisWeek: filteredHistory.filter(v => {
+      const date = new Date(v.timestamp);
+      return date >= thisWeekStart;
+    }).reduce((sum, v) => sum + v.pushUpsAdded, 0),
+
+    lastWeek: filteredHistory.filter(v => {
+      const date = new Date(v.timestamp);
+      return date >= lastWeekStart && date < lastWeekEnd;
+    }).reduce((sum, v) => sum + v.pushUpsAdded, 0),
+
+    thisMonth: filteredHistory.filter(v => {
+      const date = new Date(v.timestamp);
+      return date >= thisMonthStart;
+    }).reduce((sum, v) => sum + v.pushUpsAdded, 0),
+
+    thisYear: filteredHistory.filter(v => {
+      const date = new Date(v.timestamp);
+      return date >= thisYearStart;
+    }).reduce((sum, v) => sum + v.pushUpsAdded, 0)
+  };
+}
+
+export interface TimeBasedStats {
+  thisWeek: number;
+  lastWeek: number;
+  thisMonth: number;
+  thisYear: number;
+}
+
+/**
+ * Calculate time-based statistics from Cursor messages directly
+ */
+export function calculateCursorTimeStats(messages: any[], pushUpsPerTrigger: number): TimeBasedStats {
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  // Calculate week boundaries (Monday to Sunday)
+  const dayOfWeek = now.getDay();
+  const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const thisWeekStart = new Date(todayStart);
+  thisWeekStart.setDate(todayStart.getDate() - daysToMonday);
+
+  const lastWeekStart = new Date(thisWeekStart);
+  lastWeekStart.setDate(thisWeekStart.getDate() - 7);
+  const lastWeekEnd = new Date(thisWeekStart);
+
+  // Calculate month boundaries
+  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  // Calculate year boundaries
+  const thisYearStart = new Date(now.getFullYear(), 0, 1);
+
+  const stats: TimeBasedStats = {
+    thisWeek: 0,
+    lastWeek: 0,
+    thisMonth: 0,
+    thisYear: 0
+  };
+
+  // Scan all messages for validation patterns
+  for (const message of messages) {
+    // Only check assistant messages (type 2)
+    if (message.type === 2) {
+      const matchedPattern = VALIDATION_PATTERNS.find(p => p.regex.test(message.text));
+      if (matchedPattern) {
+        const messageDate = new Date(message.timestamp);
+        const pushups = pushUpsPerTrigger;
+
+        // Check which time periods this validation falls into
+        if (messageDate >= thisWeekStart) {
+          stats.thisWeek += pushups;
+        }
+        if (messageDate >= lastWeekStart && messageDate < lastWeekEnd) {
+          stats.lastWeek += pushups;
+        }
+        if (messageDate >= thisMonthStart) {
+          stats.thisMonth += pushups;
+        }
+        if (messageDate >= thisYearStart) {
+          stats.thisYear += pushups;
+        }
+      }
+    }
+  }
+
+  return stats;
+}
+
+export interface CursorPushUpResult {
+  newMessages: number;
+  pushUpsAdded: number;
+  totalDebt: number;
+  validationPhrasesDetected?: string[];
+  timeStats?: TimeBasedStats;
+}
+
+export async function checkAndUpdateCursorPushUps(): Promise<CursorPushUpResult> {
+  const current = getPushUpChallengeConfig();
+
+  // If main challenge is not enabled OR cursor integration is not enabled, return early
+  if (!current.enabled || !current.cursorIntegrationEnabled) {
+    return {
+      newMessages: 0,
+      pushUpsAdded: 0,
+      totalDebt: current.totalDebt
+    };
+  }
+
+  const lastTimestamp = current.lastCursorMessageTimestamp || 0;
+
+  // Get messages from Cursor database
+  const { getCursorMessagesSince } = await import('./readers/cursor');
+  const result = await getCursorMessagesSince(lastTimestamp);
+
+  const newMessages = result.messages.length;
+  const validationPhrasesDetected: string[] = [];
+  let pushUpsAdded = 0;
+
+  // Scan NEW assistant messages for validation patterns (for debt tracking)
+  for (const message of result.messages) {
+    // Only check assistant messages (type 2)
+    if (message.type === 2) {
+      const matchedPattern = VALIDATION_PATTERNS.find(p => p.regex.test(message.text));
+      if (matchedPattern) {
+        pushUpsAdded += current.pushUpsPerTrigger;
+        validationPhrasesDetected.push(matchedPattern.phrase);
+        logger.debug(`Cursor validation detected: "${matchedPattern.phrase}"`);
+      }
+    }
+  }
+
+  if (pushUpsAdded > 0) {
+    incrementPushUpDebt(pushUpsAdded);
+    incrementTodayDebt(pushUpsAdded);
+    logger.debug(`Added ${pushUpsAdded} push-ups from ${validationPhrasesDetected.length} validations in Cursor`);
+  }
+
+  // Get FRESH config after increments
+  const updated = getPushUpChallengeConfig();
+
+  // Update last message timestamp and check date
+  config.set('pushUpChallenge', {
+    ...updated,
+    lastCursorMessageTimestamp: result.maxTimestamp,
+    lastCursorCheckDate: new Date().toISOString().split('T')[0]
+  });
+
+  // Calculate time-based stats from ALL messages
+  const timeStats = calculateCursorTimeStats(result.allMessages, updated.pushUpsPerTrigger);
+
+  return {
+    newMessages,
+    pushUpsAdded,
+    totalDebt: updated.totalDebt,
+    validationPhrasesDetected,
+    timeStats
+  };
 }

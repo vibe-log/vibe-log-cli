@@ -5,6 +5,11 @@ All notable changes to the vibe-log-cli project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Note
+- This release reconciles the pr-8-review branch with main after the v0.8.0 release was accidentally published from a PR branch. All Cursor IDE integration features from the original PR are included in v0.8.0 and v0.8.1 below.
+
 ## [0.8.1] - 2025-11-15
 
 ### Fixed
