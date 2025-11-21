@@ -11,7 +11,10 @@ import { showUploadResults } from '../lib/ui';
 import { VibelogError } from '../utils/errors';
 import { logger } from '../utils/logger';
 import { isNetworkError, createNetworkError } from '../lib/errors/network-errors';
-import { checkForUpdate, shouldSpawnLatestForHook, spawnLatestVersion } from '../utils/version-check';
+import { checkForUpdate, shouldSpawnLatestForHook, VersionCheckResult } from '../utils/version-check';
+import { tryAcquireUpdateLock, UpdateLock } from '../utils/update-lock';
+import { clearNpxCache, checkNpxCacheHealth } from '../utils/npx-cache';
+import { execSync } from 'child_process';
 import chalk from 'chalk';
 
 /**
@@ -35,52 +38,38 @@ export async function send(options: SendOptions): Promise<void> {
   logger.debug('Send options received:', options);
 
   try {
-    // Check for version updates when triggered by hooks
-    // Skip if we're already running from @latest spawn to prevent infinite loops
-    if (options.hookTrigger && !process.env.VIBE_LOG_SPAWNED_LATEST) {
+    // ============================================================
+    // NON-BLOCKING UPDATE CHECK FOR HOOKS
+    // ============================================================
+    // When triggered by hooks, check for updates but don't block session processing.
+    // Updates happen in background while current version continues processing.
+    if (options.hookTrigger && !process.env.VIBE_LOG_SKIP_UPDATE) {
       const currentVersion = process.env.SIMULATE_OLD_VERSION || require('../../package.json').version;
       logger.debug(`Checking version update: hookTrigger=${options.hookTrigger}, currentVersion=${currentVersion}`);
+
       const versionCheck = await checkForUpdate(currentVersion);
       logger.debug(`Version check result:`, versionCheck);
 
       if (shouldSpawnLatestForHook(versionCheck, options.hookTrigger)) {
-        logger.debug(`Spawning latest version: current=${versionCheck.currentVersion}, latest=${versionCheck.latestVersion}`);
+        logger.debug(`Update available: current=${versionCheck.currentVersion}, latest=${versionCheck.latestVersion}`);
 
-        // Build args for the latest version spawn
-        const args = ['send'];
+        // Try to acquire update lock (non-blocking)
+        const lock = await tryAcquireUpdateLock();
 
-        // Add all the original options
-        if (options.silent) args.push('--silent');
-        if (options.background) args.push('--background');
-        if (options.dry) args.push('--dry');
-        if (options.all) args.push('--all');
-        if (options.hookTrigger) args.push(`--hook-trigger=${options.hookTrigger}`);
-        if (options.hookVersion) args.push(`--hook-version=${options.hookVersion}`);
-        if (options.claudeProjectDir) args.push(`--claude-project-dir=${options.claudeProjectDir}`);
-        if (options.test) args.push('--test');
+        if (lock) {
+          // We got the lock! Start background update (fire and forget)
+          logger.debug('Acquired update lock, starting background update');
 
-        // For background mode, spawn detached
-        if (options.background) {
-          await spawnLatestVersion(args, {
-            detached: true,
-            silent: true,
-            env: {
-              ...process.env,
-              VIBE_LOG_SPAWNED_LATEST: '1' // Prevent infinite loops
-            }
+          // Spawn background update process (don't await - fire and forget)
+          updateInBackground(versionCheck, lock).catch(error => {
+            logger.debug(`Background update failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
           });
-          return;
+
+          // IMPORTANT: Continue processing with current version
+          // Don't wait for update to complete
         } else {
-          // For non-background hook execution, spawn and wait
-          await spawnLatestVersion(args, {
-            detached: false,
-            silent: options.silent,
-            env: {
-              ...process.env,
-              VIBE_LOG_SPAWNED_LATEST: '1' // Prevent infinite loops
-            }
-          });
-          return;
+          // Another process is updating, just continue
+          logger.debug('Update in progress by another process, using current version');
         }
       }
     }
@@ -347,6 +336,68 @@ export async function sendWithTimeout(options: SendOptions): Promise<void> {
 
   // Execute send command directly for all cases
   await send(options);
+}
+
+/**
+ * Update NPX cache in background (non-blocking)
+ * This runs independently from session processing
+ */
+async function updateInBackground(
+  versionCheck: VersionCheckResult,
+  lock: UpdateLock
+): Promise<void> {
+  try {
+    await logUpdateEvent(`Starting background update: ${versionCheck.currentVersion} → ${versionCheck.latestVersion}`);
+
+    // Check cache health before update
+    const cacheHealthy = await checkNpxCacheHealth();
+    if (!cacheHealthy) {
+      await logUpdateEvent('NPX cache unhealthy, cleaning before update');
+      await clearNpxCache();
+    }
+
+    // Clear NPX cache for our package
+    await clearNpxCache();
+    await logUpdateEvent('Cleared NPX cache');
+
+    // Download latest version using npx @latest
+    // This populates the cache for next run
+    execSync('npx vibe-log-cli@latest --version', {
+      stdio: 'ignore',
+      timeout: 30000,
+      env: {
+        ...process.env,
+        VIBE_LOG_SKIP_UPDATE: '1' // Prevent recursion
+      }
+    });
+
+    await logUpdateEvent(`Update completed: next run will use ${versionCheck.latestVersion}`);
+  } catch (error) {
+    await logUpdateEvent(`Update failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  } finally {
+    // Always release lock
+    await lock.release();
+  }
+}
+
+/**
+ * Log update events to update log file
+ */
+async function logUpdateEvent(message: string): Promise<void> {
+  const fs = require('fs').promises;
+  const path = require('path');
+  const os = require('os');
+
+  const updateLogPath = path.join(os.homedir(), '.vibe-log', 'update.log');
+  const timestamp = new Date().toISOString();
+  const logLine = `[${timestamp}] ${message}\n`;
+
+  try {
+    await fs.mkdir(path.dirname(updateLogPath), { recursive: true });
+    await fs.appendFile(updateLogPath, logLine);
+  } catch {
+    // Ignore logging errors - don't fail update
+  }
 }
 
 // Re-export SendOptions type for backward compatibility
