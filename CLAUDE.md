@@ -260,6 +260,62 @@ Legacy camelCase formats (`preCompact`, `stop`) are no longer supported.
 - **PreCompact**: Triggers before context compression (manual or automatic)
 - Both hooks ensure complete session capture without redundancy
 
+### Auto-Update System
+
+#### NPX Non-Blocking Updates
+The CLI uses a sophisticated auto-update mechanism that ensures users always run the latest version without disrupting their workflow.
+
+**Key Design Principles:**
+- **Non-blocking**: Updates never delay session uploads
+- **Race-condition safe**: File-based locking prevents NPX cache corruption
+- **Background updates**: Downloads happen independently from hook execution
+- **User productivity first**: Current version processes sessions while update happens
+
+#### How It Works
+
+**Hook Command (No @latest):**
+```bash
+# Hooks use cached NPX version (fast, stable)
+npx vibe-log-cli send --silent --background --hook-trigger=sessionstart
+```
+
+**Update Flow:**
+1. Hook triggers → checks for version update
+2. If update available → tries to acquire update lock
+3. If lock acquired → starts background update (fire and forget)
+4. Current version continues processing sessions (no delay!)
+5. Background update: clears NPX cache → downloads @latest
+6. Next hook run automatically uses updated version
+
+**Architecture:**
+- `src/utils/update-lock.ts` - File-based locking (prevents concurrent updates)
+- `src/utils/npx-cache.ts` - Surgical NPX cache clearing (verified approach)
+- `src/commands/send.ts` - Non-blocking update logic
+- `~/.vibe-log/update.lock` - Lock file (5-minute timeout)
+- `~/.vibe-log/update.log` - Update event logging
+
+**Why This Approach:**
+- **NPX cache corruption fix**: Concurrent `npx @latest` executions caused ENOTEMPTY errors
+- **Verified solution**: Tested with `scripts/test-npx-cache-clearing.sh`
+- **Research-backed**: See `NPX_CACHE_RESEARCH.md` for full documentation
+- **Implementation plan**: See `NPX_NON_BLOCKING_AUTO_UPDATE_PLAN.md`
+
+**Monitoring Updates:**
+```bash
+# Check update log
+tail -f ~/.vibe-log/update.log
+
+# Check lock status
+cat ~/.vibe-log/update.lock
+
+# Verify cached version
+find ~/.npm/_npx -name "vibe-log-cli" -type d -exec cat {}/package.json \; | grep version
+```
+
+**Environment Variables:**
+- `VIBE_LOG_SKIP_UPDATE=1` - Disable update checking (for debugging)
+- `SIMULATE_OLD_VERSION=0.5.0` - Simulate outdated version (for testing)
+
 ### State Management
 - Detects setup completion status
 - Guides users through setup flow
