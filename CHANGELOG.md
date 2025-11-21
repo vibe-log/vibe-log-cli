@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.4] - 2025-01-21
+
+### Improved
+- User-Agent header now shows actual CLI version (was hardcoded to 0.6.0)
+- CLI version now sent to server in session upload headers for version tracking
+
 ## [0.8.3] - 2025-01-21
 
 ### Improved

@@ -60,6 +60,7 @@ export interface UploadResult {
 }
 
 export interface CLIConfiguration {
+  version: string;
   statusline: {
     personality: 'gordon' | 'vibe-log' | 'custom';
     customPersonality?: {
@@ -96,6 +97,7 @@ async function gatherCLIConfiguration(): Promise<CLIConfiguration | null> {
     const featureStatus = await claudeSettingsManager.getFeatureStatus();
 
     return {
+      version: require('../../package.json').version,
       statusline: {
         personality: statuslineConfig.personality,
         customPersonality: statuslineConfig.customPersonality
@@ -124,7 +126,7 @@ class SecureApiClient {
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': 'vibe-log-CLI/0.6.0',
+        'User-Agent': `vibe-log-CLI/${require('../../package.json').version}`,
         'X-Client-Version': '1.0.0',
       },
       // Prevent automatic redirects to avoid SSRF
@@ -470,6 +472,7 @@ class SecureApiClient {
           // Prepare configuration headers
           const configHeaders: Record<string, string> = {};
           if (cliConfig) {
+            configHeaders['x-vibe-config-version'] = cliConfig.version;
             configHeaders['x-vibe-config-statusline'] = JSON.stringify(cliConfig.statusline);
             configHeaders['x-vibe-config-hooks'] = JSON.stringify(cliConfig.hooks);
           }
