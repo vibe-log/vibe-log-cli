@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.3] - 2025-01-21
+
+### Improved
+- Session uploads no longer blocked by version updates
+- Auto-updates now happen in background after sessions are processed
+- NPX cache handling optimized to handle concurrent hook executions
+
+### Added
+- Update event logging to `~/.vibe-log/update.log`
+
 ## [0.8.2] - 2025-11-18
 
 ### Note
