@@ -61,6 +61,7 @@ export interface UploadResult {
 
 export interface CLIConfiguration {
   version: string;
+  hookTrigger?: string | null;
   statusline: {
     personality: 'gordon' | 'vibe-log' | 'custom';
     customPersonality?: {
@@ -88,7 +89,7 @@ function generateRequestId(): string {
 }
 
 // Gather current CLI configuration for sending to server
-async function gatherCLIConfiguration(): Promise<CLIConfiguration | null> {
+async function gatherCLIConfiguration(hookTrigger?: string): Promise<CLIConfiguration | null> {
   try {
     // Get statusline configuration
     const statuslineConfig = getStatusLinePersonality();
@@ -98,6 +99,7 @@ async function gatherCLIConfiguration(): Promise<CLIConfiguration | null> {
 
     return {
       version: require('../../package.json').version,
+      hookTrigger: hookTrigger || null,
       statusline: {
         personality: statuslineConfig.personality,
         customPersonality: statuslineConfig.customPersonality
@@ -390,10 +392,11 @@ class SecureApiClient {
 
   async uploadSessions(
     sessions: Session[],
-    onProgress?: (current: number, total: number, sizeKB?: number) => void
+    onProgress?: (current: number, total: number, sizeKB?: number) => void,
+    hookTrigger?: string
   ): Promise<any> {
     // Gather CLI configuration to send with the upload
-    const cliConfig = await gatherCLIConfiguration();
+    const cliConfig = await gatherCLIConfiguration(hookTrigger);
 
     // Validate and sanitize sessions
     const sanitizedSessions = sessions.map(session => this.sanitizeSession(session));
@@ -473,6 +476,9 @@ class SecureApiClient {
           const configHeaders: Record<string, string> = {};
           if (cliConfig) {
             configHeaders['x-vibe-config-version'] = cliConfig.version;
+            if (cliConfig.hookTrigger) {
+              configHeaders['x-vibe-config-hook-trigger'] = cliConfig.hookTrigger;
+            }
             configHeaders['x-vibe-config-statusline'] = JSON.stringify(cliConfig.statusline);
             configHeaders['x-vibe-config-hooks'] = JSON.stringify(cliConfig.hooks);
           }

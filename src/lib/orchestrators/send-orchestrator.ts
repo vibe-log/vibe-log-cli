@@ -358,7 +358,7 @@ export class SendOrchestrator {
         console.log('[DEBUG] SendOrchestrator.uploadSessions called with', apiSessions.length, 'sessions');
       }
       logger.debug(`Uploading ${apiSessions.length} sessions to API`);
-      const result = await apiClient.uploadSessions(apiSessions, onProgress);
+      const result = await apiClient.uploadSessions(apiSessions, onProgress, options.hookTrigger);
       if (process.env.VIBELOG_DEBUG === 'true') {
         console.log('[DEBUG] Upload completed successfully');
       }
