@@ -177,7 +177,8 @@ describe('Send Command - Directory Filtering', () => {
             })
           })
         ]),
-        expect.any(Function) // Progress callback
+        expect.any(Function), // Progress callback
+        undefined // hookTrigger
       );
     });
     
