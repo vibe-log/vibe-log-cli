@@ -401,7 +401,7 @@ describe('SendOrchestrator', () => {
       ).rejects.toThrow('Network failure');
 
       // Error should have been logged
-      expect(mockApiClient.uploadSessions).toHaveBeenCalledWith(apiSessions, undefined);
+      expect(mockApiClient.uploadSessions).toHaveBeenCalledWith(apiSessions, undefined, undefined);
     });
 
     it('should propagate upload errors in non-silent mode', async () => {
@@ -447,7 +447,7 @@ describe('SendOrchestrator', () => {
       const result = await orchestrator.uploadSessions(apiSessions, {}, progressCallback);
 
       expect(result.success).toBe(true);
-      expect(mockApiClient.uploadSessions).toHaveBeenCalledWith(apiSessions, progressCallback);
+      expect(mockApiClient.uploadSessions).toHaveBeenCalledWith(apiSessions, progressCallback, undefined);
     });
   });
 
