@@ -476,9 +476,7 @@ class SecureApiClient {
           const configHeaders: Record<string, string> = {};
           if (cliConfig) {
             configHeaders['x-vibe-config-version'] = cliConfig.version;
-            if (cliConfig.origin) {
-              configHeaders['x-vibe-config-origin'] = cliConfig.origin;
-            }
+            configHeaders['x-vibe-config-origin'] = cliConfig.origin || 'null';
             configHeaders['x-vibe-config-statusline'] = JSON.stringify(cliConfig.statusline);
             configHeaders['x-vibe-config-hooks'] = JSON.stringify(cliConfig.hooks);
           }
