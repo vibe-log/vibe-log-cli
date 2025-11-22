@@ -99,6 +99,11 @@ export async function send(options: SendOptions): Promise<void> {
  * Execute send in interactive mode with full UI
  */
 async function executeInteractiveSend(options: SendOptions): Promise<void> {
+  // Explicitly set origin for manual uploads (no fallback)
+  if (!options.origin) {
+    options.origin = 'manual-upload';
+  }
+
   const orchestrator = new SendOrchestrator();
   const progressUI = new SendProgressUI(options.silent);
   const summaryUI = new SendSummaryUI(options.silent);

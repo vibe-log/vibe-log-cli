@@ -178,7 +178,7 @@ describe('Send Command - Directory Filtering', () => {
           })
         ]),
         expect.any(Function), // Progress callback
-        undefined // hookTrigger
+        "manual-upload" // origin - explicitly set for manual uploads
       );
     });
     
