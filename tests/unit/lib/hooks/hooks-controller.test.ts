@@ -61,7 +61,7 @@ describe('Hooks Controller', () => {
       it('should maintain backward compatibility when mode is undefined', () => {
         const cliPath = 'npx vibe-log-cli';
         const command = buildHookCommand(cliPath, 'sessionstart');
-        
+
         // Should default to current behavior (with --claude-project-dir)
         expect(command).not.toContain('--all');
         expect(command).toContain('--claude-project-dir="$CLAUDE_PROJECT_DIR"');
@@ -70,10 +70,10 @@ describe('Hooks Controller', () => {
 
       it('should handle both sessionstart and precompact triggers with mode="all"', () => {
         const cliPath = 'node /path/to/vibe-log.js';
-        
+
         const sessionStartCommand = buildHookCommand(cliPath, 'sessionstart', 'all');
         expect(sessionStartCommand).toBe('node /path/to/vibe-log.js send --silent --background --hook-trigger=sessionstart --hook-version=1.0.0 --all');
-        
+
         const preCompactCommand = buildHookCommand(cliPath, 'precompact', 'all');
         expect(preCompactCommand).toBe('node /path/to/vibe-log.js send --silent --background --hook-trigger=precompact --hook-version=1.0.0 --all');
       });

@@ -187,11 +187,14 @@ export function buildHookCommand(
   hookTrigger: 'sessionstart' | 'precompact' | 'sessionend',
   mode?: 'all' | 'selected'
 ): string {
+  // Keep using --hook-trigger for backwards compatibility with existing installed hooks
+  // The mapping to origin happens in index.ts action handler
+
   // For global mode (track all), use --all flag instead of --claude-project-dir
   if (mode === 'all') {
     return `${cliPath} send --silent --background --hook-trigger=${hookTrigger} --hook-version=${HOOKS_VERSION} --all`;
   }
-  
+
   // For selected mode or backward compatibility, use --claude-project-dir
   return `${cliPath} send --silent --background --hook-trigger=${hookTrigger} --hook-version=${HOOKS_VERSION} --claude-project-dir="$CLAUDE_PROJECT_DIR"`;
 }

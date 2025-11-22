@@ -105,12 +105,16 @@ program
   .option('-a, --all', 'Send sessions from all projects (default: current project only)')
   .option('--silent', 'Run in silent mode (for hook execution)')
   .option('--background', 'Run upload in background (for hooks)')
-  .option('--hook-trigger <type>', 'Hook that triggered this command (sessionstart, precompact, sessionend)')
+  .option('--hook-trigger <type>', 'Hook trigger type (used by installed hooks)')
   .option('--hook-version <version>', 'Hook version (for tracking hook updates)')
   .option('--test', 'Test mode for hook validation (exits without processing)')
   .option('--claude-project-dir <dir>', 'Claude project directory from $CLAUDE_PROJECT_DIR')
   .action(async (options) => {
     try {
+      // Map hook-trigger to origin format for internal use
+      if (options.hookTrigger) {
+        options.origin = `hook-${options.hookTrigger}`;
+      }
       await sendWithTimeout(options);
     } catch (error) {
       handleError(error);

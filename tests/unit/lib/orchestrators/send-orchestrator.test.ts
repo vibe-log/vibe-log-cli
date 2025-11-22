@@ -401,6 +401,7 @@ describe('SendOrchestrator', () => {
       ).rejects.toThrow('Network failure');
 
       // Error should have been logged
+      // Third parameter is origin (should be undefined for error test)
       expect(mockApiClient.uploadSessions).toHaveBeenCalledWith(apiSessions, undefined, undefined);
     });
 

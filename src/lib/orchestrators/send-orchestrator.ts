@@ -24,7 +24,8 @@ export interface SendOptions {
   dry?: boolean;
   all?: boolean;
   silent?: boolean;
-  hookTrigger?: string;
+  origin?: string;  // Origin of upload: 'manual-upload', 'hook-sessionstart', 'hook-precompact', 'hook-sessionend'
+  hookTrigger?: string;  // Hook trigger (mapped to origin internally)
   hookVersion?: string;
   test?: boolean;
   background?: boolean;
@@ -358,7 +359,9 @@ export class SendOrchestrator {
         console.log('[DEBUG] SendOrchestrator.uploadSessions called with', apiSessions.length, 'sessions');
       }
       logger.debug(`Uploading ${apiSessions.length} sessions to API`);
-      const result = await apiClient.uploadSessions(apiSessions, onProgress, options.hookTrigger);
+      // Map hookTrigger to origin format (hookTrigger is used by installed hooks)
+      const origin = options.origin || (options.hookTrigger ? `hook-${options.hookTrigger}` : undefined);
+      const result = await apiClient.uploadSessions(apiSessions, onProgress, origin);
       if (process.env.VIBELOG_DEBUG === 'true') {
         console.log('[DEBUG] Upload completed successfully');
       }
