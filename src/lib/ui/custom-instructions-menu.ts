@@ -204,22 +204,22 @@ async function createTemplate(): Promise<void> {
   try {
     // Create template
     const { writeInstructions: writeFile } = await import('../instructions');
-    const DEFAULT_TEMPLATE = `What are you working on?
-(e.g., "Building a developer productivity tool", "Freelance projects")
-
+    const DEFAULT_TEMPLATE = `I'm building a SaaS productivity tool as my main project.
 
 My projects:
-- my-saas-app: Production app, this is my main focus
-- experiments-repo: Just prototyping ideas, don't count as real work
-- client-project: Freelance work, billable hours matter
+- main-app: Production SaaS, this is my focus
+- side-project: Learning new tech, exploratory work
+- client-work: Freelance, billable hours matter
 
+What counts as progress:
+- Shipping features to production
+- Deep focused coding sessions
+- Fixing critical bugs
 
-What counts as meaningful progress?
-(e.g., "Shipping features", "Deep focused sessions", "Code quality")
-
-
-What should be ignored?
-(e.g., "Config tweaks", "Meetings", "Documentation")
+What to ignore:
+- Config/setup tweaks
+- Updating dependencies
+- Writing docs (unless specifically asked)
 `;
     await writeFile(DEFAULT_TEMPLATE);
 
