@@ -291,6 +291,12 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
       });
     }
 
+    items.push({
+      id: 'custom-instructions',
+      label: `📝 Custom Instructions`,
+      action: 'custom-instructions'
+    });
+
     // Separator before logout
     items.push({ separator: true } as MenuItem);
 
