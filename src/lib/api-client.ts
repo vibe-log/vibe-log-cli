@@ -651,6 +651,45 @@ class SecureApiClient {
     const response = await this.client.get('/api/push-up-challenge/stats');
     return response.data;
   }
+
+  /**
+   * Sync custom instructions to backend
+   * @param content - The markdown instructions content
+   * @param source - The source of the update ('cli' or 'web')
+   * @returns Promise with success status and updated timestamp
+   */
+  async syncInstructions(
+    content: string,
+    source: 'cli' | 'web' = 'cli'
+  ): Promise<{ success: boolean; updatedAt?: string }> {
+    const response = await this.client.post('/api/user/instructions', {
+      content,
+      source,
+    });
+    return response.data;
+  }
+
+  /**
+   * Fetch custom instructions from backend
+   * @returns Promise with instructions content and metadata
+   */
+  async fetchInstructions(): Promise<{
+    content: string | null;
+    updatedAt: string | null;
+    lastUpdatedFrom: 'cli' | 'web' | null;
+  }> {
+    const response = await this.client.get('/api/user/instructions');
+    return response.data;
+  }
+
+  /**
+   * Delete custom instructions from backend
+   * @returns Promise with success status
+   */
+  async deleteInstructions(): Promise<{ success: boolean }> {
+    const response = await this.client.delete('/api/user/instructions');
+    return response.data;
+  }
 }
 
 export const apiClient = new SecureApiClient();

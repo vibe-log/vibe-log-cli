@@ -332,6 +332,9 @@ async function autoSyncFromCloud(): Promise<void> {
     if (cloudInstructions.content) {
       // Cloud has content - write to local (cloud wins)
       await writeInstructions(cloudInstructions.content);
+    } else {
+      // Cloud is empty - delete local file to stay in sync
+      await deleteLocalInstructions();
     }
   } catch {
     // Silently ignore - will show in header if there's an issue
