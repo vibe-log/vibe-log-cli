@@ -13,64 +13,24 @@ const INSTRUCTIONS_FILE = join(INSTRUCTIONS_DIR, 'instructions.md');
 
 /**
  * Default template for instructions.md
- * Based on the comprehensive template from PLAN_custom_instructions.md
+ * Matches the web UI placeholder for consistency across platforms
  */
-const DEFAULT_TEMPLATE = `# Custom Instructions for AI Analysis
+export const DEFAULT_TEMPLATE = `I'm building a SaaS productivity tool as my main project.
 
-> **Tips for effective instructions:**
-> - **Be project-specific**: Even though these are global instructions, mention actual project names!
->   - Good: "The 'payment-api' project is production-critical, 'weekend-hacks' is exploratory"
->   - Bad: "Some projects are important, others aren't"
-> - **Use concrete examples**: File paths, folder names, specific patterns you follow
->   - Good: "Files in 'src/demos/' are mockups, not features"
->   - Bad: "Some code is just for demos"
-> - **Explain the WHY**: Help AI understand your reasoning
->   - Good: "Refactoring 'legacy-app' is valuable because we're modernizing a critical system"
->   - Bad: "Refactoring is important"
-> - **Update regularly**: As projects change, update your instructions to stay relevant
+My projects:
+- main-app: Production SaaS, this is my focus
+- side-project: Learning new tech, exploratory work
+- client-work: Freelance, billable hours matter
 
-## Work Context
-<!-- What type of work are you doing? Be specific about your role and projects. -->
+What counts as progress:
+- Shipping features to production
+- Deep focused coding sessions
+- Fixing critical bugs
 
-**Example (Good):** "I'm a senior engineer working on 'payment-api' (production) and learning Rust through weekend side projects. Production work requires tests and reviews; side projects are exploratory."
-
-**Example (Too Vague):** "I do programming work."
-
-YOUR CONTEXT:
-
-
-## Goals & What Matters
-<!-- What indicates meaningful progress for YOU? What patterns show your best work? -->
-
-**Example (Good):** "Deep focus sessions with thoughtful commits matter most. I work best in 2-3 hour blocks. Rapid-fire commits usually mean I'm debugging or context-switching, not deep work."
-
-**Example (Too Vague):** "Writing good code."
-
-YOUR GOALS:
-
-
-## What to Ignore or Discount
-<!-- Specific projects, file patterns, or activities that shouldn't count as productivity -->
-
-**Example (Good):** "The 'client-demos' folder contains UI mockups for sales presentations, not real features. The 'tutorial-projects' folder is from online courses - it's learning, not production work."
-
-**Example (Too Vague):** "Some stuff doesn't matter."
-
-WHAT TO IGNORE:
-
-
-## Project-Specific Context
-<!-- Constraints, requirements, or patterns for specific projects -->
-
-**Example:** "'legacy-monolith' is a 5-year-old codebase. Refactoring and modernization work is valuable even if metrics look low. 'mobile-app' targets old Android devices, so we use older JS patterns intentionally."
-
-YOUR PROJECTS:
-
-
-## Additional Notes
-<!-- Any other patterns, preferences, or context that helps understand your work -->
-
-
+What to ignore:
+- Config/setup tweaks
+- Updating dependencies
+- Writing docs (unless specifically asked)
 `;
 
 /**

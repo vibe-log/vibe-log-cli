@@ -8,7 +8,8 @@ import {
   createDefaultInstructions,
   deleteInstructions as deleteLocalInstructions,
   getInstructionsMetadata,
-  getInstructionsPath
+  getInstructionsPath,
+  DEFAULT_TEMPLATE
 } from '../instructions';
 import { apiClient } from '../api-client';
 import { getToken } from '../config';
@@ -20,7 +21,7 @@ import { spawn } from 'child_process';
  */
 async function displayHeader(): Promise<void> {
   console.log(colors.accent('\n📝 Custom Instructions'));
-  console.log(colors.highlight('   Help the AI understand what matters to you\n'));
+  console.log(colors.subdued('   Add context about your work for more accurate analysis\n'));
 
   const token = await getToken();
   const metadata = await getInstructionsMetadata();
@@ -67,14 +68,32 @@ async function displayHeader(): Promise<void> {
 }
 
 /**
+ * Get the default editor based on environment and platform
+ */
+function getDefaultEditor(): string {
+  // Check environment variables first (user preference)
+  if (process.env.EDITOR) return process.env.EDITOR;
+  if (process.env.VISUAL) return process.env.VISUAL;
+
+  // Platform-specific fallbacks
+  if (process.platform === 'win32') {
+    return 'notepad';
+  }
+
+  // macOS/Linux: vim is more universal than nano (macOS has vim by default)
+  return 'vim';
+}
+
+/**
  * Open file in user's preferred editor
  */
 async function openInEditor(filePath: string): Promise<void> {
-  const editor = process.env.EDITOR || process.env.VISUAL || 'nano';
+  const editor = getDefaultEditor();
 
   return new Promise((resolve, reject) => {
     const child = spawn(editor, [filePath], {
-      stdio: 'inherit'
+      stdio: 'inherit',
+      shell: process.platform === 'win32'  // Windows needs shell for notepad
     });
 
     child.on('exit', (code) => {
@@ -85,8 +104,12 @@ async function openInEditor(filePath: string): Promise<void> {
       }
     });
 
-    child.on('error', (err) => {
-      reject(err);
+    child.on('error', () => {
+      // Helpful error message
+      const hint = process.platform === 'win32'
+        ? 'Set the EDITOR environment variable to your preferred editor'
+        : 'Set the EDITOR environment variable (e.g., export EDITOR=nano)';
+      reject(new Error(`Failed to open editor "${editor}". ${hint}`));
     });
   });
 }
@@ -202,26 +225,8 @@ async function createTemplate(): Promise<void> {
   }
 
   try {
-    // Create template
-    const { writeInstructions: writeFile } = await import('../instructions');
-    const DEFAULT_TEMPLATE = `I'm building a SaaS productivity tool as my main project.
-
-My projects:
-- main-app: Production SaaS, this is my focus
-- side-project: Learning new tech, exploratory work
-- client-work: Freelance, billable hours matter
-
-What counts as progress:
-- Shipping features to production
-- Deep focused coding sessions
-- Fixing critical bugs
-
-What to ignore:
-- Config/setup tweaks
-- Updating dependencies
-- Writing docs (unless specifically asked)
-`;
-    await writeFile(DEFAULT_TEMPLATE);
+    // Create template using the shared default template
+    await writeInstructions(DEFAULT_TEMPLATE);
 
     // Open in editor immediately (no middle step)
     console.log(colors.info(`\nOpening ${getInstructionsPath()} in your editor...`));
@@ -321,7 +326,8 @@ async function promptToContinue(): Promise<void> {
 }
 
 /**
- * Silently pull from cloud on menu load (cloud is source of truth)
+ * Pull from cloud on menu load (cloud is source of truth)
+ * Shows brief notification of what happened
  */
 async function autoSyncFromCloud(): Promise<void> {
   const token = await getToken();
@@ -332,9 +338,14 @@ async function autoSyncFromCloud(): Promise<void> {
     if (cloudInstructions.content) {
       // Cloud has content - write to local (cloud wins)
       await writeInstructions(cloudInstructions.content);
+      console.log(colors.dim('  ↓ Synced from cloud'));
     } else {
-      // Cloud is empty - delete local file to stay in sync
-      await deleteLocalInstructions();
+      // Cloud is empty - check if we need to delete local
+      const metadata = await getInstructionsMetadata();
+      if (metadata.exists) {
+        await deleteLocalInstructions();
+        console.log(colors.dim('  ↓ Cleared (empty in cloud)'));
+      }
     }
   } catch {
     // Silently ignore - will show in header if there's an issue
