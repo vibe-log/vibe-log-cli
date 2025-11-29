@@ -3,10 +3,6 @@ import { countCursorMessages } from '../lib/readers/cursor';
 import { createSpinner } from '../lib/ui';
 import { VibelogError } from '../utils/errors';
 import { logger } from '../utils/logger';
-import {
-  getPushUpChallengeConfig,
-  checkAndUpdateCursorPushUps
-} from '../lib/config';
 
 export async function cursorStats(): Promise<void> {
   const spinner = createSpinner('Fetching Cursor IDE stats...').start();
@@ -15,14 +11,6 @@ export async function cursorStats(): Promise<void> {
     const stats = await countCursorMessages();
 
     spinner.succeed('Cursor stats loaded!');
-
-    // Check if push-up challenge is enabled and update debt
-    const pushUpConfig = getPushUpChallengeConfig();
-    let cursorPushUpResult;
-
-    if (pushUpConfig.enabled) {
-      cursorPushUpResult = await checkAndUpdateCursorPushUps();
-    }
 
     console.log(chalk.cyan('\n💬 Your Cursor IDE Stats'));
     console.log(chalk.gray('═══════════════════════════════\n'));
@@ -44,39 +32,6 @@ export async function cursorStats(): Promise<void> {
     }
 
     console.log(chalk.gray('\n═══════════════════════════════\n'));
-
-    // Show push-up challenge results if enabled
-    if (pushUpConfig.enabled && cursorPushUpResult) {
-      console.log(chalk.cyan('💪 Push-Up Challenge:'));
-      console.log(chalk.gray(`   Tracking: ${chalk.bold('Validation phrases in assistant responses')}`));
-
-      if (cursorPushUpResult.pushUpsAdded > 0) {
-        console.log(chalk.yellow('\n   📊 Validations Detected:'));
-        console.log(chalk.gray(`   • New messages scanned: ${chalk.bold(cursorPushUpResult.newMessages)}`));
-        console.log(chalk.red(`   • Validation phrases found: ${chalk.bold(cursorPushUpResult.validationPhrasesDetected?.length || 0)}`));
-        if (cursorPushUpResult.validationPhrasesDetected && cursorPushUpResult.validationPhrasesDetected.length > 0) {
-          console.log(chalk.gray(`   • Phrases: ${chalk.dim(cursorPushUpResult.validationPhrasesDetected.slice(0, 3).join(', '))}${cursorPushUpResult.validationPhrasesDetected.length > 3 ? '...' : ''}`));
-        }
-        console.log(chalk.red(`   • Push-ups added: ${chalk.bold(cursorPushUpResult.pushUpsAdded)}`));
-        console.log(chalk.yellow(`   • Total debt: ${chalk.bold(cursorPushUpResult.totalDebt)}`));
-      } else if (cursorPushUpResult.newMessages > 0) {
-        console.log(chalk.green(`\n   ✅ No validations detected (${cursorPushUpResult.newMessages} messages scanned)`));
-      } else {
-        console.log(chalk.gray(`\n   No new messages since last check`));
-      }
-
-      // Show time-based statistics
-      if (cursorPushUpResult.timeStats) {
-        const stats = cursorPushUpResult.timeStats;
-        console.log(chalk.cyan('\n   📅 Time-Based Stats:'));
-        console.log(chalk.gray(`   • This week: ${chalk.bold(stats.thisWeek)} push-ups`));
-        console.log(chalk.gray(`   • Last week: ${chalk.bold(stats.lastWeek)} push-ups`));
-        console.log(chalk.gray(`   • This month: ${chalk.bold(stats.thisMonth)} push-ups`));
-        console.log(chalk.gray(`   • This year: ${chalk.bold(stats.thisYear)} push-ups`));
-      }
-
-      console.log(chalk.gray('\n═══════════════════════════════\n'));
-    }
 
     // Motivational message based on usage
     if (stats.conversationCount === 0) {

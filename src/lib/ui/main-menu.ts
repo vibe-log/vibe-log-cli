@@ -122,12 +122,6 @@ export async function showMainMenu(
         return;
       }
 
-      case 'pushup-challenge': {
-        const { showPushUpChallengeMenu } = await import('./push-up-challenge-menu');
-        await showPushUpChallengeMenu(true); // true indicates first-time setup
-        break;
-      }
-
       case 'exit':
         console.log(colors.muted('\nGoodbye! 👋\n'));
         process.exit(0);
@@ -521,12 +515,6 @@ async function handleMenuAction(
       }
       break;
       
-    case 'pushup-challenge': {
-      const { showPushUpChallengeMenu } = await import('./push-up-challenge-menu');
-      await showPushUpChallengeMenu(false); // false indicates regular menu access
-      break;
-    }
-
     case 'help':
       showHelp();
       console.log('Press Enter to continue...');

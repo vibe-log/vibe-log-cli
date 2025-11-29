@@ -1,5 +1,4 @@
 import { colors, icons, box, padRight, getTerminalWidth } from './styles';
-import { getPushUpChallengeConfig, getPushUpStats } from '../config';
 
 // Menu item labels - centralized for consistency
 const MENU_LABELS = {
@@ -83,72 +82,6 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
     return items;
   }
 
-  // For PUSHUP_ONLY state - user has only enabled push-up challenge
-  if (context.state === 'PUSHUP_ONLY') {
-    // Primary action - Push-Up Challenge
-    const pushUpConfig = getPushUpChallengeConfig();
-    const pushUpStats = getPushUpStats();
-
-    if (pushUpConfig.enabled) {
-      const streakEmoji = pushUpStats.streakDays > 0 ? '🔥' : '';
-      items.push({
-        id: 'pushup-challenge',
-        label: `💪 Push-Up Challenge (Debt: ${pushUpStats.debt}, Streak: ${pushUpStats.streakDays} days ${streakEmoji})`,
-        action: 'pushup-challenge'
-      });
-    } else {
-      items.push({
-        id: 'pushup-challenge',
-        label: `💪 Push-Up Challenge`,
-        action: 'pushup-challenge'
-      });
-    }
-
-    items.push({ separator: true } as MenuItem);
-
-    // Standup - works without auth
-    items.push({
-      id: 'standup',
-      label: `📋 Today's standup`,
-      action: 'standup'
-    });
-
-    items.push({ separator: true } as MenuItem);
-
-    items.push({
-      id: 'status-line',
-      label: MENU_LABELS.STRATEGIC_COPILOT,
-      description: MENU_LABELS.STRATEGIC_COPILOT_DESC,
-      action: 'status-line'
-    });
-
-    // Separator before additional features
-    items.push({ separator: true } as MenuItem);
-
-    // Offer to install sub-agents for local reports
-    items.push({
-      id: 'install-agents',
-      label: getReportGenerateLabel(),
-      action: 'install-agents'
-    });
-
-    // Separator before cloud option
-    items.push({ separator: true } as MenuItem);
-
-    // Offer cloud mode for email summaries
-    items.push({
-      id: 'switch-cloud',
-      label: `${icons.sparkles} Enable cloud mode`,
-      action: 'switch-cloud'
-    });
-
-    // Add cloud mode details as non-selectable items
-    items.push({ separator: true, id: 'cloud-detail-1', label: '   ✓ Uses 0 tokens (our infrastructure)' } as MenuItem);
-    items.push({ separator: true, id: 'cloud-detail-2', label: '   📧 Weekly recaps & Daily standup emails' } as MenuItem);
-    items.push({ separator: true, id: 'cloud-detail-3', label: '   📊 Interactive dashboards' } as MenuItem);
-    items.push({ separator: true, id: 'cloud-detail-4', label: '   🎯 Optimization insights & coaching plans' } as MenuItem);
-  }
-
   // For LOCAL_ONLY state
   if (context.state === 'LOCAL_ONLY') {
     // Primary action - Standup (works without auth in local mode)
@@ -157,25 +90,6 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
       label: `📋 Today's standup`,
       action: 'standup'
     });
-
-    // Add Push-Up Challenge menu item immediately after standup
-    const pushUpConfig = getPushUpChallengeConfig();
-    const pushUpStats = getPushUpStats();
-
-    if (pushUpConfig.enabled) {
-      const streakEmoji = pushUpStats.streakDays > 0 ? '🔥' : '';
-      items.push({
-        id: 'pushup-challenge',
-        label: `💪 Push-Up Challenge (Debt: ${pushUpStats.debt}, Streak: ${pushUpStats.streakDays} days ${streakEmoji})`,
-        action: 'pushup-challenge'
-      });
-    } else {
-      items.push({
-        id: 'pushup-challenge',
-        label: `💪 Push-Up Challenge`,
-        action: 'pushup-challenge'
-      });
-    }
 
     items.push({ separator: true } as MenuItem);
 
@@ -226,25 +140,6 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
       label: `📋 Today's standup`,
       action: 'standup'
     });
-
-    // Add Push-Up Challenge menu item immediately after standup
-    const pushUpConfigCloud = getPushUpChallengeConfig();
-    const pushUpStatsCloud = getPushUpStats();
-
-    if (pushUpConfigCloud.enabled) {
-      const streakEmojiCloud = pushUpStatsCloud.streakDays > 0 ? '🔥' : '';
-      items.push({
-        id: 'pushup-challenge',
-        label: `💪 Push-Up Challenge (Debt: ${pushUpStatsCloud.debt}, Streak: ${pushUpStatsCloud.streakDays} days ${streakEmojiCloud})`,
-        action: 'pushup-challenge'
-      });
-    } else {
-      items.push({
-        id: 'pushup-challenge',
-        label: `💪 Push-Up Challenge`,
-        action: 'pushup-challenge'
-      });
-    }
 
     items.push({ separator: true } as MenuItem);
 

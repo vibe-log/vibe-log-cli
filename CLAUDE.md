@@ -47,7 +47,7 @@ Each command is a standalone module that handles specific CLI operations:
   - Never call `apiClient.uploadSessions()` directly - the send command handles all session processing
   - The `selectedSessions` parameter expects `SelectedSessionInfo[]` from session-selector
 - **`status.ts`** - Display user streak, points, and statistics (includes Cursor IDE stats)
-- **`cursor-stats.ts`** - Display dedicated Cursor IDE statistics view with push-up tracking integration
+- **`cursor-stats.ts`** - Display dedicated Cursor IDE statistics view
 - **`auth.ts`** - Re-authentication for expired/invalid tokens
   - Supports `wizardMode` parameter to suppress menu-related messages during guided flows
 - **`config.ts`** - Manage CLI configuration settings
@@ -56,11 +56,6 @@ Each command is a standalone module that handles specific CLI operations:
 - **`hooks-log.ts`** - View and manage hook execution logs
 - **`hooks-manage.ts`** - Comprehensive hooks management interface
 - **`verify-hooks.ts`** - Verify hook installation and configuration
-- **`pushup-challenge.ts`** - Push-up challenge gamification system
-  - Tracks validation phrases in Claude Code responses
-  - Adds push-ups to debt for over-validation patterns
-  - Automatically scans Cursor IDE messages for same validation phrases when enabled
-  - Subcommands: `enable`, `disable`, `stats`, `summary`, `statusline`
 
 ### Core Libraries (`/src/lib/`)
 
@@ -130,8 +125,6 @@ Each command is a standalone module that handles specific CLI operations:
 
 **Hook Naming Convention**: All hooks use PascalCase format (e.g., `PreCompact`, `SessionStart`, `SessionEnd`, `Stop`).
 Legacy camelCase formats (`preCompact`, `stop`) are no longer supported.
-
-**Note**: The `Stop` hook (PascalCase) is reserved for the Push-Up Challenge feature and should not be used by vibe-log hooks.
 
 ##### Core Hook Management (`/src/lib/hooks/`)
 - **`hooks-controller.ts`** - Selective hook management:

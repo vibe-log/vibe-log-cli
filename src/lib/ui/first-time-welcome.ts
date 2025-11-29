@@ -3,7 +3,7 @@ import { colors } from './styles';
 import chalk from 'chalk';
 import { InteractiveMenu, MenuOption } from './interactive-menu';
 
-export type WelcomeChoice = 'standup' | 'local' | 'cloud' | 'statusline' | 'pushup-challenge' | 'exit';
+export type WelcomeChoice = 'standup' | 'local' | 'cloud' | 'statusline' | 'exit';
 
 // USP details for each option
 const optionDetails: Record<string, string[]> = {
@@ -28,12 +28,6 @@ const optionDetails: Record<string, string[]> = {
     '💡 Shows feedback in Claude Code',
     '🧠 Personalized Guidance',
     '🤝 Keeps You & Claude focused'
-  ],
-  'pushup-challenge': [
-    '🎮 Gamify your coding with push-ups',
-    '✅ Tracks validation responses from Claude (You are absolutely right)',
-    '📊 Build streaks and compete with yourself',
-    '💬 Integrates with Claude Code statusline'
   ]
 };
 
@@ -46,11 +40,6 @@ export async function showFirstTimeWelcome(): Promise<WelcomeChoice> {
   if (process.stdin.isTTY && process.stdout.isTTY) {
     // Build menu options
     const menuOptions: MenuOption[] = [
-      {
-        title: '💪 Push-Up Challenge - Get Fit While Coding!',
-        value: 'pushup-challenge',
-        details: optionDetails['pushup-challenge']
-      },
       {
         title: '📋 Prepare for standup (2 min) - NEW!',
         value: 'standup',
@@ -112,10 +101,6 @@ export async function showFirstTimeWelcome(): Promise<WelcomeChoice> {
   console.log();
  
   const menuChoices = [
-    {
-      name: '💪 Push-Up Challenge - Get Fit While Coding!',
-      value: 'pushup-challenge' as const,
-    },
     {
       name: '📋 Prepare for standup (2 min) - NEW!',
       value: 'standup' as const,
