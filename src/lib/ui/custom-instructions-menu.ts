@@ -115,6 +115,34 @@ async function openInEditor(filePath: string): Promise<void> {
 }
 
 /**
+ * Sync local instructions to cloud (if authenticated) or show login promotion
+ * @param successMessage - Custom success message for the sync
+ */
+async function syncToCloudOrPromptLogin(successMessage: string = 'Synced to cloud!'): Promise<void> {
+  const token = await getToken();
+  if (token) {
+    console.log(colors.muted('Syncing to cloud...'));
+    try {
+      const content = await readInstructions();
+      if (content) {
+        await apiClient.syncInstructions(content, 'cli');
+        showSuccess(successMessage);
+      }
+    } catch (syncError) {
+      showError('Failed to sync to cloud');
+      if (syncError instanceof Error) {
+        console.log(colors.dim(`  ${syncError.message}`));
+      }
+    }
+  } else {
+    console.log('');
+    console.log(colors.info('💡 Tip: Login to sync instructions across devices'));
+    console.log(colors.subdued('   Run: vibe-log auth'));
+    console.log(colors.subdued('   Or edit online at app.vibe-log.dev/settings'));
+  }
+}
+
+/**
  * View current instructions
  */
 async function viewInstructions(): Promise<void> {
@@ -172,29 +200,7 @@ async function editInstructions(): Promise<void> {
     await openInEditor(getInstructionsPath());
     console.log(colors.success('\nFile saved!'));
 
-    // Auto-sync or show login promotion
-    const token = await getToken();
-    if (token) {
-      console.log(colors.muted('Syncing to cloud...'));
-      try {
-        const content = await readInstructions();
-        if (content) {
-          await apiClient.syncInstructions(content, 'cli');
-          showSuccess('Changes synced to cloud!');
-        }
-      } catch (syncError) {
-        showError('Failed to sync to cloud');
-        if (syncError instanceof Error) {
-          console.log(colors.dim(`  ${syncError.message}`));
-        }
-      }
-    } else {
-      // Promote login for non-authenticated users
-      console.log('');
-      console.log(colors.info('💡 Tip: Login to sync instructions across devices'));
-      console.log(colors.subdued('   Run: vibe-log auth'));
-      console.log(colors.subdued('   Or edit online at app.vibe-log.dev/settings'));
-    }
+    await syncToCloudOrPromptLogin('Changes synced to cloud!');
   } catch (error) {
     showError('Failed to open editor');
     if (error instanceof Error) {
@@ -235,30 +241,7 @@ async function createTemplate(): Promise<void> {
     await openInEditor(getInstructionsPath());
     console.log(colors.success('\nFile saved!'));
 
-    // Auto-sync or show login promotion
-    const token = await getToken();
-    if (token) {
-      // Auto-sync to cloud
-      console.log(colors.muted('Syncing to cloud...'));
-      try {
-        const content = await readInstructions();
-        if (content) {
-          await apiClient.syncInstructions(content, 'cli');
-          showSuccess('Instructions synced to cloud!');
-        }
-      } catch (syncError) {
-        showError('Failed to sync to cloud');
-        if (syncError instanceof Error) {
-          console.log(colors.dim(`  ${syncError.message}`));
-        }
-      }
-    } else {
-      // Promote login for non-authenticated users
-      console.log('');
-      console.log(colors.info('💡 Tip: Login to sync instructions across devices'));
-      console.log(colors.subdued('   Run: vibe-log auth'));
-      console.log(colors.subdued('   Or edit online at app.vibe-log.dev/settings'));
-    }
+    await syncToCloudOrPromptLogin('Instructions synced to cloud!');
   } catch (error) {
     showError('Failed to create or edit template');
     if (error instanceof Error) {
@@ -326,8 +309,9 @@ async function promptToContinue(): Promise<void> {
 }
 
 /**
- * Pull from cloud on menu load (cloud is source of truth)
- * Shows brief notification of what happened
+ * Sync instructions on menu load
+ * - Cloud has content → cloud wins, write to local
+ * - Cloud is empty, local exists → sync local to cloud
  */
 async function autoSyncFromCloud(): Promise<void> {
   const token = await getToken();
@@ -336,15 +320,16 @@ async function autoSyncFromCloud(): Promise<void> {
   try {
     const cloudInstructions = await apiClient.fetchInstructions();
     if (cloudInstructions.content) {
-      // Cloud has content - write to local (cloud wins)
+      // Cloud has content - cloud wins, write to local
       await writeInstructions(cloudInstructions.content);
       console.log(colors.dim('  ↓ Synced from cloud'));
     } else {
-      // Cloud is empty - check if we need to delete local
-      const metadata = await getInstructionsMetadata();
-      if (metadata.exists) {
-        await deleteLocalInstructions();
-        console.log(colors.dim('  ↓ Cleared (empty in cloud)'));
+      // Cloud is empty - check if local has content to push up
+      const localContent = await readInstructions();
+      if (localContent) {
+        // Local exists but cloud is empty - push local to cloud
+        await apiClient.syncInstructions(localContent, 'cli');
+        console.log(colors.dim('  ↑ Synced local to cloud'));
       }
     }
   } catch {
