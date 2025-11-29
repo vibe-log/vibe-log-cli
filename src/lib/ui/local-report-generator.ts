@@ -566,6 +566,8 @@ export async function generateLocalReportInteractive(): Promise<void> {
       console.log(colors.muted(`System prompt adds behavioral instructions (${orchestrated.systemPrompt.length} characters)`));
       if (customInstructions) {
         console.log(colors.success(`✓ Custom instructions applied (${customInstructions.length} characters)`));
+      } else {
+        console.log(colors.muted(`ℹ No custom instructions configured`));
       }
       
       // Ensure temp report directory exists (already defined above)
