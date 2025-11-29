@@ -564,6 +564,9 @@ export async function generateLocalReportInteractive(): Promise<void> {
       // Execute directly with Claude
       console.log(colors.muted(`Using orchestrated prompt (${updatedPrompt.length} characters)`));
       console.log(colors.muted(`System prompt adds behavioral instructions (${orchestrated.systemPrompt.length} characters)`));
+      if (customInstructions) {
+        console.log(colors.success(`✓ Custom instructions applied (${customInstructions.length} characters)`));
+      }
       
       // Ensure temp report directory exists (already defined above)
       await fs.mkdir(tempReportDir, { recursive: true }).catch(() => {});
