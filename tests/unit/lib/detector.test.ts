@@ -15,7 +15,6 @@ vi.mock('../../../src/lib/config', () => ({
   getToken: vi.fn(async () => null),
   getLastSyncSummary: vi.fn(() => null),
   getDashboardUrl: vi.fn(() => 'https://vibe-log.dev'),
-  getPushUpChallengeConfig: vi.fn(() => ({ enabled: false })),
 }));
 
 vi.mock('../../../src/lib/claude-settings-reader', () => ({
@@ -48,7 +47,6 @@ import {
   getToken,
   getLastSyncSummary,
   getDashboardUrl,
-  getPushUpChallengeConfig,
 } from '../../../src/lib/config';
 
 import {
@@ -62,7 +60,6 @@ const mockGetAllConfig = getAllConfig as any;
 const mockGetToken = getToken as any;
 const mockGetLastSyncSummary = getLastSyncSummary as any;
 const mockGetDashboardUrl = getDashboardUrl as any;
-const mockGetPushUpChallengeConfig = getPushUpChallengeConfig as any;
 const mockGetHookMode = getHookMode as any;
 const mockGetTrackedProjects = getTrackedProjects as any;
 const mockGetStatusLineStatus = getStatusLineStatus as any;
@@ -78,7 +75,6 @@ describe('detector', () => {
     mockGetToken.mockResolvedValue(null);
     mockGetLastSyncSummary.mockReturnValue(null);
     mockGetDashboardUrl.mockReturnValue('https://vibe-log.dev');
-    mockGetPushUpChallengeConfig.mockReturnValue({ enabled: false });
     mockGetHookMode.mockResolvedValue('none');
     mockGetTrackedProjects.mockResolvedValue([]);
     mockGetStatusLineStatus.mockResolvedValue('not-installed');
@@ -226,26 +222,6 @@ describe('detector', () => {
         expect(result.state).toBe('CLOUD_ONLY');
         expect(result.hasAuth).toBe(true);
         expect(result.hasAgents).toBe(false);
-      });
-    });
-
-    describe('PUSHUP_ONLY state', () => {
-      it('should detect PUSHUP_ONLY when only push-up challenge enabled', async () => {
-        // Push-up challenge requires some config to not be FIRST_TIME
-        mockGetAllConfig.mockReturnValue({ pushUpChallenge: { enabled: true } });
-        mockGetToken.mockResolvedValue(null);
-        mockGetPushUpChallengeConfig.mockReturnValue({ enabled: true });
-
-        // Explicitly mock fs to ensure no agents detected
-        const mockAccess = vi.spyOn(fs, 'access');
-        mockAccess.mockRejectedValue(new Error('Path does not exist'));
-
-        const result = await detectSetupState();
-
-        expect(result.state).toBe('PUSHUP_ONLY');
-        expect(result.hasAuth).toBe(false);
-        expect(result.hasAgents).toBe(false);
-        expect(result.hasPushUpChallenge).toBe(true);
       });
     });
 

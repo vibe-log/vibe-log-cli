@@ -7,7 +7,6 @@ import { logger } from '../utils/logger';
 import { transformSuggestion, getStatusLinePersonality, getPersonalityDisplayName } from '../lib/personality-manager';
 import { isLoadingState, isStaleLoadingState, LoadingState, getLoadingMessage } from '../types/loading-state';
 import { getCCUsageMetrics } from '../lib/ccusage-integration';
-import { getPushUpChallengeConfig, getPushUpStats } from '../lib/config';
 
 /**
  * Output format types for the statusline
@@ -39,44 +38,12 @@ function getScoreEmoji(score: number): string {
 }
 
 /**
- * Format push-up challenge stats for statusline
- * Returns null if challenge is not enabled
- */
-function formatPushUpStats(): string | null {
-  const config = getPushUpChallengeConfig();
-
-  // Only show if enabled
-  if (!config.enabled) {
-    return null;
-  }
-
-  const stats = getPushUpStats();
-  const parts: string[] = [];
-
-  // Show Push-Up Challenge header and metrics
-  if (stats.debt > 0 || stats.completed > 0) {
-    parts.push(`💪 Push-Up Challenge`);
-    parts.push(`Push-Up To-Do: ${stats.debt}`);
-    parts.push(`Total Push-Ups Done: ${stats.completed}`);
-  }
-
-  // Show streak if active
-  if (stats.streakDays > 0) {
-    parts.push(`🔥 ${stats.streakDays} day streak`);
-  }
-
-  // Return formatted string or null if no stats to show
-  return parts.length > 0 ? parts.join(' | ') : null;
-}
-
-/**
  * Format the analysis for compact output (default)
  * Example: 🟢 85/100 | ✨ Great context! Consider adding expected output format
  * With actionableSteps: Adds second line with "✅ TRY THIS:" prefix
  * With ccusage: Adds usage metrics on additional line
- * With push-ups: Adds push-up challenge stats on additional line
  */
-function formatCompact(analysis: PromptAnalysis, ccusageOutput?: string | null, pushUpOutput?: string | null): string {
+function formatCompact(analysis: PromptAnalysis, ccusageOutput?: string | null): string {
   const score = analysis.score;
   let suggestion = analysis.suggestion;
   const actionableSteps = analysis.actionableSteps;
@@ -114,11 +81,6 @@ function formatCompact(analysis: PromptAnalysis, ccusageOutput?: string | null, 
   // Add ccusage metrics if available
   if (ccusageOutput) {
     output += '\n' + ccusageOutput;
-  }
-
-  // Add push-up stats if available
-  if (pushUpOutput) {
-    output += '\n' + pushUpOutput;
   }
 
   return output;
@@ -226,16 +188,13 @@ function formatLoadingState(state: LoadingState, format: OutputFormat): string {
 /**
  * Format the analysis based on the selected format
  */
-function formatAnalysis(analysis: PromptAnalysis, format: OutputFormat, ccusageOutput?: string | null, pushUpOutput?: string | null): string {
+function formatAnalysis(analysis: PromptAnalysis, format: OutputFormat, ccusageOutput?: string | null): string {
   switch (format) {
     case 'json':
-      // For JSON, include ccusage and pushup as separate fields
+      // For JSON, include ccusage as separate field
       const jsonOutput: any = { ...analysis };
       if (ccusageOutput) {
         jsonOutput.ccusage = ccusageOutput;
-      }
-      if (pushUpOutput) {
-        jsonOutput.pushups = pushUpOutput;
       }
       return JSON.stringify(jsonOutput);
     case 'detailed':
@@ -246,7 +205,7 @@ function formatAnalysis(analysis: PromptAnalysis, format: OutputFormat, ccusageO
       return formatMinimal(analysis);
     case 'compact':
     default:
-      return formatCompact(analysis, ccusageOutput, pushUpOutput);
+      return formatCompact(analysis, ccusageOutput);
   }
 }
 
@@ -309,23 +268,11 @@ function formatDefault(format: OutputFormat): string {
   const personalityName = getPersonalityDisplayName(personality.personality);
 
   // Create unified message for all personalities
-  let baseMessage = `💭 ${personalityName} is ready to analyze and improve your prompts`;
-
-  // Get push-up stats if enabled
-  const pushUpOutput = formatPushUpStats();
-
-  // Add push-up stats to base message if available
-  if (pushUpOutput && format !== 'minimal' && format !== 'emoji') {
-    baseMessage += '\n' + pushUpOutput;
-  }
+  const baseMessage = `💭 ${personalityName} is ready to analyze and improve your prompts`;
 
   switch (format) {
     case 'json':
-      const jsonResult: any = { status: 'ready', message: baseMessage, personality: personality.personality };
-      if (pushUpOutput) {
-        jsonResult.pushups = pushUpOutput;
-      }
-      return JSON.stringify(jsonResult);
+      return JSON.stringify({ status: 'ready', message: baseMessage, personality: personality.personality });
     case 'detailed':
       return `Status: Ready | ${baseMessage}`;
     case 'emoji':
@@ -486,11 +433,8 @@ export function createStatuslineCommand(): Command {
           debugLog(`Not calling ccusage - withUsage: ${options.withUsage}, hasContext: ${!!claudeContext}`);
         }
 
-        // Get push-up stats (always check if enabled)
-        const pushUpOutput = formatPushUpStats();
-
         // Format and output the analysis
-        const output = formatAnalysis(analysis, format, ccusageOutput, pushUpOutput);
+        const output = formatAnalysis(analysis, format, ccusageOutput);
         debugLog(`SUCCESS: Outputting analysis (${output.length} bytes): ${output.substring(0, 150)}`);
         logger.debug(`Statusline about to output (${output.length} bytes): ${output.substring(0, 200)}`);
         process.stdout.write(output);

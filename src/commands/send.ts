@@ -230,17 +230,6 @@ async function executeInteractiveSend(options: SendOptions): Promise<void> {
     // Update sync state
     await orchestrator.updateSyncState(sessions, options);
 
-    // Sync push-up challenge stats after session upload
-    logger.info('🔄 Triggering push-up stats sync after session upload...');
-    try {
-      const { syncPushUpStats } = await import('../lib/push-up-sync');
-      await syncPushUpStats();
-      logger.info('✅ Push-up stats sync completed');
-    } catch (err) {
-      logger.error('❌ Failed to sync push-up stats after session upload:', err);
-      // Don't fail the whole upload if push-up sync fails
-    }
-
     // Show results
     if (!options.silent) {
       showUploadResults(results);

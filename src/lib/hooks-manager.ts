@@ -29,7 +29,6 @@ interface HookConfig {
 interface ClaudeSettings {
   hooks?: {
     PreCompact?: HookConfig[];
-    Stop?: HookConfig[]; // Used by Push-Up Challenge
     [key: string]: HookConfig[] | any;
   };
   [key: string]: any;

@@ -388,41 +388,6 @@ describe('API Client Module', () => {
     });
   });
 
-  describe('Push-Up Challenge', () => {
-    it('should sync push-up challenge data', async () => {
-      const pushUpData = {
-        date: '2024-01-15',
-        count: 50,
-        sets: [10, 10, 10, 10, 10],
-      };
-
-      mockAxiosInstance.post.mockResolvedValue({
-        data: { success: true, totalToday: 50 },
-      });
-
-      const result = await apiClient.syncPushUpChallenge(pushUpData);
-
-      expect(result).toEqual({ success: true, totalToday: 50 });
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/api/push-up-challenge/sync', pushUpData);
-    });
-
-    it('should fetch push-up challenge stats', async () => {
-      const mockStats = {
-        totalPushUps: 1500,
-        currentStreak: 7,
-        longestStreak: 14,
-        averagePerDay: 50,
-      };
-
-      mockAxiosInstance.get.mockResolvedValue({ data: mockStats });
-
-      const result = await apiClient.fetchPushUpChallengeStats();
-
-      expect(result).toEqual(mockStats);
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/api/push-up-challenge/stats');
-    });
-  });
-
   describe('Upload Error Handling', () => {
     it('should propagate upload errors', async () => {
       const sessions = [testData.createSession()];
