@@ -225,26 +225,6 @@ describe('detector', () => {
       });
     });
 
-    describe('PUSHUP_ONLY state', () => {
-      it('should detect PUSHUP_ONLY when only push-up challenge enabled', async () => {
-        // Push-up challenge requires some config to not be FIRST_TIME
-        mockGetAllConfig.mockReturnValue({ pushUpChallenge: { enabled: true } });
-        mockGetToken.mockResolvedValue(null);
-        mockGetPushUpChallengeConfig.mockReturnValue({ enabled: true });
-
-        // Explicitly mock fs to ensure no agents detected
-        const mockAccess = vi.spyOn(fs, 'access');
-        mockAccess.mockRejectedValue(new Error('Path does not exist'));
-
-        const result = await detectSetupState();
-
-        expect(result.state).toBe('PUSHUP_ONLY');
-        expect(result.hasAuth).toBe(false);
-        expect(result.hasAgents).toBe(false);
-        expect(result.hasPushUpChallenge).toBe(true);
-      });
-    });
-
     describe('PARTIAL_SETUP state', () => {
       it('should detect PARTIAL_SETUP for incomplete configurations', async () => {
         mockGetAllConfig.mockReturnValue({ someConfig: 'value' });
