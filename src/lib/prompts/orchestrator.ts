@@ -49,7 +49,12 @@ EXECUTION FLOW:
 COMMUNICATION:
 - Announce batching strategy clearly
 - Show how many agents are being launched
-- Keep updates concise`;
+- Keep updates concise${context.customInstructions ? `
+
+USER'S CUSTOM INSTRUCTIONS:
+${context.customInstructions}
+
+Apply these preferences when analyzing sessions and generating insights.` : ''}`;
 
   // Main prompt focused on the task
   const prompt = `Analyze my Claude Code sessions from ${timeframeDesc} using vibe-log sub-agents.
