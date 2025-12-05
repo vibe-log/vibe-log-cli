@@ -147,18 +147,15 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
     const tips = getTipsForRotation();
     let tipIndex = Math.floor(Math.random() * tips.length); // Start with random tip
 
-    // Print tip on its own line first
-    console.log(chalk.gray(`Tip: ${tips[tipIndex]}`));
-
-    // Start spinner on the next line
+    // Start spinner first
     const analysisSpinner = createSpinner('Analyzing sessions...').start();
 
-    // Rotate tips every 4 seconds (update the line above the spinner)
+    // Show tips below spinner every 4 seconds
     const tipInterval = setInterval(() => {
+      analysisSpinner.stop();
+      console.log(chalk.gray(`\nTip: ${tips[tipIndex]}`));
       tipIndex = (tipIndex + 1) % tips.length;
-      // Move cursor up, clear line, print new tip, move cursor back down
-      process.stdout.write('\x1b[1A\x1b[2K'); // Move up 1 line, clear it
-      console.log(chalk.gray(`Tip: ${tips[tipIndex]}`));
+      analysisSpinner.start();
     }, 4000);
 
     // Execute Claude to analyze the sessions
