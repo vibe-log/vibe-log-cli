@@ -170,7 +170,15 @@ DO NOT include any text before ----JSON START---- or after ----JSON END----`;
 
 /**
  * Get the system prompt for Claude execution
+ * @param customInstructions - Optional user-provided custom instructions to personalize analysis
  */
-export function getClaudeSystemPrompt(): string {
-  return 'You are a developer standup meeting assistant. Extract REAL USER-FACING FEATURES and BUSINESS VALUE from coding sessions. Focus on what developers actually discuss in standups: features built, bugs fixed, integrations completed, performance improvements. AVOID technical implementation details about agents, tools, or internal systems. CRITICAL: Only extract work that is EXPLICITLY mentioned in the session messages - never hallucinate or make up features. Translate technical details into business value. Return ONLY valid JSON.';
+export function getClaudeSystemPrompt(customInstructions?: string): string {
+  const basePrompt = 'You are a developer standup meeting assistant. Extract REAL USER-FACING FEATURES and BUSINESS VALUE from coding sessions. Focus on what developers actually discuss in standups: features built, bugs fixed, integrations completed, performance improvements. AVOID technical implementation details about agents, tools, or internal systems. CRITICAL: Only extract work that is EXPLICITLY mentioned in the session messages - never hallucinate or make up features. Translate technical details into business value. Return ONLY valid JSON.';
+
+  // Only add custom instructions if they contain non-whitespace content
+  if (customInstructions && customInstructions.trim()) {
+    return `${basePrompt}\n\nUSER INSTRUCTIONS:\n${customInstructions}\n\nApply these preferences when analyzing sessions and generating the standup report.`;
+  }
+
+  return basePrompt;
 }
