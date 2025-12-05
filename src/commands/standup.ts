@@ -4,6 +4,7 @@ import { createSpinner } from '../lib/ui';
 import { VibelogError } from '../utils/errors';
 import { logger } from '../utils/logger';
 import { readClaudeSessions } from '../lib/readers/claude';
+import { isClaudeTempProject } from '../lib/temp-directories';
 import { SessionData } from '../lib/readers/types';
 import { executeClaude, checkClaudeInstalled } from '../utils/claude-executor';
 import { extractProjectName } from '../lib/claude-project-parser';
@@ -52,15 +53,20 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
     logger.debug(`Reading sessions from ${startDate.toISOString()} to ${endDate.toISOString()}`);
     const claudeSessions = await readClaudeSessions({ since: startDate });
 
-    if (!claudeSessions || claudeSessions.length === 0) {
+    // Filter out temp projects used for automated analysis (like standup itself)
+    const filteredSessions = claudeSessions?.filter(s =>
+      !isClaudeTempProject(s.projectPath)
+    ) || [];
+
+    if (!filteredSessions || filteredSessions.length === 0) {
       spinner.fail('No sessions found');
       console.log(chalk.yellow('\nNo Claude Code sessions found in the last 3 days.'));
       console.log(chalk.gray('Start coding with Claude Code and then run this command again!'));
       return;
     }
 
-    spinner.succeed(`Found ${claudeSessions.length} sessions from the last 3 days`);
-    logger.debug(`Found ${claudeSessions.length} Claude sessions`);
+    spinner.succeed(`Found ${filteredSessions.length} sessions from the last 3 days`);
+    logger.debug(`Found ${filteredSessions.length} Claude sessions`);
 
     // Prepare temp directory with session data
     const tempManager = new StandupTempManager();
@@ -69,7 +75,7 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
     // CRITICAL: Filter out today's sessions - only show PAST work
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
-    const pastSessions = claudeSessions.filter(s =>
+    const pastSessions = filteredSessions.filter(s =>
       s.timestamp.toISOString().split('T')[0] !== todayStr
     );
 
