@@ -8,6 +8,7 @@ export interface PromptContext {
   projectPaths: string[];
   projectNames: string[];
   statusLineInstalled?: boolean;
+  customInstructions?: string;
 }
 
 export interface OrchestratedPrompt {

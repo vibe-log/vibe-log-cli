@@ -15,7 +15,8 @@ import {
   groupSessionsByProject
 } from '../lib/standup-utils';
 import { StandupTempManager } from '../lib/standup-temp-manager';
-import { RotatingTipsWithHeader } from '../lib/ui/rotating-tips';
+import { readInstructions } from '../lib/instructions';
+import { getTipsForRotation } from '../lib/ui/standup-tips';
 import path from 'path';
 import fs from 'fs/promises';
 
@@ -129,11 +130,30 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
     console.log(chalk.gray(`📁 Analyzing ${actualSessions.length} sessions from ${Object.keys(actualSessionsByProject).length} projects (${actualTargetDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })})`));
     console.log();
 
-    // Start rotating productivity tips during analysis
-    const tipsDisplay = new RotatingTipsWithHeader(
-      'While we analyze your sessions, here are some productivity tips:',
-    );
-    tipsDisplay.start(6000); // Rotate tips every 6 seconds for better readability
+    // Read custom instructions if available
+    const customInstructions = await readInstructions();
+    if (customInstructions) {
+      console.log(chalk.gray('📝 Using your custom instructions'));
+      logger.debug('Custom instructions loaded for standup analysis');
+    }
+
+    // Start spinner animation with rotating tips during Claude analysis
+    const tips = getTipsForRotation();
+    let tipIndex = Math.floor(Math.random() * tips.length); // Start with random tip
+
+    // Print tip on its own line first
+    console.log(chalk.gray(`Tip: ${tips[tipIndex]}`));
+
+    // Start spinner on the next line
+    const analysisSpinner = createSpinner('Analyzing sessions...').start();
+
+    // Rotate tips every 4 seconds (update the line above the spinner)
+    const tipInterval = setInterval(() => {
+      tipIndex = (tipIndex + 1) % tips.length;
+      // Move cursor up, clear line, print new tip, move cursor back down
+      process.stdout.write('\x1b[1A\x1b[2K'); // Move up 1 line, clear it
+      console.log(chalk.gray(`Tip: ${tips[tipIndex]}`));
+    }, 4000);
 
     // Execute Claude to analyze the sessions
     let standupData: StandupData | null = null;
@@ -142,7 +162,7 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
 
     try {
       await executeClaude(standupPrompt, {
-        systemPrompt: getClaudeSystemPrompt(),
+        systemPrompt: getClaudeSystemPrompt(customInstructions || undefined),
         cwd: tempDir,  // Use temp directory so Claude can access the session files
         claudePath: claudeCheck.path,  // Use the found Claude path
         onStreamEvent: (event) => {
@@ -189,12 +209,13 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
                 const outputPath = path.join(tempDir, 'standup-output.json');
                 await fs.writeFile(outputPath, JSON.stringify(standupData, null, 2));
 
-                // Stop tips and show completion
-                tipsDisplay.stop();
-                console.log(chalk.green('\n✓ Claude Code analysis complete!'));
+                // Stop spinner and show completion
+                clearInterval(tipInterval);
+                analysisSpinner.succeed('Claude Code analysis complete!');
                 logger.debug('Successfully parsed standup data from Claude response');
               } else {
-                tipsDisplay.stop();
+                clearInterval(tipInterval);
+                analysisSpinner.stop();
                 if (startIndex === -1) {
                   logger.debug('JSON START delimiter not found in Claude response');
                 }
@@ -209,7 +230,8 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
                 console.log(chalk.gray('Try running with --debug flag to see Claude\'s full response'));
               }
             } catch (err) {
-              tipsDisplay.stop();
+              clearInterval(tipInterval);
+              analysisSpinner.stop();
               logger.debug(`Could not parse Claude output as JSON: ${err}`);
               console.log(chalk.yellow('\n⚠️  Claude response was not valid JSON'));
 
@@ -232,13 +254,14 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
               }
             }
           } else if (code !== 0) {
-            tipsDisplay.stop();
-            console.log(chalk.yellow('\n⚠️  Claude analysis had an issue'));
+            clearInterval(tipInterval);
+            analysisSpinner.fail('Claude analysis had an issue');
           }
         }
       });
     } catch (error) {
-      tipsDisplay.stop();
+      clearInterval(tipInterval);
+      analysisSpinner.fail('Failed to execute Claude');
       logger.error('Failed to execute Claude:', error);
       console.log(chalk.yellow(`\n⚠️  Could not run Claude: ${error instanceof Error ? error.message : 'Unknown error'}`));
     }

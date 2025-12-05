@@ -50,6 +50,12 @@ interface ConfigSchema {
     backupDate: string;
     backupReason?: string; // Why it was backed up (e.g., "Replaced by vibe-log status line")
   };
+  customInstructions?: {
+    lastUpdated?: string;
+    characterCount?: number;
+    lastSyncStatus?: 'success' | 'failed';
+    lastSyncTime?: string;
+  };
 }
 
 const config = new Conf<ConfigSchema>({

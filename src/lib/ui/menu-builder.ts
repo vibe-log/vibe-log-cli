@@ -100,7 +100,17 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
       action: 'status-line'
     });
 
-    // Separator between local and analysis tools
+    // Separator before personalization
+    items.push({ separator: true } as MenuItem);
+
+    // Custom Instructions - affects both local and cloud analysis
+    items.push({
+      id: 'custom-instructions',
+      label: `📝 Custom Instructions`,
+      action: 'custom-instructions'
+    });
+
+    // Separator before analysis tools
     items.push({ separator: true } as MenuItem);
 
     // Analysis tools
@@ -162,6 +172,17 @@ export function generateMenuItems(context: MenuContext): MenuItem[] {
       action: 'manage-hooks'
     });
 
+    // Separator before personalization
+    items.push({ separator: true } as MenuItem);
+
+    // Custom Instructions - affects both local reports and cloud analysis
+    items.push({
+      id: 'custom-instructions',
+      label: `📝 Custom Instructions`,
+      action: 'custom-instructions'
+    });
+
+    // Separator before enhancement tools
     items.push({ separator: true } as MenuItem);
 
     // Enhancement tools

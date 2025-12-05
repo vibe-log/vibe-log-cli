@@ -515,6 +515,12 @@ async function handleMenuAction(
       }
       break;
       
+    case 'custom-instructions': {
+      const { showCustomInstructionsMenu } = await import('./custom-instructions-menu');
+      await showCustomInstructionsMenu();
+      break;
+    }
+
     case 'help':
       showHelp();
       console.log('Press Enter to continue...');

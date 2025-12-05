@@ -8,6 +8,7 @@ import { PromptContext } from '../../types/prompts';
 import { checkClaudeInstalled } from '../../utils/claude-executor';
 import { executeClaudePrompt } from '../report-executor';
 import { getStatusLineStatus } from '../status-line-manager';
+import { readInstructions } from '../instructions';
 import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
@@ -360,14 +361,18 @@ export async function generateLocalReportInteractive(): Promise<void> {
   // Check if status line is installed for the report recommendation
   const statusLineStatus = await getStatusLineStatus();
   const isStatusLineInstalled = statusLineStatus === 'installed';
-  
+
+  // Read custom instructions if available
+  const customInstructions = await readInstructions();
+
   // Build the orchestrated prompt
   const promptContext: PromptContext = {
     timeframe,
     days,
     projectPaths: selectedProjects.map(p => p.id),
     projectNames: selectedProjects.map(p => p.name),
-    statusLineInstalled: isStatusLineInstalled
+    statusLineInstalled: isStatusLineInstalled,
+    customInstructions: customInstructions || undefined
   };
   
   const orchestrated = buildOrchestratedPrompt(promptContext);
@@ -559,6 +564,11 @@ export async function generateLocalReportInteractive(): Promise<void> {
       // Execute directly with Claude
       console.log(colors.muted(`Using orchestrated prompt (${updatedPrompt.length} characters)`));
       console.log(colors.muted(`System prompt adds behavioral instructions (${orchestrated.systemPrompt.length} characters)`));
+      if (customInstructions) {
+        console.log(colors.success(`✓ Custom instructions applied (${customInstructions.length} characters)`));
+      } else {
+        console.log(colors.muted(`ℹ No custom instructions configured`));
+      }
       
       // Ensure temp report directory exists (already defined above)
       await fs.mkdir(tempReportDir, { recursive: true }).catch(() => {});
