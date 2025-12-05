@@ -21,7 +21,8 @@ import { spawn } from 'child_process';
  */
 async function displayHeader(): Promise<void> {
   console.log(colors.accent('\n📝 Custom Instructions'));
-  console.log(colors.subdued('   Add context about your work for more accurate analysis\n'));
+  console.log(colors.subdued('   Help the AI understand your work so it can give you relevant insights.'));
+  console.log(colors.subdued('   Used in: daily standups, reports, and cloud dashboard\n'));
 
   const token = await getToken();
   const metadata = await getInstructionsMetadata();
