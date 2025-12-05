@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8.6] - 2025-12-05
 
+### Added
+- **Custom Instructions**: Personalize your AI-generated reports and standups with custom context
+  - New "Custom Instructions" menu option in main menu
+  - Instructions stored locally at `~/.vibe-log/instructions.md`
+  - Applied to daily standups and local productivity reports
+  - Cloud sync support for instructions across devices
+  - Add context like your role, team, projects, or preferred output style
+
 ### Fixed
 - Daily standup now filters out temp projects (temp-prompt-analysis, temp-productivity-report, etc.) that were appearing in output
 - Standup tips no longer overlap - each tip now prints on a separate line instead of trying to overwrite in-place
