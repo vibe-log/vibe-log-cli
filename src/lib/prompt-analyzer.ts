@@ -344,9 +344,8 @@ Respond with JSON only, no explanation.`;
       logger.debug('SDK loaded successfully');
       await this.logToDebugFile(`SDK loaded successfully for session ${sessionId}`);
       
-      // Use model from options or default to haiku
-      // In hook mode (when sessionId exists), prioritize speed over accuracy
-      const selectedModel = options.model || (sessionId ? 'haiku' : 'haiku');
+      // Use model from options or default to haiku for speed
+      const selectedModel = options.model || 'haiku';
       logger.debug(`Using Claude SDK with ${selectedModel} model for analysis`);
       
       // No timeout - let the SDK complete naturally
