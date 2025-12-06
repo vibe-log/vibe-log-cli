@@ -39,7 +39,6 @@ jobs:
         
       - name: Run linting
         run: npm run lint
-        continue-on-error: true
         
       - name: Run type checking
         run: npm run type-check
