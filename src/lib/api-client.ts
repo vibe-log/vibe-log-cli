@@ -1,12 +1,13 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import { getToken, getApiUrl, getStatusLinePersonality } from './config';
-import { VibelogError } from '../utils/errors';
-import { validateUrl } from './input-validator';
-import { logger } from '../utils/logger';
-import { isNetworkError, createNetworkError } from './errors/network-errors';
-import { claudeSettingsManager } from './claude-settings-manager';
 import crypto from 'crypto';
+import packageJson from '../../package.json';
+import { claudeSettingsManager } from './claude-settings-manager';
+import { getToken, getApiUrl, getStatusLinePersonality } from './config';
+import { isNetworkError, createNetworkError } from './errors/network-errors';
+import { validateUrl } from './input-validator';
 import type { CliTelemetry } from './telemetry';
+import { VibelogError } from '../utils/errors';
+import { logger } from '../utils/logger';
 
 export interface Session {
   tool: 'claude_code' | 'cursor' | 'vscode';
@@ -98,7 +99,7 @@ async function gatherCLIConfiguration(origin?: string): Promise<CLIConfiguration
     const featureStatus = await claudeSettingsManager.getFeatureStatus();
 
     return {
-      version: require('../../package.json').version,
+      version: packageJson.version,
       origin: origin || null,  // No fallback - must be explicitly set
       statusline: {
         personality: statuslineConfig.personality,
@@ -128,7 +129,7 @@ class SecureApiClient {
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': `vibe-log-CLI/${require('../../package.json').version}`,
+        'User-Agent': `vibe-log-CLI/${packageJson.version}`,
         'X-Client-Version': '1.0.0',
       },
       // Prevent automatic redirects to avoid SSRF

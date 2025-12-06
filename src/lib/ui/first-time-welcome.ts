@@ -1,6 +1,7 @@
-import inquirer from 'inquirer';
-import { colors } from './styles';
 import chalk from 'chalk';
+import inquirer from 'inquirer';
+import packageJson from '../../../package.json';
+import { colors } from './styles';
 import { InteractiveMenu, MenuOption } from './interactive-menu';
 
 export type WelcomeChoice = 'standup' | 'local' | 'cloud' | 'statusline' | 'exit';
@@ -80,8 +81,7 @@ export async function showFirstTimeWelcome(): Promise<WelcomeChoice> {
 
       // Show logo and slogan
       const { showLogo } = await import('../ui');
-      const pkg = require('../../../package.json');
-      const version = process.env.SIMULATE_OLD_VERSION || pkg.version;
+      const version = process.env.SIMULATE_OLD_VERSION || packageJson.version;
       await showLogo(version);
 
       console.log();

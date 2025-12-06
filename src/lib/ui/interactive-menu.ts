@@ -1,5 +1,6 @@
-import readline from 'readline';
 import chalk from 'chalk';
+import readline from 'readline';
+import packageJson from '../../../package.json';
 import { colors } from './styles';
 
 export interface MenuOption {
@@ -39,8 +40,7 @@ export class InteractiveMenu {
 
     // Show logo first
     const { showLogo } = await import('../ui');
-    const pkg = require('../../../package.json');
-    const version = process.env.SIMULATE_OLD_VERSION || pkg.version;
+    const version = process.env.SIMULATE_OLD_VERSION || packageJson.version;
     await showLogo(version);
 
     // Slogan as single line, left-aligned
@@ -75,9 +75,9 @@ export class InteractiveMenu {
   }
 
   async show(): Promise<string | null> {
-    return new Promise(async (resolve) => {
-      await this.render();
+    await this.render();
 
+    return new Promise((resolve) => {
       const handleKeypress = async (_str: string | undefined, key: any) => {
         if (key) {
           if (key.name === 'up') {

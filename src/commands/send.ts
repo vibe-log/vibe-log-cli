@@ -1,21 +1,25 @@
-import { SendOrchestrator, SendOptions } from '../lib/orchestrators/send-orchestrator';
+import chalk from 'chalk';
+import { execSync } from 'child_process';
+import { promises as fs } from 'fs';
+import os from 'os';
+import path from 'path';
+import packageJson from '../../package.json';
+import { isNetworkError, createNetworkError } from '../lib/errors/network-errors';
 import { BackgroundSendOrchestrator } from '../lib/orchestrators/background-send-orchestrator';
 import { HookSendOrchestrator } from '../lib/orchestrators/hook-send-orchestrator';
-import { SendProgressUI } from '../lib/ui/send/send-progress';
-import { SendSummaryUI } from '../lib/ui/send/send-summary';
-import { SendConfirmationUI } from '../lib/ui/send/send-confirmation';
+import { SendOrchestrator, SendOptions } from '../lib/orchestrators/send-orchestrator';
 import { showPrivacyPreview } from '../lib/ui/privacy-preview';
 import { parseProjectName } from '../lib/ui/project-display';
 import { countTotalRedactions } from '../lib/ui/sanitization-display';
+import { SendConfirmationUI } from '../lib/ui/send/send-confirmation';
+import { SendProgressUI } from '../lib/ui/send/send-progress';
+import { SendSummaryUI } from '../lib/ui/send/send-summary';
 import { showUploadResults } from '../lib/ui';
 import { VibelogError } from '../utils/errors';
 import { logger } from '../utils/logger';
-import { isNetworkError, createNetworkError } from '../lib/errors/network-errors';
-import { checkForUpdate, shouldSpawnLatestForHook, VersionCheckResult } from '../utils/version-check';
-import { tryAcquireUpdateLock, UpdateLock } from '../utils/update-lock';
 import { clearNpxCache, checkNpxCacheHealth } from '../utils/npx-cache';
-import { execSync } from 'child_process';
-import chalk from 'chalk';
+import { tryAcquireUpdateLock, UpdateLock } from '../utils/update-lock';
+import { checkForUpdate, shouldSpawnLatestForHook, VersionCheckResult } from '../utils/version-check';
 
 /**
  * Send session data to Vibelog API
@@ -44,7 +48,7 @@ export async function send(options: SendOptions): Promise<void> {
     // When triggered by hooks, check for updates but don't block session processing.
     // Updates happen in background while current version continues processing.
     if (options.hookTrigger && !process.env.VIBE_LOG_SKIP_UPDATE) {
-      const currentVersion = process.env.SIMULATE_OLD_VERSION || require('../../package.json').version;
+      const currentVersion = process.env.SIMULATE_OLD_VERSION || packageJson.version;
       logger.debug(`Checking version update: hookTrigger=${options.hookTrigger}, currentVersion=${currentVersion}`);
 
       const versionCheck = await checkForUpdate(currentVersion);
@@ -378,10 +382,6 @@ async function updateInBackground(
  * Log update events to update log file
  */
 async function logUpdateEvent(message: string): Promise<void> {
-  const fs = require('fs').promises;
-  const path = require('path');
-  const os = require('os');
-
   const updateLogPath = path.join(os.homedir(), '.vibe-log', 'update.log');
   const timestamp = new Date().toISOString();
   const logLine = `[${timestamp}] ${message}\n`;

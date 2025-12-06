@@ -1,9 +1,8 @@
+import packageJson from '../../package.json';
 import { getToken, getStatusLinePersonality } from './config';
 import { detectSetupState } from './detector';
 import { getHooksStatus } from './hooks/hooks-controller';
 import { logger } from '../utils/logger';
-
-const pkg = require('../../package.json');
 
 export interface CliTelemetry {
   // Installation state
@@ -43,7 +42,7 @@ export async function collectTelemetry(): Promise<CliTelemetry | null> {
     trackedProjectCount: state.trackedProjectCount,
     statusLineInstalled: state.hasStatusLine,
     statusLinePersonality: statusLine?.personality || 'gordon',
-    cliVersion: pkg.version,
+    cliVersion: packageJson.version,
     hookVersion: hookStatus.sessionStartHook?.version || hookStatus.preCompactHook?.version, // Deprecated
     sessionStartHookVersion: hookStatus.sessionStartHook?.version,
     preCompactHookVersion: hookStatus.preCompactHook?.version,

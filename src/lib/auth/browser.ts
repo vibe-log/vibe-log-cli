@@ -321,12 +321,14 @@ function isValidTokenFormat(token: string): boolean {
   }
   
   // Check for common injection patterns
+  /* eslint-disable no-control-regex */
   const dangerousPatterns = [
     /[<>]/,           // HTML injection
     /[`${}]/,         // Template injection
-    /[\u0000-\u001F]/,    // Control characters  eslint-disable-line no-control-regex
+    /[\u0000-\u001F]/,    // Control characters
     /['";\\]/,        // SQL/Command injection
   ];
+  /* eslint-enable no-control-regex */
   
   return !dangerousPatterns.some(pattern => pattern.test(token));
 }
