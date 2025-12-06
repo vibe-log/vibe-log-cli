@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
-import path from 'path';
 import os from 'os';
+import path from 'path';
+import packageJson from '../../package.json';
 
 const UPDATE_LOCK_PATH = path.join(os.homedir(), '.vibe-log', 'update.lock');
 const LOCK_TIMEOUT = 5 * 60 * 1000; // 5 minutes
@@ -33,7 +34,7 @@ export async function tryAcquireUpdateLock(): Promise<UpdateLock | null> {
     const lockData: LockData = {
       pid: process.pid,
       timestamp: Date.now(),
-      version: require('../../package.json').version
+      version: packageJson.version
     };
 
     await fs.writeFile(

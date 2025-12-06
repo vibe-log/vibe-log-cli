@@ -33,8 +33,6 @@ vi.mock('../hooks/hooks-controller', () => ({
 }));
 
 describe('hooks-manager - Hook Preservation Tests', () => {
-  const _mockSettingsPath = '/mock/home/.claude/settings.json';
-
   beforeEach(() => {
     vi.clearAllMocks();
   });

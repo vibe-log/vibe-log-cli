@@ -765,14 +765,6 @@ describe('hooks-controller - Hook Preservation Tests', () => {
 
   describe('checkForHookUpdates', () => {
     it('should return needsUpdate=false when all hooks are current', async () => {
-      const _currentStatus = {
-        sessionStartHook: { installed: true, enabled: true, version: '1.0.0' },
-        preCompactHook: { installed: true, enabled: true, version: '1.0.0' },
-        sessionEndHook: { installed: true, enabled: true, version: '1.0.0' },
-        settingsPath: '/mock/settings.json',
-        cliPath: '/usr/local/bin/vibe-log'
-      };
-
       // Mock getHooksStatus by mocking the underlying readSettings
       (claudeSettingsReader.readGlobalSettings as any).mockResolvedValue({
         hooks: {

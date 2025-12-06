@@ -9,8 +9,9 @@
  */
 
 import { spawn } from 'child_process';
-import { logger } from '../utils/logger';
+import fs from 'fs';
 import os from 'os';
+import { logger } from '../utils/logger';
 import path from 'path';
 
 // Cache for ccusage output to avoid repeated calls
@@ -65,7 +66,6 @@ export async function getCCUsageMetrics(
     const timeoutHandle = setTimeout(() => {
       timedOut = true;
       logger.debug(`ccusage timed out after ${timeout}ms`);
-      const fs = require('fs');
       fs.appendFileSync(debugLogPath, `[${new Date().toISOString()}] TIMEOUT after ${timeout}ms - output so far: "${output}"\n`);
       
       // On timeout, return the last successful result if available
@@ -80,7 +80,6 @@ export async function getCCUsageMetrics(
 
     try {
       // Debug logging to file
-      const fs = require('fs');
       fs.appendFileSync(debugLogPath, `[${new Date().toISOString()}] Spawning ccusage process\n`);
       
       // Spawn ccusage process using npx with @latest to ensure v16+
@@ -111,7 +110,6 @@ export async function getCCUsageMetrics(
 
       // Handle process completion
       ccusage.on('close', (code) => {
-        const fs = require('fs');
         fs.appendFileSync(debugLogPath, `[${new Date().toISOString()}] Process closed with code ${code}, timedOut: ${timedOut}, output: "${output}"\n`);
         
         if (processExited) return;

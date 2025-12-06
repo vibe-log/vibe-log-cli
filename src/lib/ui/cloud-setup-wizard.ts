@@ -1,18 +1,19 @@
+import chalk from 'chalk';
+import fs from 'fs/promises';
 import inquirer from 'inquirer';
-import { colors } from './styles';
+import open from 'open';
+import path from 'path';
 import { auth } from '../../commands/auth';
 import { sendWithTimeout } from '../../commands/send';
-import { showSessionSelector, SelectedSessionInfo } from './session-selector';
-import { showPrivacyPreview } from './privacy-preview';
-import { MessageSanitizer } from '../message-sanitizer';
-import { getDashboardUrl } from '../config';
+import packageJson from '../../../package.json';
 import { displayError } from '../../utils/errors';
 import { VibelogError } from '../../utils/errors';
+import { getDashboardUrl } from '../config';
 import { isNetworkError } from '../errors/network-errors';
-import path from 'path';
-import fs from 'fs/promises';
-import open from 'open';
-import chalk from 'chalk';
+import { MessageSanitizer } from '../message-sanitizer';
+import { showPrivacyPreview } from './privacy-preview';
+import { showSessionSelector, SelectedSessionInfo } from './session-selector';
+import { colors } from './styles';
 
 /**
  * Helper function to show connection error help messages
@@ -38,8 +39,7 @@ function showConnectionErrorHelp(error: unknown): void {
  */
 export async function guidedCloudSetup(): Promise<void> {
   // Get version for logo display
-  const pkg = require('../../../package.json');
-  const version = process.env.SIMULATE_OLD_VERSION || pkg.version;
+  const version = process.env.SIMULATE_OLD_VERSION || packageJson.version;
 
   // Step 0: Show privacy notice first
   console.clear();
