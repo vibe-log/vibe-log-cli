@@ -151,6 +151,7 @@ export function validateProjectName(name: string): string {
   
   // Remove potentially dangerous characters
   const sanitized = name
+    // eslint-disable-next-line no-control-regex
     .replace(/[<>:"\\|?*\u0000-\u001F]/g, '') // Windows forbidden chars
     .replace(/\.\./g, '')                  // Directory traversal
     .replace(/^\.|\.$/g, '')               // Leading/trailing dots
@@ -190,6 +191,7 @@ export function sanitizeLogOutput(message: string): string {
   }
   
   // Remove ANSI escape codes that could manipulate terminal
+  // eslint-disable-next-line no-control-regex
   const ansiPattern = /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g;
   
   return message
@@ -220,7 +222,7 @@ export function validateAuthToken(token: string): string {
   const dangerousPatterns = [
     /[<>]/,           // HTML injection
     /[`${}]/,         // Template injection
-    /[\u0000-\u001F]/,    // Control characters
+    /[\u0000-\u001F]/,    // Control characters  eslint-disable-line no-control-regex
     /[';\\]/,         // SQL/Command injection
   ];
   

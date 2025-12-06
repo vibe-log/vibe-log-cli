@@ -1,3 +1,4 @@
+/* eslint-disable no-control-regex */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import chalk from 'chalk';
 import {

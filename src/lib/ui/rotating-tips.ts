@@ -49,6 +49,7 @@ export class RotatingTips {
 
     // Track line length for proper clearing
     // Remove ANSI escape codes to get actual character count
+    // eslint-disable-next-line no-control-regex
     this.lastLineLength = output.replace(/\x1b\[[0-9;]*m/g, '').length;
 
     process.stdout.write(output);
@@ -139,6 +140,7 @@ export class RotatingTips {
   showMessage(message: string): void {
     this.clearLine();
     const output = `${chalk.green('✓')} ${message}`;
+    // eslint-disable-next-line no-control-regex
     this.lastLineLength = output.replace(/\x1b\[[0-9;]*m/g, '').length;
     process.stdout.write(output);
   }

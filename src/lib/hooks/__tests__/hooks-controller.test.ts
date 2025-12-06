@@ -9,7 +9,6 @@ import {
   updateHookConfig,
   checkForHookUpdates,
   installSelectiveProjectHooks,
-  getHooksStatus,
   type HookSelection,
   type ProjectHookConfig
 } from '../hooks-controller';
@@ -766,7 +765,7 @@ describe('hooks-controller - Hook Preservation Tests', () => {
 
   describe('checkForHookUpdates', () => {
     it('should return needsUpdate=false when all hooks are current', async () => {
-      const currentStatus = {
+      const _currentStatus = {
         sessionStartHook: { installed: true, enabled: true, version: '1.0.0' },
         preCompactHook: { installed: true, enabled: true, version: '1.0.0' },
         sessionEndHook: { installed: true, enabled: true, version: '1.0.0' },

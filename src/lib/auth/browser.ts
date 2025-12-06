@@ -324,7 +324,7 @@ function isValidTokenFormat(token: string): boolean {
   const dangerousPatterns = [
     /[<>]/,           // HTML injection
     /[`${}]/,         // Template injection
-    /[\u0000-\u001F]/,    // Control characters
+    /[\u0000-\u001F]/,    // Control characters  eslint-disable-line no-control-regex
     /['";\\]/,        // SQL/Command injection
   ];
   

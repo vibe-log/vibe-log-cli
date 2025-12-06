@@ -190,13 +190,13 @@ function formatLoadingState(state: LoadingState, format: OutputFormat): string {
  */
 function formatAnalysis(analysis: PromptAnalysis, format: OutputFormat, ccusageOutput?: string | null): string {
   switch (format) {
-    case 'json':
-      // For JSON, include ccusage as separate field
+    case 'json': {
       const jsonOutput: any = { ...analysis };
       if (ccusageOutput) {
         jsonOutput.ccusage = ccusageOutput;
       }
       return JSON.stringify(jsonOutput);
+    }
     case 'detailed':
       return formatDetailed(analysis);
     case 'emoji':
