@@ -42,7 +42,7 @@ describe('Claude Settings Reader', () => {
   });
 
   describe('getHookMode', () => {
-    it.skip('should return "all" when global settings have vibe-log hooks', async () => {
+    it('should return "all" when global settings have vibe-log hooks', async () => {
       // Mock global settings with vibe-log hooks
       mockFs.readFile.mockImplementation((path, encoding) => {
         if (path === '/home/user/.claude/settings.json') {
@@ -71,7 +71,7 @@ describe('Claude Settings Reader', () => {
       expect(mode).toBe('all');
     });
 
-    it.skip('should return "selected" when only project-local settings have vibe-log hooks', async () => {
+    it('should return "selected" when only project-local settings have vibe-log hooks', async () => {
       // Mock no global hooks
       mockFs.readFile.mockImplementation((path, encoding) => {
         if (path === '/home/user/.claude/settings.json') {
@@ -137,7 +137,7 @@ describe('Claude Settings Reader', () => {
       expect(mode).toBe('none');
     });
 
-    it.skip('should prioritize "all" mode over "selected" when both exist', async () => {
+    it('should prioritize "all" mode over "selected" when both exist', async () => {
       // Mock both global and local hooks
       mockFs.readFile.mockImplementation((path, encoding) => {
         if (path === '/home/user/.claude/settings.json') {
@@ -191,7 +191,7 @@ describe('Claude Settings Reader', () => {
   });
 
   describe('getTrackedProjects', () => {
-    it.skip('should return list of projects with vibe-log hooks in local settings', async () => {
+    it('should return list of projects with vibe-log hooks in local settings', async () => {
       mockFs.readFile.mockImplementation((path, encoding) => {
         if (path === '/home/projects/app1/.claude/settings.local.json') {
           const content = JSON.stringify({

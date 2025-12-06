@@ -133,11 +133,14 @@ describe('Configuration Module', () => {
       consoleSpy.mockRestore();
     });
 
+    // Note: These tests require vi.resetModules() to work properly because
+    // the config module caches the Conf instance at import time.
+    // Encryption behavior is tested via integration tests.
     it.skip('should clear token', async () => {
       mockConfigInstance.store.set('token', 'some-token');
-      
+
       await clearToken();
-      
+
       expect(mockConfigInstance.config.delete).toHaveBeenCalledWith('token');
     });
   });
@@ -160,11 +163,12 @@ describe('Configuration Module', () => {
       expect(url).toBe('https://vibe-log.dev');
     });
 
+    // Skip: requires vi.resetModules() - tested via integration tests
     it.skip('should set API URL', () => {
       const newUrl = 'https://new.vibe-log.dev';
-      
+
       setApiUrl(newUrl);
-      
+
       expect(mockConfigInstance.config.set).toHaveBeenCalledWith('apiUrl', newUrl);
     });
   });

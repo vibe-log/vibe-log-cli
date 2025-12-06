@@ -28,6 +28,8 @@ describe('Secure Config', () => {
   });
 
   describe('Token Encryption', () => {
+    // Skip: These tests require vi.resetModules() due to config module caching
+    // Encryption behavior is tested via integration tests
     it.skip('should use random encryption keys, not username-based', async () => {
       // Mock that key file doesn't exist yet
       (fs.readFile as any).mockRejectedValueOnce(new Error('ENOENT'));

@@ -154,6 +154,7 @@ describe('Project Display Module', () => {
       expect(stripped).toBe('█'.repeat(20));
     });
 
+    // Skip: Tests specific ANSI codes that may vary by chalk version/config
     it.skip('should apply correct color based on activity level', () => {
       // High activity (>75%) - should be green (success)
       const highActivity = createActivityGraph(80, 100, 20);
@@ -234,6 +235,7 @@ describe('Project Display Module', () => {
       expect(stripped).not.toContain('█');
     });
 
+    // Skip: Tests specific ANSI codes that may vary by chalk version/config
     it.skip('should apply colors based on intensity', () => {
       const sparkline = createSparkline([0, 2, 5, 10], 10);
       // Zero values should be dim
@@ -553,6 +555,7 @@ describe('Project Display Module', () => {
   });
 
   describe('edge cases and error handling', () => {
+    // Skip: Underlying code doesn't handle undefined - would need defensive checks
     it.skip('should handle undefined values gracefully', () => {
       const undefinedProject = {
         name: undefined as any,

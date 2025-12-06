@@ -1,34 +1,47 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { status } from '../status';
 import * as tokenAuth from '../../lib/auth/token';
-import { apiClient } from '../../lib/api-client';
+import * as apiClientModule from '../../lib/api-client';
 import * as ui from '../../lib/ui';
 import { VibelogError } from '../../utils/errors';
 import { logger } from '../../utils/logger';
+import * as cursorReader from '../../lib/readers/cursor';
 
 // Mock dependencies
 vi.mock('../../lib/auth/token');
 vi.mock('../../lib/api-client');
 vi.mock('../../lib/ui');
 vi.mock('../../utils/logger');
-vi.mock('chalk', () => ({
-  default: {
-    cyan: (text: string) => text,
-    gray: (text: string) => text,
-    green: (text: string) => text,
-    yellow: (text: string) => text,
-    blue: (text: string) => text,
-    magenta: (text: string) => text,
-    red: (text: string) => text,
-    bold: (text: string) => text,
-  },
-}));
+vi.mock('../../lib/readers/cursor');
+vi.mock('chalk', () => {
+  const identity = (text: string) => text;
+  const chainable = {
+    cyan: identity,
+    gray: identity,
+    green: identity,
+    yellow: identity,
+    blue: identity,
+    magenta: identity,
+    red: identity,
+    bold: identity,
+    dim: identity,
+  };
+  // Make bold return a chainable object with color methods
+  const bold = Object.assign((text: string) => text, chainable);
+  return {
+    default: {
+      ...chainable,
+      bold,
+    },
+  };
+});
 
-describe.skip('Status Command', () => {
+describe('Status Command', () => {
   const mockTokenAuth = vi.mocked(tokenAuth);
-  const mockApiClient = vi.mocked(apiClient);
+  const mockApiClient = vi.mocked(apiClientModule.apiClient);
   const mockUi = vi.mocked(ui);
   const mockLogger = vi.mocked(logger);
+  const mockCursorReader = vi.mocked(cursorReader);
 
   let mockSpinner: any;
 
@@ -65,17 +78,24 @@ describe.skip('Status Command', () => {
       text: '',
     };
     
-    // Setup apiClient mocks directly (not nested under .apiClient)
+    // Setup apiClient mocks - assign mock functions
     mockApiClient.getStreak = vi.fn().mockResolvedValue(mockStreakData);
     mockApiClient.getRecentSessions = vi.fn().mockResolvedValue(mockRecentSessions);
-    mockApiClient.uploadSessions = vi.fn();
     
     // Setup default mocks
     mockTokenAuth.requireAuth.mockResolvedValue();
     mockUi.createSpinner.mockReturnValue(mockSpinner);
     mockUi.formatDuration.mockImplementation((seconds) => `${Math.floor(seconds / 3600)}h`);
     mockUi.formatDate.mockImplementation((date) => date.toISOString().split('T')[0]);
-    
+
+    // Mock cursor reader - return empty stats by default
+    mockCursorReader.countCursorMessages.mockResolvedValue({
+      conversationCount: 0,
+      totalMessages: 0,
+      userMessages: 0,
+      assistantMessages: 0,
+    });
+
     // Mock console
     global.console.log = vi.fn();
     global.console.error = vi.fn();

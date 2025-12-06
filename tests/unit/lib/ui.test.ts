@@ -251,6 +251,7 @@ describe('UI Utilities', () => {
   });
 
   describe('createSpinner', () => {
+    // Skip: ora mock not properly integrated
     it.skip('should create ora spinner with text', () => {
       const mockSpinner = {
         start: vi.fn(),
@@ -271,6 +272,7 @@ describe('UI Utilities', () => {
   });
 
   describe('Color Output', () => {
+    // Skip: ANSI color codes vary by chalk version/config
     it.skip('should use appropriate colors for different message types', () => {
       // Test color output by checking chalk usage
       showSuccess('Test');
