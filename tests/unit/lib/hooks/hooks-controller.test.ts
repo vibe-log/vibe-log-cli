@@ -82,14 +82,14 @@ describe('Hooks Controller', () => {
     it('should include all required parameters in correct order', () => {
       const cliPath = 'npx vibe-log-cli';
       const command = buildHookCommand(cliPath, 'sessionstart');
-      
+
       // Check all parameters are present
       expect(command).toContain('send');
       expect(command).toContain('--silent');
       expect(command).toContain('--background');
       expect(command).toContain('--hook-trigger=sessionstart');
       expect(command).toContain('--hook-version=');
-      
+
       // Verify order is correct
       const expectedOrder = ['send', '--silent', '--background', '--hook-trigger=', '--hook-version='];
       let lastIndex = -1;
@@ -98,6 +98,45 @@ describe('Hooks Controller', () => {
         expect(currentIndex).toBeGreaterThan(lastIndex);
         lastIndex = currentIndex;
       }
+    });
+
+    describe('--source flag', () => {
+      it('should include --source=claude when source is "claude"', () => {
+        const cliPath = 'npx vibe-log-cli';
+        const command = buildHookCommand(cliPath, 'sessionstart', 'all', 'claude');
+
+        expect(command).toContain('--source=claude');
+        expect(command).toBe('npx vibe-log-cli send --silent --background --hook-trigger=sessionstart --source=claude --hook-version=1.0.0 --all');
+      });
+
+      it('should include --source=cursor when source is "cursor"', () => {
+        const cliPath = 'npx vibe-log-cli';
+        const command = buildHookCommand(cliPath, 'precompact', 'selected', 'cursor');
+
+        expect(command).toContain('--source=cursor');
+        expect(command).toBe('npx vibe-log-cli send --silent --background --hook-trigger=precompact --source=cursor --hook-version=1.0.0 --claude-project-dir="$CLAUDE_PROJECT_DIR"');
+      });
+
+      it('should not include --source flag when source is undefined', () => {
+        const cliPath = 'npx vibe-log-cli';
+        const command = buildHookCommand(cliPath, 'sessionstart', 'all');
+
+        expect(command).not.toContain('--source=');
+        expect(command).toBe('npx vibe-log-cli send --silent --background --hook-trigger=sessionstart --hook-version=1.0.0 --all');
+      });
+
+      it('should include --source with correct position in command', () => {
+        const cliPath = 'npx vibe-log-cli';
+        const command = buildHookCommand(cliPath, 'precompact', 'all', 'claude');
+
+        // Verify --source comes after --hook-trigger and before --hook-version
+        const hookTriggerIndex = command.indexOf('--hook-trigger=');
+        const sourceIndex = command.indexOf('--source=');
+        const hookVersionIndex = command.indexOf('--hook-version=');
+
+        expect(sourceIndex).toBeGreaterThan(hookTriggerIndex);
+        expect(hookVersionIndex).toBeGreaterThan(sourceIndex);
+      });
     });
   });
 

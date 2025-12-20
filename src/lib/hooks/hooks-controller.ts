@@ -185,18 +185,21 @@ export async function getHooksStatus(): Promise<HooksStatus> {
 export function buildHookCommand(
   cliPath: string,
   hookTrigger: 'sessionstart' | 'precompact' | 'sessionend',
-  mode?: 'all' | 'selected'
+  mode?: 'all' | 'selected',
+  source?: 'claude' | 'cursor'
 ): string {
   // Keep using --hook-trigger for backwards compatibility with existing installed hooks
   // The mapping to origin happens in index.ts action handler
 
+  const sourceFlag = source ? ` --source=${source}` : '';
+
   // For global mode (track all), use --all flag instead of --claude-project-dir
   if (mode === 'all') {
-    return `${cliPath} send --silent --background --hook-trigger=${hookTrigger} --hook-version=${HOOKS_VERSION} --all`;
+    return `${cliPath} send --silent --background --hook-trigger=${hookTrigger}${sourceFlag} --hook-version=${HOOKS_VERSION} --all`;
   }
 
   // For selected mode or backward compatibility, use --claude-project-dir
-  return `${cliPath} send --silent --background --hook-trigger=${hookTrigger} --hook-version=${HOOKS_VERSION} --claude-project-dir="$CLAUDE_PROJECT_DIR"`;
+  return `${cliPath} send --silent --background --hook-trigger=${hookTrigger}${sourceFlag} --hook-version=${HOOKS_VERSION} --claude-project-dir="$CLAUDE_PROJECT_DIR"`;
 }
 
 /**
