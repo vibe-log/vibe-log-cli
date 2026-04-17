@@ -355,11 +355,16 @@ Respond with JSON only, no explanation.`;
       const tempAnalysisDir = getTempDirectoryPath('PROMPT_ANALYSIS');
       await fs.mkdir(tempAnalysisDir, { recursive: true }).catch(() => {});
       
-      // Simplified options - optimize for speed in hook mode
+      // Simplified options - optimize for speed in hook mode.
+      // maxThinkingTokens: 0 disables thinking regardless of the user's Claude
+      // Code settings (e.g. alwaysThinkingEnabled). Haiku does not support
+      // thinking, so without this the API returns 400 when the global setting
+      // is on. Analysis does not need thinking anyway; it only emits JSON.
       const queryOptions = {
         maxTurns: 1,                    // Single turn only
         model: selectedModel,           // Use selected model (haiku by default)
         disallowedTools: ['*'],         // No tools needed for JSON response
+        maxThinkingTokens: 0,           // Required for Haiku compatibility
         cwd: tempAnalysisDir            // Use temp directory to isolate analysis sessions
       };
       
