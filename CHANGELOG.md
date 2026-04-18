@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.8] - 2026-04-18
+
+### Added
+- Added manual Codex session discovery and cloud sync support.
+- Added `send --source claude|codex|all` with Claude Code remaining the default.
+- Added manual sync source selection for Claude Code, Codex, and all supported sources.
+
+### Improved
+- Codex uploads use the existing session API shape while preserving stable Codex dedupe ids and model metadata.
+- Project/session selectors now display Codex sessions grouped by their actual `cwd`.
+
 ## [0.8.7] - 2026-04-18
 
 ### Fixed
