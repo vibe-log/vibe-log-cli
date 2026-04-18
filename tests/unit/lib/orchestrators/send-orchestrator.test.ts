@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SendOrchestrator } from '../../../../src/lib/orchestrators/send-orchestrator';
 import * as authModule from '../../../../src/lib/auth/token';
 import * as claudeModule from '../../../../src/lib/readers/claude';
+import * as codexModule from '../../../../src/lib/readers/codex';
 import * as configModule from '../../../../src/lib/config';
 import * as apiClientModule from '../../../../src/lib/api-client';
 import * as claudeCoreModule from '../../../../src/lib/claude-core';
@@ -11,6 +12,7 @@ import path from 'path';
 // Mock all dependencies
 vi.mock('../../../../src/lib/auth/token');
 vi.mock('../../../../src/lib/readers/claude');
+vi.mock('../../../../src/lib/readers/codex');
 vi.mock('../../../../src/lib/config');
 vi.mock('../../../../src/lib/api-client');
 vi.mock('../../../../src/lib/claude-core');
@@ -21,6 +23,7 @@ describe('SendOrchestrator', () => {
   const mockGetToken = vi.mocked(authModule.getToken);
   const mockRequireAuth = vi.mocked(authModule.requireAuth);
   const mockReadClaudeSessions = vi.mocked(claudeModule.readClaudeSessions);
+  const mockReadCodexSessions = vi.mocked(codexModule.readCodexSessions);
   const mockGetProjectSyncData = vi.mocked(configModule.getProjectSyncData);
   const mockUpdateProjectSyncBoundaries = vi.mocked(configModule.updateProjectSyncBoundaries);
   const mockSetLastSyncSummary = vi.mocked(configModule.setLastSyncSummary);
@@ -38,6 +41,7 @@ describe('SendOrchestrator', () => {
     // Default mocks
     mockGetToken.mockResolvedValue('test-token');
     mockRequireAuth.mockResolvedValue();
+    mockReadCodexSessions.mockResolvedValue([]);
     mockApiClient.uploadSessions = vi.fn().mockResolvedValue({
       success: true,
       sessionsProcessed: 1
@@ -814,6 +818,102 @@ describe('SendOrchestrator', () => {
       await expect(orchestrator.sanitizeSessions(shortSessions))
         .rejects
         .toThrow(/All 2 session.*shorter than 4 minutes/);
+    });
+  });
+
+  describe('source selection', () => {
+    const claudeSession = {
+      id: 'claude-session',
+      tool: 'claude_code' as const,
+      source: 'claude' as const,
+      projectPath: '/home/user/projects/my-app',
+      timestamp: new Date('2026-04-18T08:00:00.000Z'),
+      duration: 300,
+      messages: [
+        { role: 'user' as const, content: 'Claude prompt', timestamp: new Date('2026-04-18T08:00:00.000Z') },
+        { role: 'assistant' as const, content: 'Claude answer', timestamp: new Date('2026-04-18T08:05:00.000Z') }
+      ],
+      metadata: { files_edited: 1, languages: ['typescript'] }
+    };
+
+    const codexSession = {
+      id: 'codex-session',
+      tool: 'codex' as const,
+      source: 'codex' as const,
+      projectPath: '/home/user/projects/my-app',
+      timestamp: new Date('2026-04-18T09:00:00.000Z'),
+      duration: 360,
+      claudeSessionId: 'codex:codex-session',
+      messages: [
+        { role: 'user' as const, content: 'Codex prompt', timestamp: new Date('2026-04-18T09:00:00.000Z') },
+        { role: 'assistant' as const, content: 'Codex answer', timestamp: new Date('2026-04-18T09:06:00.000Z') }
+      ],
+      metadata: { files_edited: 2, languages: ['typescript'] },
+      modelInfo: {
+        models: ['gpt-5.4-codex'],
+        primaryModel: 'gpt-5.4-codex',
+        modelUsage: { 'gpt-5.4-codex': 1 },
+        modelSwitches: 0
+      }
+    };
+
+    it('defaults to Claude sessions only', async () => {
+      mockReadClaudeSessions.mockResolvedValue([claudeSession]);
+      mockReadCodexSessions.mockResolvedValue([codexSession]);
+
+      const sessions = await orchestrator.loadSessions({});
+
+      expect(sessions).toEqual([claudeSession]);
+      expect(mockReadClaudeSessions).toHaveBeenCalledWith({ since: undefined });
+      expect(mockReadCodexSessions).not.toHaveBeenCalled();
+    });
+
+    it('loads Codex sessions only with source codex', async () => {
+      mockReadClaudeSessions.mockResolvedValue([claudeSession]);
+      mockReadCodexSessions.mockResolvedValue([codexSession]);
+
+      const sessions = await orchestrator.loadSessions({ source: 'codex' });
+
+      expect(sessions).toEqual([codexSession]);
+      expect(mockReadCodexSessions).toHaveBeenCalledWith({ since: undefined });
+      expect(mockReadClaudeSessions).not.toHaveBeenCalled();
+    });
+
+    it('merges Claude and Codex sessions with source all', async () => {
+      mockReadClaudeSessions.mockResolvedValue([claudeSession]);
+      mockReadCodexSessions.mockResolvedValue([codexSession]);
+
+      const sessions = await orchestrator.loadSessions({ source: 'all', all: true });
+
+      expect(sessions).toEqual([claudeSession, codexSession]);
+      expect(mockReadClaudeSessions).toHaveBeenCalledWith({ since: undefined });
+      expect(mockReadCodexSessions).toHaveBeenCalledWith({ since: undefined });
+    });
+
+    it('uses current API shape for Codex payloads', async () => {
+      const apiSessions = await orchestrator.sanitizeSessions([codexSession]);
+
+      expect(apiSessions).toHaveLength(1);
+      expect(apiSessions[0]).toMatchObject({
+        tool: 'claude_code',
+        claudeSessionId: 'codex:codex-session',
+        data: {
+          metadata: {
+            models: ['gpt-5.4-codex'],
+            primaryModel: 'gpt-5.4-codex',
+          }
+        }
+      });
+    });
+
+    it('passes Codex manual upload origin to the API client', async () => {
+      await orchestrator.uploadSessions([], { origin: 'manual-upload-codex', source: 'codex' });
+
+      expect(mockApiClient.uploadSessions).toHaveBeenCalledWith(
+        [],
+        undefined,
+        'manual-upload-codex'
+      );
     });
   });
 

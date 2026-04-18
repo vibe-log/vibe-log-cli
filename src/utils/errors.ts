@@ -40,6 +40,9 @@ export function displayError(error: unknown): void {
         console.log(chalk.yellow('💡 Make sure Claude Code is installed'));
         console.log(chalk.gray('   Visit: https://claude.ai/download'));
         break;
+      case 'CODEX_NOT_FOUND':
+        console.log(chalk.yellow('💡 Make sure Codex is installed and you have used it at least once'));
+        break;
       case 'SEND_FAILED':
         console.log(chalk.yellow('💡 The upload failed. Please check your connection and try again'));
         break;
@@ -124,6 +127,9 @@ export function handleError(error: unknown): void {
       case 'CLAUDE_NOT_FOUND':
         console.log(chalk.yellow('💡 Make sure Claude Code is installed'));
         console.log(chalk.gray('   Visit: https://claude.ai/download'));
+        break;
+      case 'CODEX_NOT_FOUND':
+        console.log(chalk.yellow('💡 Make sure Codex is installed and you have used it at least once'));
         break;
     }
   } else if (error instanceof Error) {

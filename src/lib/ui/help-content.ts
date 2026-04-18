@@ -8,7 +8,7 @@ export function showHelpContent(): void {
   console.log('');
   console.log(colors.primary('📊 Vibe-Log - Measure, Learn & Improve Your AI Coding'));
   console.log('');
-  console.log(colors.subdued('Understand how you work with Claude Code. Track patterns, measure'));
+  console.log(colors.subdued('Understand how you work with Claude Code and Codex. Track patterns, measure'));
   console.log(colors.subdued('productivity, and discover what makes your AI coding sessions effective.'));
   console.log('');
   console.log(colors.accent('🎯 Why Track Your AI Coding?'));
@@ -38,7 +38,7 @@ export function showHelpContent(): void {
   console.log(colors.accent('⚡ Getting Started:'));
   console.log('  1. Run ' + colors.primary('npx vibe-log-cli') + ' to open this menu');
   console.log('  2. Choose your analysis mode (Cloud or Local)');
-  console.log('  3. Start coding with Claude - vibe-log tracks automatically');
+  console.log('  3. Start coding with Claude Code or Codex - vibe-log can sync supported sessions');
   console.log('  4. Review insights to improve your AI coding workflow');
   console.log('');
   console.log(colors.accent('📚 Learn More:'));

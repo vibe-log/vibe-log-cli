@@ -111,7 +111,7 @@ export async function readClaudeSessions(
       }
       
       // Now read and parse the full file
-      const session = await parseSessionFile(filePath);
+      const session = await parseClaudeSessionFile(filePath);
       
       if (session) {
         // Apply filters (timestamp check now redundant but kept for safety)
@@ -129,8 +129,10 @@ export async function readClaudeSessions(
         
         // Add source file information for re-reading
         session.sourceFile = {
+          source: 'claude',
           claudeProjectPath: projectPath,
-          sessionFile: file
+          sessionFile: file,
+          fullPath: filePath
         };
         
         sessions.push(session);
@@ -149,7 +151,7 @@ export async function readClaudeSessions(
   return sessions.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 }
 
-async function parseSessionFile(filePath: string): Promise<SessionData | null> {
+export async function parseClaudeSessionFile(filePath: string): Promise<SessionData | null> {
   try {
     const content = await fs.readFile(filePath, 'utf-8');
     const lines = content.trim().split('\n');
@@ -278,6 +280,7 @@ async function parseSessionFile(filePath: string): Promise<SessionData | null> {
       messages,
       duration,
       tool: 'claude_code',
+      source: 'claude',
       metadata: {
         files_edited: editedFiles.size,
         languages: languages,

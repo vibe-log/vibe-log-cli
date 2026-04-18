@@ -17,6 +17,9 @@ export interface PlanningModeInfo {
   exitPlanTimestamps: Date[];          // Timestamps when ExitPlanMode was called
 }
 
+export type SessionSource = 'claude' | 'codex';
+export type SyncSource = SessionSource | 'all';
+
 export interface SessionMetadata {
   id: string;
   projectPath: string;
@@ -27,7 +30,8 @@ export interface SessionMetadata {
 export interface SessionData extends SessionMetadata {
   messages: Message[];
   duration: number;
-  tool: 'claude_code' | 'cursor' | 'vscode';
+  tool: 'claude_code' | 'cursor' | 'vscode' | 'codex';
+  source?: SessionSource;
   metadata?: {
     files_edited: number;
     languages: string[];
@@ -37,8 +41,10 @@ export interface SessionData extends SessionMetadata {
   gitBranch?: string;  // Git branch from JSONL
   // Source file information for re-reading if needed
   sourceFile?: {
+    source?: SessionSource;
     claudeProjectPath: string;  // e.g., ~/.claude/projects/-home-user-vibe-log
     sessionFile: string;         // e.g., session-123.jsonl
+    fullPath?: string;           // Absolute JSONL path for non-Claude sources
   };
 }
 

@@ -29,6 +29,10 @@ export class BackgroundSendOrchestrator {
     // Build args for the background process (without --background flag)
     const args = [scriptPath, 'send', '--silent', `--hook-trigger=${options.hookTrigger}`];
 
+    if (options.source) {
+      args.push(`--source=${options.source}`);
+    }
+
     if (options.hookVersion) {
       args.push(`--hook-version=${options.hookVersion}`);
     }

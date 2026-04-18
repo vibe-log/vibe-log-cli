@@ -1,12 +1,12 @@
 import inquirer from 'inquirer';
-import fs from 'fs/promises';
-import path from 'path';
-import os from 'os';
 import { colors, padRight } from './styles';
 import { formatDuration, createSpinner } from '../ui';
 import { logger } from '../../utils/logger';
 import { readClaudeSessions } from '../readers/claude';
+import { readCodexSessions } from '../readers/codex';
+import { SessionData, SessionSource, SyncSource } from '../readers/types';
 import { formatRelativeTime, parseProjectName } from './project-display';
+import { VibelogError } from '../../utils/errors';
 
 /**
  * Session identifier information for memory-efficient passing
@@ -19,6 +19,8 @@ export interface SelectedSessionInfo {
   duration: number;     // Duration in seconds for UI display
   timestamp: Date;      // Session timestamp for UI display
   messageCount: number; // Number of messages for UI display
+  source?: SessionSource;
+  fullPath?: string;
 }
 
 interface SessionGroup {
@@ -35,6 +37,8 @@ interface SessionInfo {
   timestamp: Date;
   messageCount: number;
   timeRange: string;
+  source: SessionSource;
+  fullPath?: string;
 }
 
 /**
@@ -42,32 +46,21 @@ interface SessionInfo {
  * Reads sessions directly from ~/.claude/projects/
  * Returns session identifiers for memory-efficient processing
  */
-export async function showSessionSelector(): Promise<SelectedSessionInfo[]> {
-  const claudePath = path.join(os.homedir(), '.claude', 'projects');
-  
-  // Check if Claude directory exists
-  try {
-    await fs.access(claudePath);
-  } catch {
-    console.log(colors.warning('\nNo Claude Code sessions found.'));
-    console.log(colors.subdued('Make sure you have used Claude Code at least once.'));
-    return [];
-  }
-  
+export async function showSessionSelector(source: SyncSource = 'claude'): Promise<SelectedSessionInfo[]> {
   // Show spinner while loading sessions
-  const spinner = createSpinner('Looking for Claude Code sessions...').start();
+  const spinner = createSpinner(`Looking for ${getSourceLabel(source)} sessions...`).start();
   
   try {
     // Read all available sessions
-    const allSessions = await readAvailableSessions(claudePath);
+    const allSessions = await readAvailableSessions(source);
     
     if (allSessions.length === 0) {
-      spinner.fail(colors.warning('No sessions longer than 4 minutes found in the last 7 days.'));
+      spinner.fail(colors.warning(`No ${getSourceLabel(source)} sessions longer than 4 minutes found in the last 7 days.`));
       console.log(colors.subdued('Sessions must be at least 4 minutes long to be uploaded.'));
       return [];
     }
     
-    spinner.succeed(colors.success(`Found Claude Code sessions`));
+    spinner.succeed(colors.success(`Found ${getSourceLabel(source)} sessions`));
     console.log('');
     
     // Group sessions by time period
@@ -120,18 +113,10 @@ export async function showSessionSelector(): Promise<SelectedSessionInfo[]> {
  * Quick helper to select today's sessions only
  */
 export async function selectTodaysSessions(): Promise<SelectedSessionInfo[]> {
-  const claudePath = path.join(os.homedir(), '.claude', 'projects');
-  
-  try {
-    await fs.access(claudePath);
-  } catch {
-    return [];
-  }
-  
   const spinner = createSpinner('Loading today\'s sessions...').start();
   
   try {
-    const allSessions = await readAvailableSessions(claudePath);
+    const allSessions = await readAvailableSessions('claude');
     const grouped = groupSessionsByTime(allSessions);
     const todayGroup = grouped.find(g => g.label === 'Today');
     
@@ -150,21 +135,20 @@ export async function selectTodaysSessions(): Promise<SelectedSessionInfo[]> {
 }
 
 /**
- * Read all available sessions from Claude projects directory
+ * Read all available sessions from the selected source
  */
-async function readAvailableSessions(_claudePath: string): Promise<SessionInfo[]> {
+async function readAvailableSessions(source: SyncSource): Promise<SessionInfo[]> {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const MIN_DURATION_SECONDS = 240; // 4 minutes minimum
   
   try {
-    // Use the optimized reader with date filtering
-    const claudeSessions = await readClaudeSessions({ since: sevenDaysAgo });
+    const sourceSessions = await readSessionsForSource(source, sevenDaysAgo);
     
     // Filter out sessions shorter than 4 minutes
-    const validSessions = claudeSessions.filter(session => session.duration >= MIN_DURATION_SECONDS);
+    const validSessions = sourceSessions.filter(session => session.duration >= MIN_DURATION_SECONDS);
     
     // Log if sessions were filtered
-    const filteredCount = claudeSessions.length - validSessions.length;
+    const filteredCount = sourceSessions.length - validSessions.length;
     if (filteredCount > 0) {
       logger.debug(`Filtered out ${filteredCount} session(s) shorter than 4 minutes`);
     }
@@ -194,15 +178,61 @@ async function readAvailableSessions(_claudePath: string): Promise<SessionInfo[]
         duration: session.duration,
         timestamp: session.timestamp,
         messageCount: session.messages.length,
-        timeRange
+        timeRange,
+        source: session.source || session.sourceFile?.source || 'claude',
+        fullPath: session.sourceFile?.fullPath,
       };
     }).filter(s => s.projectPath && s.sessionFile); // Filter out any sessions without source info
     
     // Sort by timestamp, newest first
     return sessions.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   } catch (error) {
-    logger.error('Error reading Claude sessions:', error);
+    logger.error(`Error reading ${source} sessions:`, error);
     return [];
+  }
+}
+
+async function readSessionsForSource(source: SyncSource, since: Date): Promise<SessionData[]> {
+  if (source === 'claude') {
+    return readClaudeSessions({ since });
+  }
+
+  if (source === 'codex') {
+    return readCodexSessions({ since });
+  }
+
+  const sessions: SessionData[] = [];
+
+  try {
+    sessions.push(...await readClaudeSessions({ since }));
+  } catch (error) {
+    if (!(error instanceof VibelogError) || error.code !== 'CLAUDE_NOT_FOUND') {
+      throw error;
+    }
+    logger.debug('Claude sessions not found while reading all sources');
+  }
+
+  try {
+    sessions.push(...await readCodexSessions({ since }));
+  } catch (error) {
+    if (!(error instanceof VibelogError) || error.code !== 'CODEX_NOT_FOUND') {
+      throw error;
+    }
+    logger.debug('Codex sessions not found while reading all sources');
+  }
+
+  return sessions;
+}
+
+function getSourceLabel(source: SyncSource): string {
+  switch (source) {
+    case 'codex':
+      return 'Codex';
+    case 'all':
+      return 'supported';
+    case 'claude':
+    default:
+      return 'Claude Code';
   }
 }
 

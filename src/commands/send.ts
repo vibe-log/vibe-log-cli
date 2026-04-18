@@ -105,7 +105,7 @@ export async function send(options: SendOptions): Promise<void> {
 async function executeInteractiveSend(options: SendOptions): Promise<void> {
   // Explicitly set origin for manual uploads (no fallback)
   if (!options.origin) {
-    options.origin = 'manual-upload';
+    options.origin = getManualUploadOrigin(options);
   }
 
   const orchestrator = new SendOrchestrator();
@@ -126,7 +126,8 @@ async function executeInteractiveSend(options: SendOptions): Promise<void> {
       summaryUI.showNoSessions({
         all: options.all,
         selectedSessions: options.selectedSessions,
-        currentDir: process.cwd()
+        currentDir: process.cwd(),
+        source: options.source
       });
       return;
     }
@@ -184,7 +185,9 @@ async function executeInteractiveSend(options: SendOptions): Promise<void> {
         displayName: parseProjectName(s.projectPath),
         duration: s.duration,
         timestamp: s.timestamp,
-        messageCount: s.messages.length
+        messageCount: s.messages.length,
+        source: s.source || s.sourceFile?.source,
+        fullPath: s.sourceFile?.fullPath
       }));
       
       const proceed = await showPrivacyPreview(apiSessions, sessionInfo, []);
@@ -255,6 +258,22 @@ function determineSessionSource(options: SendOptions): string {
   if (options.selectedSessions) {
     return `${options.selectedSessions.length} selected sessions`;
   }
+
+  if (options.source === 'codex') {
+    if (options.all) return 'all Codex projects';
+    if (options.projectPaths?.length) {
+      return `${options.projectPaths.length} selected Codex project${options.projectPaths.length === 1 ? '' : 's'}`;
+    }
+    return `current directory (${parseProjectName(process.cwd())}) Codex`;
+  }
+
+  if (options.source === 'all') {
+    if (options.all) return 'all supported projects';
+    if (options.projectPaths?.length) {
+      return `${options.projectPaths.length} selected supported project${options.projectPaths.length === 1 ? '' : 's'}`;
+    }
+    return `current directory (${parseProjectName(process.cwd())}) across supported sources`;
+  }
   
   if (options.claudeProjectDir) {
     return parseProjectName(options.claudeProjectDir);
@@ -265,6 +284,18 @@ function determineSessionSource(options: SendOptions): string {
   }
   
   return `current directory (${parseProjectName(process.cwd())})`;
+}
+
+function getManualUploadOrigin(options: SendOptions): string {
+  switch (options.source) {
+    case 'codex':
+      return 'manual-upload-codex';
+    case 'all':
+      return 'manual-upload-all';
+    case 'claude':
+    default:
+      return 'manual-upload';
+  }
 }
 
 /**

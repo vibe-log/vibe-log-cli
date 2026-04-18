@@ -95,9 +95,10 @@ program
 // Hidden command for hooks - not shown in help
 program
   .command('send', { hidden: true })
-  .description('Send session data from current project to vibe-log')
+  .description('Send Claude Code or Codex session data from current project to vibe-log')
   .option('-d, --dry', 'Show what would be sent without uploading')
   .option('-a, --all', 'Send sessions from all projects (default: current project only)')
+  .option('--source <source>', 'Session source: claude, codex, or all', 'claude')
   .option('--silent', 'Run in silent mode (for hook execution)')
   .option('--background', 'Run upload in background (for hooks)')
   .option('--hook-trigger <type>', 'Hook trigger type (used by installed hooks)')
@@ -203,7 +204,8 @@ function showHelp(): void {
   console.log('Quick actions:');
   console.log('  npx vibe-log-cli auth               Sign in to enable cloud sync & web dashboard');
   console.log('  npx vibe-log-cli install-auto-sync  Configure automatic session sync');
-  console.log('  npx vibe-log-cli send               Manually sync sessions to cloud');
+  console.log('  npx vibe-log-cli send               Manually sync Claude Code sessions to cloud');
+  console.log('  npx vibe-log-cli send --source codex Manually sync Codex sessions to cloud');
   console.log('  npx vibe-log-cli privacy            Preview what data gets sent (privacy first!)');
   console.log('');
   console.log('For hooks (automatic sync):');

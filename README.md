@@ -250,6 +250,7 @@ Why we recommend both:
 
 Currently supported:
 - ✅ Claude Code
+- ✅ Codex (manual cloud sync)
 
 Future:
 - 🔜 Cursor

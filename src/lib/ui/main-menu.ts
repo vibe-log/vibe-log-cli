@@ -1,6 +1,5 @@
 import inquirer from 'inquirer';
 import { StateDetails } from '../detector';
-import { parseProjectName } from './project-display';
 import { colors, icons } from './styles';
 import { createStatusDashboard } from './status-sections';
 import { generateMenuItems, MenuContext } from './menu-builder';
@@ -278,6 +277,7 @@ async function handleMenuAction(
           
           await sendWithTimeout({ 
             selectedSessions: syncOption.sessions,
+            source: syncOption.source,
             fromMenu: true
           });
           break;
@@ -289,64 +289,27 @@ async function handleMenuAction(
           
           await sendWithTimeout({ 
             selectedSessions: syncOption.sessions,
+            source: syncOption.source,
             fromMenu: true
           });
           break;
           
         case 'projects': {
-          // Send selected projects
-          // Read sessions from selected projects
-          const { readClaudeSessions } = await import('../readers/claude');
-          const { analyzeProject } = await import('../claude-core');
-          const projectSessions: any[] = [];
-          
-          for (const claudePath of syncOption.projects) {
-            try {
-              // Analyze the Claude project to get the actual path
-              const dirName = parseProjectName(claudePath);
-              const project = await analyzeProject(claudePath, dirName);
-              
-              if (!project) {
-                console.log(colors.warning(`Failed to analyze project ${dirName}`));
-                continue;
-              }
-              
-              // Read sessions using the actual path for filtering
-              const sessions = await readClaudeSessions({
-                projectPath: project.actualPath
-              });
-              projectSessions.push(...sessions);
-              console.log(colors.subdued(`  • ${project.name}: ${sessions.length} sessions`));
-            } catch (error) {
-              console.log(colors.warning(`Failed to read sessions from ${parseProjectName(claudePath)}`));
-            }
-          }
-          
-          if (projectSessions.length > 0) {
-            console.log(colors.success(`\nTotal: ${projectSessions.length} sessions to sync`));
-            console.log(colors.dim('Preparing sessions for privacy-safe upload...'));
-            
-            await sendWithTimeout({ 
-              selectedSessions: projectSessions.map(s => ({
-                projectPath: s.sourceFile?.claudeProjectPath || s.projectPath,
-                sessionFile: s.sourceFile?.sessionFile || '',
-                displayName: parseProjectName(s.projectPath),
-                timestamp: s.timestamp,
-                duration: s.duration,
-                messageCount: s.messages.length
-              })),
-              fromMenu: true
-            });
-          } else {
-            console.log(colors.warning('No sessions found in selected projects'));
-          }
+          console.log(colors.info(`\nSyncing ${syncOption.projectPaths.length} selected project${syncOption.projectPaths.length === 1 ? '' : 's'}...`));
+          console.log(colors.dim('Preparing sessions for privacy-safe upload...'));
+
+          await sendWithTimeout({
+            source: syncOption.source,
+            projectPaths: syncOption.projectPaths,
+            fromMenu: true
+          });
           break;
         }
           
         case 'all':
           // Send all projects
           console.log(colors.info('\nSyncing all projects...'));
-          await sendWithTimeout({ all: true, fromMenu: true });
+          await sendWithTimeout({ all: true, source: syncOption.source, fromMenu: true });
           break;
           
         case 'cancel':

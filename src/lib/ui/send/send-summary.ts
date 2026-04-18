@@ -3,6 +3,7 @@ import { formatDuration, showSuccess, showWarning, showInfo } from '../../ui';
 import { parseProjectName } from '../project-display';
 import { Session as ApiSession } from '../../api-client';
 import { logger } from '../../../utils/logger';
+import { SyncSource } from '../../readers/types';
 
 export class SendSummaryUI {
   private silent: boolean;
@@ -14,7 +15,8 @@ export class SendSummaryUI {
   showNoSessions(options: { 
     all?: boolean; 
     selectedSessions?: any[];
-    currentDir?: string 
+    currentDir?: string;
+    source?: SyncSource;
   }) {
     if (this.silent) {
       logger.info('No sessions found');
@@ -26,13 +28,25 @@ export class SendSummaryUI {
     } else if (!options.all && options.currentDir) {
       showWarning(`No sessions found in current directory (${parseProjectName(options.currentDir)}).`);
       showInfo('Tips:');
-      showInfo('- Make sure you have used Claude Code in this directory');
+      showInfo(`- Make sure you have used ${this.getSourceLabel(options.source)} in this directory`);
       showInfo('- Use --all flag to send sessions from all projects');
       showInfo(`- Current directory: ${options.currentDir}`);
     } else {
       const defaultDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
       showWarning('No new sessions found in any project.');
-      showInfo('Make sure you have used Claude Code since ' + defaultDate.toLocaleDateString());
+      showInfo(`Make sure you have used ${this.getSourceLabel(options.source)} since ${defaultDate.toLocaleDateString()}`);
+    }
+  }
+
+  private getSourceLabel(source?: SyncSource): string {
+    switch (source) {
+      case 'codex':
+        return 'Codex';
+      case 'all':
+        return 'Claude Code or Codex';
+      case 'claude':
+      default:
+        return 'Claude Code';
     }
   }
 

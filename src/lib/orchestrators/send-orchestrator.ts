@@ -1,5 +1,6 @@
 import { requireAuth, getToken } from '../auth/token';
 import { readClaudeSessions } from '../readers/claude';
+import { readCodexSessions, parseCodexSessionFile } from '../readers/codex';
 import { apiClient, Session } from '../api-client';
 import {
   getProjectSyncData,
@@ -11,7 +12,7 @@ import { VibelogError } from '../../utils/errors';
 import { logger } from '../../utils/logger';
 import { MessageSanitizer } from '../message-sanitizer';
 import { logHookError } from '../hook-utils';
-import { SessionData } from '../readers/types';
+import { SessionData, SessionSource, SyncSource } from '../readers/types';
 import { SelectedSessionInfo } from '../ui/session-selector';
 import { analyzeProject } from '../claude-core';
 import path from 'path';
@@ -31,6 +32,8 @@ export interface SendOptions {
   selectedSessions?: SelectedSessionInfo[];
   skipActionMenu?: boolean;
   claudeProjectDir?: string;
+  projectPaths?: string[];
+  source?: SyncSource;
   fromMenu?: boolean;  // Indicates call is from interactive menu
   isInitialSync?: boolean;  // Indicates this is initial sync during hook setup
 }
@@ -86,6 +89,8 @@ export class SendOrchestrator {
   }
 
   async loadSessions(options: SendOptions): Promise<SessionData[]> {
+    const source = this.resolveSyncSource(options.source);
+
     // Handle pre-selected sessions
     if (options.selectedSessions && options.selectedSessions.length > 0) {
       return this.readSelectedSessions(options.selectedSessions);
@@ -95,26 +100,95 @@ export class SendOrchestrator {
     // This ensures global hooks capture all projects regardless of CLAUDE_PROJECT_DIR
     if (options.all) {
       // For --all mode, don't use project-specific date filtering
-      const sessions = await readClaudeSessions({ since: undefined });
-      return sessions;
+      return this.loadSessionsForSource(source, { since: undefined }, source === 'all');
     }
 
     // Determine date filter only for non-all modes
     const sinceDate = this.determineSinceDate(options);
 
+    if (options.projectPaths && options.projectPaths.length > 0) {
+      const sessions = await this.loadSessionsForSource(source, { since: sinceDate }, source === 'all');
+      const normalizedPaths = options.projectPaths.map(projectPath => path.normalize(projectPath).toLowerCase());
+      return sessions.filter(session => {
+        const sessionPath = path.normalize(session.projectPath).toLowerCase();
+        return normalizedPaths.some(projectPath =>
+          sessionPath === projectPath || sessionPath.startsWith(projectPath + path.sep)
+        );
+      });
+    }
+
     // Handle explicit Claude project directory (only when --all is not set)
-    if (options.claudeProjectDir && options.claudeProjectDir.trim() !== '') {
+    if (source === 'claude' && options.claudeProjectDir && options.claudeProjectDir.trim() !== '') {
       return this.loadProjectSessions(options.claudeProjectDir, sinceDate);
     }
 
     // Load all sessions and filter to current directory (default behavior)
-    const sessions = await readClaudeSessions({ since: sinceDate });
+    const sessions = await this.loadSessionsForSource(source, { since: sinceDate }, source === 'all');
     const currentDir = process.cwd();
     return sessions.filter(session => {
       const sessionPath = path.normalize(session.projectPath).toLowerCase();
       const currentPath = path.normalize(currentDir).toLowerCase();
       return sessionPath === currentPath || sessionPath.startsWith(currentPath + path.sep);
     });
+  }
+
+  private resolveSyncSource(source?: SyncSource): SyncSource {
+    const resolved = source || 'claude';
+    if (resolved !== 'claude' && resolved !== 'codex' && resolved !== 'all') {
+      throw new VibelogError(
+        `Invalid source "${resolved}". Use claude, codex, or all.`,
+        'VALIDATION_ERROR'
+      );
+    }
+    return resolved;
+  }
+
+  private async loadSessionsForSource(
+    source: SyncSource,
+    readerOptions: { since?: Date; projectPath?: string; limit?: number } = {},
+    allowMissing: boolean = false
+  ): Promise<SessionData[]> {
+    if (source === 'claude') {
+      return readClaudeSessions(readerOptions);
+    }
+
+    if (source === 'codex') {
+      return readCodexSessions(readerOptions);
+    }
+
+    const sources: SessionSource[] = ['claude', 'codex'];
+    const sessions: SessionData[] = [];
+
+    for (const currentSource of sources) {
+      try {
+        const sourceSessions = currentSource === 'claude'
+          ? await readClaudeSessions(readerOptions)
+          : await readCodexSessions(readerOptions);
+        sessions.push(...sourceSessions);
+      } catch (error) {
+        if (!allowMissing || !(error instanceof VibelogError) ||
+            (error.code !== 'CLAUDE_NOT_FOUND' && error.code !== 'CODEX_NOT_FOUND')) {
+          throw error;
+        }
+        logger.debug(`Skipping missing ${currentSource} sessions while loading all sources`);
+      }
+    }
+
+    return this.sortAndDedupeSessions(sessions);
+  }
+
+  private sortAndDedupeSessions(sessions: SessionData[]): SessionData[] {
+    const seen = new Set<string>();
+    const deduped: SessionData[] = [];
+
+    for (const session of sessions) {
+      const key = `${session.source || session.tool}:${session.claudeSessionId || session.id}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      deduped.push(session);
+    }
+
+    return deduped.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
   }
 
   private determineSinceDate(options: SendOptions): Date | undefined {
@@ -155,7 +229,19 @@ export class SendOrchestrator {
     
     for (const info of selectedInfo) {
       try {
-        const filePath = path.join(info.projectPath, info.sessionFile);
+        const filePath = info.fullPath || path.join(info.projectPath, info.sessionFile);
+        const selectedSource = info.source || 'claude';
+
+        if (selectedSource === 'codex') {
+          const session = await parseCodexSessionFile(filePath);
+          if (session) {
+            sessions.push(session);
+          } else {
+            failedFiles.push(info.sessionFile);
+          }
+          continue;
+        }
+
         const content = await fs.readFile(filePath, 'utf-8');
         const lines = content.trim().split('\n');
         
@@ -251,6 +337,7 @@ export class SendOrchestrator {
             messages,
             duration,
             tool: 'claude_code',
+            source: 'claude',
             claudeSessionId: metadata.claudeSessionId,  // Include Claude session ID
             metadata: {
               files_edited: editedFiles.size,
@@ -290,9 +377,10 @@ export class SendOrchestrator {
       
       const sanitizedMessages = this.sanitizer.sanitizeMessages(session.messages);
       const projectName = parseProjectName(session.projectPath);
+      const apiTool = session.tool === 'codex' ? 'claude_code' : session.tool;
       
       apiSessions.push({
-        tool: session.tool,
+        tool: apiTool,
         timestamp: session.timestamp.toISOString(),
         duration: session.duration,
         claudeSessionId: session.claudeSessionId,  // Include Claude session ID
@@ -369,6 +457,7 @@ export class SendOrchestrator {
 
   async updateSyncState(sessions: SessionData[], options: SendOptions): Promise<void> {
     if (sessions.length === 0) return;
+    const source = this.resolveSyncSource(options.source);
     
     const sortedSessions = [...sessions].sort((a, b) => 
       new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -377,7 +466,23 @@ export class SendOrchestrator {
     const oldestSession = sortedSessions[0];
     const newestSession = sortedSessions[sortedSessions.length - 1];
     
-    if (options.claudeProjectDir) {
+    if (source === 'codex') {
+      if (options.all) {
+        setLastSyncSummary('all Codex projects');
+      } else if (options.projectPaths && options.projectPaths.length > 0) {
+        setLastSyncSummary(`${options.projectPaths.length} Codex project${options.projectPaths.length === 1 ? '' : 's'}`);
+      } else {
+        setLastSyncSummary(`${parseProjectName(process.cwd())} Codex sessions`);
+      }
+    } else if (source === 'all') {
+      if (options.all) {
+        setLastSyncSummary('all supported projects');
+      } else if (options.projectPaths && options.projectPaths.length > 0) {
+        setLastSyncSummary(`${options.projectPaths.length} supported project${options.projectPaths.length === 1 ? '' : 's'}`);
+      } else {
+        setLastSyncSummary('supported sessions');
+      }
+    } else if (options.claudeProjectDir) {
       const claudeFolderName = parseProjectName(options.claudeProjectDir);
       const projectName = parseProjectName(process.cwd());
       
