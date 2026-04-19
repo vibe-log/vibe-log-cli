@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.11] - 2026-04-19
+
+### Fixed
+- Reduced CLI upload request size to avoid Cloudflare Worker memory and D1 CPU limits during large syncs.
+- Added adaptive upload chunking by raw payload size so very large sessions are sent one request at a time.
+
 ## [0.8.10] - 2026-04-19
 
 ### Improved

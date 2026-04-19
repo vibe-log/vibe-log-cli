@@ -125,6 +125,8 @@ class SecureApiClient {
   private windowStart = Date.now();
   private readonly MAX_REQUESTS_PER_MINUTE = 60;
   private readonly GZIP_UPLOAD_THRESHOLD_BYTES = 16 * 1024;
+  private readonly MAX_UPLOAD_BATCH_SIZE = 10;
+  private readonly MAX_UPLOAD_BATCH_BYTES = 2 * 1024 * 1024;
 
   constructor() {
     this.client = axios.create({
@@ -404,13 +406,10 @@ class SecureApiClient {
     // Validate and sanitize sessions
     const sanitizedSessions = sessions.map(session => this.sanitizeSession(session));
 
-    // Keep request count low while gzip and server-side async queueing keep large uploads manageable.
-    const MAX_UPLOAD_BATCH_SIZE = 100;
-    const chunks = [];
-    
-    for (let i = 0; i < sanitizedSessions.length; i += MAX_UPLOAD_BATCH_SIZE) {
-      chunks.push(sanitizedSessions.slice(i, i + MAX_UPLOAD_BATCH_SIZE));
-    }
+    // Keep each request small enough for Cloudflare Worker memory and D1 CPU limits.
+    // Gzip saves network time, but the Worker still has to gunzip, parse, validate,
+    // compact, and write each request body before it can return.
+    const chunks = this.createUploadChunks(sanitizedSessions);
     
     const results = [];
     let uploadedCount = 0;
@@ -549,6 +548,35 @@ class SecureApiClient {
         messageSummary: session.data?.messageSummary || '',
       },
     };
+  }
+
+  private createUploadChunks(sessions: Session[]): Session[][] {
+    const chunks: Session[][] = [];
+    let currentChunk: Session[] = [];
+    let currentChunkBytes = 2; // JSON array brackets overhead estimate
+
+    for (const session of sessions) {
+      const sessionBytes = Buffer.byteLength(JSON.stringify(session));
+      const exceedsCount = currentChunk.length >= this.MAX_UPLOAD_BATCH_SIZE;
+      const exceedsBytes =
+        currentChunk.length > 0 &&
+        currentChunkBytes + sessionBytes + 1 > this.MAX_UPLOAD_BATCH_BYTES;
+
+      if (exceedsCount || exceedsBytes) {
+        chunks.push(currentChunk);
+        currentChunk = [];
+        currentChunkBytes = 2;
+      }
+
+      currentChunk.push(session);
+      currentChunkBytes += sessionBytes + 1; // comma overhead estimate
+    }
+
+    if (currentChunk.length > 0) {
+      chunks.push(currentChunk);
+    }
+
+    return chunks;
   }
 
   private calculateChecksum(data: any): string {
