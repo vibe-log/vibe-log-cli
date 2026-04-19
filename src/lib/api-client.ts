@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import crypto from 'crypto';
+import { gzipSync } from 'node:zlib';
 import packageJson from '../../package.json';
 import { claudeSettingsManager } from './claude-settings-manager';
 import { getToken, getApiUrl, getStatusLinePersonality } from './config';
@@ -123,6 +124,7 @@ class SecureApiClient {
   private requestCount = 0;
   private windowStart = Date.now();
   private readonly MAX_REQUESTS_PER_MINUTE = 60;
+  private readonly GZIP_UPLOAD_THRESHOLD_BYTES = 16 * 1024;
 
   constructor() {
     this.client = axios.create({
@@ -356,7 +358,7 @@ class SecureApiClient {
     try {
       // Use GET to check status without consuming the token
       const response = await this.client.get(`/api/auth/cli/complete?token=${token}`);
-      
+
       return {
         success: response.data.success,
         userId: response.data.userId
@@ -377,7 +379,7 @@ class SecureApiClient {
   async verifyToken(): Promise<{ valid: boolean; user?: any }> {
     try {
       const response = await this.client.get('/api/auth/cli/verify');
-      
+
       // Don't return raw user data
       return {
         valid: true,
@@ -402,13 +404,12 @@ class SecureApiClient {
     // Validate and sanitize sessions
     const sanitizedSessions = sessions.map(session => this.sanitizeSession(session));
 
-    // Chunk large uploads
-    // Using 100 for better performance - modern connections can handle 300-500KB payloads
-    const CHUNK_SIZE = 100;
+    // Keep upload batches small so a single request cannot overwhelm server-side processing.
+    const MAX_UPLOAD_BATCH_SIZE = 10;
     const chunks = [];
     
-    for (let i = 0; i < sanitizedSessions.length; i += CHUNK_SIZE) {
-      chunks.push(sanitizedSessions.slice(i, i + CHUNK_SIZE));
+    for (let i = 0; i < sanitizedSessions.length; i += MAX_UPLOAD_BATCH_SIZE) {
+      chunks.push(sanitizedSessions.slice(i, i + MAX_UPLOAD_BATCH_SIZE));
     }
     
     const results = [];
@@ -439,12 +440,20 @@ class SecureApiClient {
           payload.telemetry = telemetry; // Add to existing payload
         }
       }
+
+      const serializedPayload = JSON.stringify(payload);
+      const rawPayloadBytes = Buffer.byteLength(serializedPayload);
+      const shouldCompress = rawPayloadBytes >= this.GZIP_UPLOAD_THRESHOLD_BYTES;
+      const requestBody = shouldCompress ? gzipSync(serializedPayload) : payload;
       
       // Calculate payload size in kilobytes
-      const payloadSize = Buffer.byteLength(JSON.stringify(payload)) / 1024;
+      const payloadSize = (shouldCompress ? requestBody.length : rawPayloadBytes) / 1024;
       
       if (process.env.VIBELOG_DEBUG === 'true') {
         console.log('[DEBUG] Uploading batch', i + 1, 'of', chunks.length, 'with', chunk.length, 'sessions', `(${payloadSize.toFixed(2)} KB)`);
+        if (shouldCompress) {
+          console.log('[DEBUG] Gzip compressed upload payload', `${(rawPayloadBytes / 1024).toFixed(2)} KB -> ${payloadSize.toFixed(2)} KB`);
+        }
         console.log('[DEBUG] Total progress:', uploadedCount, '+', chunk.length, '=', uploadedCount + chunk.length, 'of', sanitizedSessions.length);
         
         // Log first session of each chunk to debug validation issues
@@ -481,9 +490,12 @@ class SecureApiClient {
             configHeaders['x-vibe-config-statusline'] = JSON.stringify(cliConfig.statusline);
             configHeaders['x-vibe-config-hooks'] = JSON.stringify(cliConfig.hooks);
           }
+          if (shouldCompress) {
+            configHeaders['Content-Encoding'] = 'gzip';
+          }
 
           // Use /cli/sessions endpoint for CLI uploads (bearer token auth)
-          const response = await this.client.post('/cli/sessions', payload, {
+          const response = await this.client.post('/cli/sessions', requestBody, {
             headers: configHeaders
           });
           results.push(response.data);
@@ -496,11 +508,6 @@ class SecureApiClient {
           }
           if (onProgress) {
             onProgress(uploadedCount, sanitizedSessions.length, uploadedSizeKB);
-          }
-          
-          // Add a small delay between chunks to avoid overwhelming the server
-          if (i < chunks.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 100));
           }
           
           break; // Success, exit retry loop
