@@ -58,6 +58,9 @@ export interface UploadResult {
   pointsEarned?: PointsEarned;  // Points earned from this upload
   created?: number;              // Number of new sessions created
   duplicates?: number;           // Number of duplicate sessions
+  updated?: number;               // Number of updated sessions
+  accepted?: number;              // Number of sessions accepted for async processing
+  queued?: boolean;               // True when the server queued processing asynchronously
   batchId?: string;              // Batch ID for tracking
 }
 
@@ -492,6 +495,10 @@ class SecureApiClient {
           if (shouldCompress) {
             configHeaders['Content-Encoding'] = 'gzip';
           }
+          configHeaders['x-vibe-upload-session-count'] = String(chunk.length);
+          configHeaders['x-vibe-upload-total-sessions'] = String(sanitizedSessions.length);
+          configHeaders['x-vibe-upload-batch-number'] = String(i + 1);
+          configHeaders['x-vibe-upload-total-batches'] = String(chunks.length);
 
           // Use /cli/sessions endpoint for CLI uploads (bearer token auth)
           const response = await this.client.post('/cli/sessions', requestBody, {
@@ -600,16 +607,30 @@ class SecureApiClient {
         };
       }, null as PointsEarned | null);
 
-    return {
+    const sessionsProcessed = results.reduce((sum, r) => {
+      const processed = (r.created || 0) + (r.duplicates || 0) + (r.updated || 0);
+      return sum + (processed > 0 ? processed : (r.accepted || 0));
+    }, 0);
+    const updated = results.reduce((sum, r) => sum + (r.updated || 0), 0);
+    const accepted = results.reduce((sum, r) => sum + (r.accepted || 0), 0);
+    const queued = results.some(r => r.queued);
+    const batchId = results.find(r => r.batchId)?.batchId;
+    const merged: UploadResult = {
       success: results.every(r => r.success),
       created: results.reduce((sum, r) => sum + (r.created || 0), 0),
       duplicates: results.reduce((sum, r) => sum + (r.duplicates || 0), 0),
-      sessionsProcessed: results.reduce((sum, r) => sum + ((r.created || 0) + (r.duplicates || 0)), 0),
+      sessionsProcessed,
       analysisPreview: results[0]?.analysisPreview,
       streak: results[results.length - 1]?.streak,
-      pointsEarned: pointsEarned || undefined,
-      batchId: results.find(r => r.batchId)?.batchId,
+      batchId,
     };
+
+    if (pointsEarned) merged.pointsEarned = pointsEarned;
+    if (updated > 0) merged.updated = updated;
+    if (accepted > 0) merged.accepted = accepted;
+    if (queued) merged.queued = queued;
+
+    return merged;
   }
 
   async getStreak(): Promise<StreakInfo> {
