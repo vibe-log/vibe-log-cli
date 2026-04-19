@@ -57,7 +57,7 @@ ${context.customInstructions}
 Apply these preferences when analyzing sessions and generating insights.` : ''}`;
 
   // Main prompt focused on the task
-  const prompt = `Analyze my Claude Code sessions from ${timeframeDesc} using vibe-log sub-agents.
+  const prompt = `Analyze my Claude Code and Codex sessions from ${timeframeDesc} using vibe-log sub-agents.
 
 Projects to analyze:
 ${projectList}
@@ -85,7 +85,7 @@ BATCHING STRATEGY (MAX 9 AGENTS TOTAL):
 For each batch of sessions, launch:
 Task(subagent_type="vibe-log-session-analyzer", 
      description="Analyze batch of [X] sessions",
-     prompt="You are analyzing a BATCH of Claude Code session files.
+     prompt="You are analyzing a BATCH of Claude Code and Codex session files.
 
 FILES TO ANALYZE: 
 [List the specific .vibe-log-temp/filename for each session in this batch]
@@ -243,7 +243,7 @@ KEY POINTS:
 - The system automatically converts JSON to HTML and saves it`;
 
   // Build a shorter, more user-friendly command for display
-  const displayCommand = `claude "Analyze my Claude Code sessions from ${timeframeDesc} using vibe-log sub-agents..."`;
+  const displayCommand = `vibe-log "Analyze my Claude Code and Codex sessions from ${timeframeDesc} using vibe-log sub-agents..."`;
   
   return {
     prompt,
@@ -262,19 +262,4 @@ export function buildSimplePrompt(context: PromptContext): string {
   const projectList = projectNames.join(', ');
   
   return `@vibe-log-report-generator analyze my coding sessions from the last ${timeframe} for projects: ${projectList}. Focus on productivity insights and key accomplishments.`;
-}
-
-/**
- * Get the full command with proper escaping for clipboard/terminal
- */
-export function getExecutableCommand(prompt: string): string {
-  // Escape for shell execution
-  const escaped = prompt
-    .replace(/\\/g, '\\\\')
-    .replace(/"/g, '\\"')
-    .replace(/\$/g, '\\$')
-    .replace(/`/g, '\\`')
-    .replace(/\n/g, '\\n');
-    
-  return `claude "${escaped}"`;
 }

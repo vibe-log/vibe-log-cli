@@ -1,9 +1,10 @@
 import inquirer from 'inquirer';
 import { colors, icons, box, format } from './styles';
-import { discoverProjects, ClaudeProject } from '../claude-core';
+import { discoverProjects } from '../claude-core';
+import { discoverCodexProjects } from '../codex-core';
 import { SelectableProject } from './project-selector';
 import { interactiveProjectSelector } from './interactive-project-selector';
-import { buildOrchestratedPrompt, getExecutableCommand } from '../prompts/orchestrator';
+import { buildOrchestratedPrompt } from '../prompts/orchestrator';
 import { PromptContext } from '../../types/prompts';
 import { executeClaudePrompt } from '../report-executor';
 import {
@@ -13,15 +14,22 @@ import {
 } from '../../utils/acp-executor';
 import { getStatusLineStatus } from '../status-line-manager';
 import { readInstructions } from '../instructions';
+import { readClaudeSessions } from '../readers/claude';
+import { readCodexSessions } from '../readers/codex';
+import { SessionData, SessionSource } from '../readers/types';
 import { promises as fs } from 'fs';
 import path from 'path';
-import os from 'os';
-import { getTempDirectoryPath } from '../temp-directories';
+import { getTempDirectoryPath, isClaudeTempProject } from '../temp-directories';
 
 interface TimeframeOption {
   name: string;
   value: string;
   days?: number;
+}
+
+interface LocalReportProject extends SelectableProject {
+  sources: SessionSource[];
+  sourcePaths: Partial<Record<SessionSource, string>>;
 }
 
 /**
@@ -41,7 +49,7 @@ function showLocalReportExplanation(): void {
   
   // Section 1: How it works
   console.log(colors.primary(format.bold('How Local Reports Work')));
-  console.log(colors.highlight('Local reports use Claude Code to quickly analyze your sessions'));
+  console.log(colors.highlight('Local reports use your local ACP agent to quickly analyze sessions'));
   console.log(colors.highlight('and generate a HTML report with key insights,'));
   console.log(colors.highlight('keeping your data 100% private on your machine.'));
   console.log();
@@ -57,7 +65,7 @@ function showLocalReportExplanation(): void {
   
   // Section 3: Privacy note
   console.log(colors.success(`${icons.lock} ${format.bold('100% Private')}`));
-  console.log(colors.muted('All analysis happens locally using your Claude Code tokens.'));
+  console.log(colors.muted('All analysis happens locally using your configured agent subscription or tokens.'));
   console.log(colors.muted('No data is sent to vibe-log servers in local mode.'));
   console.log();
   
@@ -115,22 +123,191 @@ async function selectTimeframe(): Promise<{ timeframe: string; days: number }> {
   return { timeframe, days: selected?.days || 7 };
 }
 
-/**
- * Convert ClaudeProject to SelectableProject for the UI
- */
-function toSelectableProjects(
-  projects: ClaudeProject[], 
-  previouslySelected: string[]
-): SelectableProject[] {
-  return projects.map(p => ({
-    id: p.claudePath,
-    name: p.name,
-    path: p.actualPath,
-    sessions: p.sessions,
-    lastActivity: p.lastActivity || new Date(),
-    selected: previouslySelected.includes(p.claudePath),
-    isActive: p.isActive
-  }));
+function mergeLocalReportProject(
+  grouped: Map<string, LocalReportProject>,
+  input: {
+    source: SessionSource;
+    name: string;
+    actualPath: string;
+    sourcePath: string;
+    sessions: number;
+    lastActivity: Date | null;
+    isActive: boolean;
+  }
+): void {
+  const normalizedPath = path.normalize(input.actualPath);
+  if (isClaudeTempProject(normalizedPath)) {
+    return;
+  }
+
+  const key = normalizedPath.toLowerCase();
+  const existing = grouped.get(key);
+
+  if (!existing) {
+    grouped.set(key, {
+      id: normalizedPath,
+      name: input.name,
+      path: normalizedPath,
+      sessions: input.sessions,
+      lastActivity: input.lastActivity || new Date(0),
+      selected: false,
+      isActive: input.isActive,
+      sources: [input.source],
+      sourcePaths: {
+        [input.source]: input.sourcePath,
+      },
+    });
+    return;
+  }
+
+  const existingLastActivity = new Date(existing.lastActivity);
+  existing.sessions += input.sessions;
+  existing.lastActivity = input.lastActivity && input.lastActivity > existingLastActivity
+    ? input.lastActivity
+    : existing.lastActivity;
+  existing.isActive = existing.isActive || input.isActive;
+  existing.sources = Array.from(new Set([...existing.sources, input.source]));
+  existing.sourcePaths[input.source] = input.sourcePath;
+}
+
+async function discoverLocalReportProjects(): Promise<LocalReportProject[]> {
+  const grouped = new Map<string, LocalReportProject>();
+  const [claudeProjects, codexProjects] = await Promise.all([
+    discoverProjects().catch(() => []),
+    discoverCodexProjects().catch(() => []),
+  ]);
+
+  for (const project of claudeProjects) {
+    mergeLocalReportProject(grouped, {
+      source: 'claude',
+      name: project.name,
+      actualPath: project.actualPath,
+      sourcePath: project.claudePath,
+      sessions: project.sessions,
+      lastActivity: project.lastActivity,
+      isActive: project.isActive,
+    });
+  }
+
+  for (const project of codexProjects) {
+    mergeLocalReportProject(grouped, {
+      source: 'codex',
+      name: project.name,
+      actualPath: project.actualPath,
+      sourcePath: project.codexPath,
+      sessions: project.sessions,
+      lastActivity: project.lastActivity,
+      isActive: project.isActive,
+    });
+  }
+
+  return Array.from(grouped.values()).sort((a, b) => {
+    const aTime = new Date(a.lastActivity).getTime();
+    const bTime = new Date(b.lastActivity).getTime();
+    return bTime - aTime;
+  });
+}
+
+function hasCodexSource(projects: LocalReportProject[]): boolean {
+  return projects.some(project => project.sources.includes('codex'));
+}
+
+async function readProjectSessions(project: LocalReportProject, since: Date): Promise<SessionData[]> {
+  const sessions: SessionData[] = [];
+
+  if (project.sources.includes('claude')) {
+    sessions.push(...await readClaudeSessions({
+      since,
+      projectPath: project.path,
+    }));
+  }
+
+  if (project.sources.includes('codex')) {
+    sessions.push(...await readCodexSessions({
+      since,
+      projectPath: project.path,
+    }));
+  }
+
+  return sessions.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+}
+
+function safeManifestFilename(value: string): string {
+  return value.replace(/[^a-zA-Z0-9._-]/g, '_');
+}
+
+async function copySelectedProjectSessions(input: {
+  selectedProjects: LocalReportProject[];
+  tempDir: string;
+  days: number;
+  timeframe: string;
+}): Promise<{ copiedFiles: number; totalSessions: number; manifest: any }> {
+  const since = new Date();
+  since.setDate(since.getDate() - input.days);
+
+  let copiedFiles = 0;
+  let totalSessions = 0;
+  const manifest: any = {
+    generated: new Date().toISOString(),
+    timeframe: input.timeframe,
+    timeframeDays: input.days,
+    sources: Array.from(new Set(input.selectedProjects.flatMap(project => project.sources))),
+    projects: [],
+    sessionFiles: []
+  };
+
+  for (const project of input.selectedProjects) {
+    let projectSessionCount = 0;
+
+    try {
+      const sessions = await readProjectSessions(project, since);
+
+      for (const [index, session] of sessions.entries()) {
+        const sourceFile = session.sourceFile?.fullPath;
+        if (!sourceFile) continue;
+
+        const stat = await fs.stat(sourceFile);
+        const source = session.source || session.sourceFile?.source || (session.tool === 'codex' ? 'codex' : 'claude');
+        const originalFile = session.sourceFile?.sessionFile || path.basename(sourceFile);
+        const destFilename = safeManifestFilename(`${project.name}_${source}_${index + 1}_${originalFile}`);
+        const destFile = path.join(input.tempDir, destFilename);
+
+        await fs.copyFile(sourceFile, destFile);
+
+        copiedFiles++;
+        projectSessionCount++;
+
+        const sizeKB = parseFloat((stat.size / 1024).toFixed(2));
+        manifest.sessionFiles.push({
+          file: destFilename,
+          project: project.name,
+          source,
+          originalPath: sourceFile,
+          modified: stat.mtime.toISOString(),
+          sizeKB,
+          isLarge: stat.size > 100000,
+          readStrategy: stat.size > 100000 ? 'read_partial' : 'read_full'
+        });
+      }
+
+      manifest.projects.push({
+        name: project.name,
+        path: project.path,
+        sources: project.sources,
+        sourcePaths: project.sourcePaths,
+        sessionCount: projectSessionCount
+      });
+
+      totalSessions += projectSessionCount;
+    } catch (err) {
+      console.log(colors.warning(`⚠️  Could not access project: ${project.name}`));
+      console.log(colors.muted(`   ${err instanceof Error ? err.message : String(err)}`));
+    }
+  }
+
+  manifest.totalSessions = totalSessions;
+
+  return { copiedFiles, totalSessions, manifest };
 }
 
 /**
@@ -282,7 +459,7 @@ export async function generateLocalReportInteractive(): Promise<void> {
   
   // Step 2: Discover and select projects
   console.log(colors.accent('Step 2: Select Projects to Include'));
-  console.log(colors.muted('Discovering Claude Code projects...'));
+  console.log(colors.muted('Discovering Claude Code and Codex projects...'));
   console.log();
   
   // Add processing time guidance
@@ -295,11 +472,11 @@ export async function generateLocalReportInteractive(): Promise<void> {
   }
   console.log();
   
-  const allProjects = await discoverProjects();
+  const allProjects = await discoverLocalReportProjects();
   
   if (allProjects.length === 0) {
-    console.log(colors.warning(`${icons.warning} No Claude Code projects found`));
-    console.log(colors.muted('Start a Claude Code session to begin tracking.'));
+    console.log(colors.warning(`${icons.warning} No Claude Code or Codex projects found`));
+    console.log(colors.muted('Start a Claude Code or Codex session to begin tracking.'));
     return;
   }
   
@@ -317,12 +494,9 @@ export async function generateLocalReportInteractive(): Promise<void> {
     return;
   }
   
-  // Convert to selectable format (no previous selection persistence for local reports)
-  const selectableProjects = toSelectableProjects(recentProjects, []);
-  
   // Show project selector
   const selectedProjects = await interactiveProjectSelector({
-    projects: selectableProjects,
+    projects: recentProjects,
     multiSelect: true,
     title: `SELECT PROJECTS (${recentProjects.length} with recent activity)`,
     showStats: true
@@ -373,19 +547,18 @@ export async function generateLocalReportInteractive(): Promise<void> {
   const promptContext: PromptContext = {
     timeframe,
     days,
-    projectPaths: selectedProjects.map(p => p.id),
+    projectPaths: selectedProjects.map(p => p.path),
     projectNames: selectedProjects.map(p => p.name),
     statusLineInstalled: isStatusLineInstalled,
     customInstructions: customInstructions || undefined
   };
   
   const orchestrated = buildOrchestratedPrompt(promptContext);
-  const executableCommand = getExecutableCommand(orchestrated.prompt);
   
-  console.log(colors.primary('Generated Command:'));
+  console.log(colors.primary('Generated Plan:'));
   console.log();
   console.log(colors.accent('This command will orchestrate vibe-log sub-agents to:'));
-  console.log(colors.highlight('  1. Fetch and organize your Claude Code sessions into chunks'));
+  console.log(colors.highlight('  1. Fetch and organize your Claude Code and Codex sessions into chunks'));
   console.log(colors.highlight(`  2. Run ${days > 1 ? `${Math.min(days, 7)} parallel analyzers` : '1 analyzer'} to extract patterns`));
   console.log(colors.highlight('  3. Generate a concise HTML report'));
   if (days > 1) {
@@ -395,7 +568,12 @@ export async function generateLocalReportInteractive(): Promise<void> {
   console.log();
   
   // Check local ACP agent availability for the recommended execution option
-  const configuredProvider = getConfiguredLocalAgentProvider();
+  const selectedReportProjects = selectedProjects as LocalReportProject[];
+  const configuredProvider = hasCodexSource(selectedReportProjects)
+    && !process.env.VIBELOG_LOCAL_AGENT_PROVIDER
+    && !process.env.VIBELOG_AGENT_PROVIDER
+    ? 'codex'
+    : getConfiguredLocalAgentProvider();
   const providerOrder: LocalAgentProviderId[] = configuredProvider === 'claude'
     ? ['claude', 'codex']
     : ['codex', 'claude'];
@@ -413,18 +591,17 @@ export async function generateLocalReportInteractive(): Promise<void> {
     });
   }
   choices.push(
-    { name: '📋 Copy command to clipboard', value: 'copy-full' },
     { name: '👁️  View full prompt', value: 'view' },
     { name: '↩️  Return to menu', value: 'return' }
   );
   
   // Show local agent unavailable message if needed  
   if (!localAgentChecks.some((check) => check.installed)) {
-    console.log(colors.muted(`${configuredAgentCheck.name} ACP adapter not available - using copy-to-clipboard method`));
+    console.log(colors.muted(`${configuredAgentCheck.name} ACP adapter not available`));
     console.log();
   }
   
-  // Prompt to copy command or return
+  // Prompt to execute, inspect prompt, or return
   const { action } = await inquirer.prompt([
     {
       type: 'list',
@@ -437,7 +614,7 @@ export async function generateLocalReportInteractive(): Promise<void> {
   if (typeof action === 'string' && action.startsWith('execute:')) {
     const selectedProvider = action.split(':')[1] as LocalAgentProviderId;
     const selectedAgentCheck = localAgentChecks.find((check) => check.provider === selectedProvider) || configuredAgentCheck;
-    // Pre-fetch session files before executing Claude
+    // Pre-fetch session files before executing the selected ACP provider
     console.log();
     console.log(colors.accent('Pre-fetching session data...'));
     
@@ -459,96 +636,19 @@ export async function generateLocalReportInteractive(): Promise<void> {
       await fs.mkdir(tempDir, { recursive: true });
       console.log(colors.info(`📁 Created temp directory: ${tempDir}`));
       
-      // Get Claude projects directory
-      const claudeProjectsPath = path.join(os.homedir(), '.claude', 'projects');
-      
-      // Copy relevant session files
-      let copiedFiles = 0;
-      let totalSessions = 0;
-      const manifest: any = {
-        generated: new Date().toISOString(),
-        timeframe: timeframe,
-        timeframeDays: days,
-        projects: [],
-        sessionFiles: []
-      };
-      
-      // Process each selected project
-      for (const project of selectedProjects) {
-        // Extract Claude folder name from the project ID
-        // On Windows: project.id is like C:\Users\97254\.claude\projects\C--vibelog-vibe-log-cli
-        // On Mac/Linux: project.id is like ~/.claude/projects/-home-user-projects-vibe-log
-        
-        let sourceDir: string;
-        let claudeFolderName: string;
-        
-        if (process.platform === 'win32') {
-          // On Windows, project.id is already the full path
-          sourceDir = project.id;
-          // Extract just the folder name for prefixing files
-          claudeFolderName = path.basename(project.id);
-        } else {
-          // On Mac/Linux, extract the folder name and join with base path
-          claudeFolderName = project.id.split('/').pop() || '';
-          sourceDir = path.join(claudeProjectsPath, claudeFolderName);
-        }
-        
-        try {
-          // Read all JSONL files from this project
-          const files = await fs.readdir(sourceDir);
-          const jsonlFiles = files.filter(f => f.endsWith('.jsonl'));
-          
-          let projectSessionCount = 0;
-          
-          // Check each session file
-          for (const file of jsonlFiles) {
-            const sourceFile = path.join(sourceDir, file);
-            
-            // Quick check if session is within timeframe
-            const fileStat = await fs.stat(sourceFile);
-            const since = new Date();
-            since.setDate(since.getDate() - days);
-            
-            if (fileStat.mtime >= since) {
-              // Copy file to temp directory with project prefix
-              const destFile = path.join(tempDir, `${claudeFolderName}_${file}`);
-              await fs.copyFile(sourceFile, destFile);
-              
-              copiedFiles++;
-              projectSessionCount++;
-              
-              // Add to manifest with size information
-              const sizeKB = parseFloat((fileStat.size / 1024).toFixed(2));
-              manifest.sessionFiles.push({
-                file: `${claudeFolderName}_${file}`,
-                project: project.name,
-                originalPath: sourceFile,
-                modified: fileStat.mtime.toISOString(),
-                sizeKB: sizeKB,
-                isLarge: fileStat.size > 100000, // Files > 100KB are considered large
-                readStrategy: fileStat.size > 100000 ? 'read_partial' : 'read_full'
-              });
-            }
-          }
-          
-          // Add project info to manifest
-          manifest.projects.push({
-            name: project.name,
-            path: project.path,
-            claudePath: project.id,
-            sessionCount: projectSessionCount
-          });
-          
-          totalSessions += projectSessionCount;
-        } catch (err) {
-          console.log(colors.warning(`⚠️  Could not access project: ${project.name}`));
-          console.log(colors.muted(`   ${err instanceof Error ? err.message : String(err)}`));
-        }
-      }
-      
-      manifest.totalSessions = totalSessions;
+      const { copiedFiles, totalSessions, manifest } = await copySelectedProjectSessions({
+        selectedProjects: selectedReportProjects,
+        tempDir,
+        days,
+        timeframe,
+      });
       
       console.log(colors.success(`✓ Copied ${copiedFiles} session files from selected projects`));
+      if (totalSessions === 0) {
+        console.log(colors.warning('No session files matched the selected projects and timeframe.'));
+        console.log(colors.muted('Try selecting a longer timeframe or another project.'));
+        return;
+      }
       
       // Save lightweight manifest
       const manifestPath = path.join(tempDir, 'manifest.json');
@@ -577,7 +677,7 @@ export async function generateLocalReportInteractive(): Promise<void> {
         `Session files have been copied to: .vibe-log-temp/\nManifest available at: .vibe-log-temp/manifest.json\n\nProjects to analyze:`
       );
       
-      // Execute directly with Claude
+      // Execute directly with the selected ACP provider
       console.log(colors.muted(`Using orchestrated prompt (${updatedPrompt.length} characters)`));
       console.log(colors.muted(`System prompt adds behavioral instructions (${orchestrated.systemPrompt.length} characters)`));
       if (customInstructions) {
@@ -615,15 +715,6 @@ export async function generateLocalReportInteractive(): Promise<void> {
             console.log(colors.muted(error.stack || error.toString()));
           }
           
-          console.log();
-          console.log(colors.info('Please use the copy command option instead.'));
-          console.log();
-          
-          // Show the command for manual execution
-          console.log(colors.info('Command to run manually:'));
-          console.log(colors.highlight(executableCommand));
-          console.log();
-          
           // Clean up temp directory before exiting
           const tempDir = path.join(tempReportDir, '.vibe-log-temp');
           fs.rm(tempDir, { recursive: true, force: true }).catch(() => {
@@ -631,7 +722,7 @@ export async function generateLocalReportInteractive(): Promise<void> {
           });
           
           // Exit gracefully without recursive call
-          console.log(colors.muted('Report generation failed. Please try copying the command above.'));
+          console.log(colors.muted('Report generation failed. Please check your ACP adapter and try again.'));
         }
       });
     } catch (error) {
@@ -645,15 +736,6 @@ export async function generateLocalReportInteractive(): Promise<void> {
         console.log(colors.muted(error instanceof Error ? error.stack : String(error)));
       }
       
-      console.log();
-      console.log(colors.info('Please use the copy command option instead.'));
-      console.log();
-      
-      // Show the command for manual execution
-      console.log(colors.info('Command to run manually:'));
-      console.log(colors.highlight(executableCommand));
-      console.log();
-      
       // Clean up temp directory before exiting
       const tempDir = path.join(tempReportDir, '.vibe-log-temp');
       await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {
@@ -661,34 +743,9 @@ export async function generateLocalReportInteractive(): Promise<void> {
       });
       
       // Exit gracefully without recursive call
-      console.log(colors.muted('Report generation failed. Please try copying the command above.'));
+      console.log(colors.muted('Report generation failed. Please check your ACP adapter and try again.'));
       return;
     }
-  } else if (action === 'copy-full') {
-    // Try to copy full command to clipboard
-    try {
-      const { execSync } = await import('child_process');
-      if (process.platform === 'darwin') {
-        execSync(`echo '${executableCommand.replace(/'/g, "'\\''")}'  | pbcopy`);
-        console.log(colors.success('\n✓ Full orchestrated command copied to clipboard!'));
-      } else if (process.platform === 'win32') {
-        execSync(`echo ${executableCommand} | clip`);
-        console.log(colors.success('\n✓ Full orchestrated command copied to clipboard!'));
-      } else {
-        console.log(colors.info('\nCommand:'));
-        console.log(colors.highlight(executableCommand));
-      }
-    } catch {
-      console.log(colors.info('\nCommand:'));
-      console.log(colors.highlight(executableCommand));
-    }
-    
-    // Exit after copying
-    console.log();
-    console.log(colors.accent('👋 Ready to generate your report!'));
-    console.log(colors.muted('Run the command in your terminal to start the analysis.'));
-    console.log(colors.warning(`📁 Report will be saved as: vibe-log-report-${new Date().toISOString().split('T')[0]}.pdf`));
-    process.exit(0);
   } else if (action === 'view') {
     // Show the full prompt
     console.log();
