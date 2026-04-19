@@ -391,7 +391,7 @@ async function updateInBackground(
 
     // Download latest version using npx @latest
     // This populates the cache for next run
-    execSync('npx vibe-log-cli@latest --version', {
+    execSync('npx -y vibe-log-cli@latest --version', {
       stdio: 'ignore',
       timeout: 30000,
       env: {

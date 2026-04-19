@@ -5,6 +5,12 @@ import { join } from 'path';
 import fs from 'fs/promises';
 import { logger } from '../utils/logger';
 
+const DEFAULT_CLI_PATH = 'npx -y vibe-log-cli@latest';
+const LEGACY_NPX_CLI_PATHS = new Set([
+  'npx vibe-log-cli',
+  'npx vibe-log-cli@latest',
+]);
+
 export interface ProjectSyncData {
   oldestSyncedTimestamp?: string;
   newestSyncedTimestamp?: string;
@@ -68,7 +74,7 @@ const config = new Conf<ConfigSchema>({
     },
     cliPath: {
       type: 'string',
-      default: 'npx vibe-log-cli',
+      default: DEFAULT_CLI_PATH,
     },
     token: {
       type: 'string',
@@ -251,7 +257,17 @@ export function getCliPath(): string {
   }
   
   // Use configured path or default to npx command
-  return config.get('cliPath') || 'npx vibe-log-cli';
+  const configuredPath = config.get('cliPath');
+  if (!configuredPath) {
+    return DEFAULT_CLI_PATH;
+  }
+
+  const normalizedPath = configuredPath.trim().replace(/\s+/g, ' ');
+  if (LEGACY_NPX_CLI_PATHS.has(normalizedPath)) {
+    return DEFAULT_CLI_PATH;
+  }
+
+  return configuredPath;
 }
 
 export function setCliPath(path: string): void {

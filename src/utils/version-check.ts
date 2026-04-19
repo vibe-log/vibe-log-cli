@@ -249,7 +249,7 @@ export async function checkForUpdate(currentVersion: string): Promise<VersionChe
 }
 
 /**
- * Spawn a process using npx vibe-log-cli@latest
+ * Spawn a process using npx -y vibe-log-cli@latest
  * This ensures we always use the latest version
  */
 export async function spawnLatestVersion(
@@ -264,7 +264,7 @@ export async function spawnLatestVersion(
 
   // Build command - use npx to get latest version
   const command = 'npx';
-  const spawnArgs = ['vibe-log-cli@latest', ...args];
+  const spawnArgs = ['-y', 'vibe-log-cli@latest', ...args];
 
   const spawnOptions: SpawnOptions = {
     detached: options?.detached || false,

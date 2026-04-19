@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.13] - 2026-04-19
+
+### Fixed
+- Fixed Codex auto-sync hooks resolving to stale global `vibe-log-cli` installs by using `npx -y vibe-log-cli@latest`.
+- Normalized legacy `npx vibe-log-cli` CLI path settings so existing configs use the latest hook-capable package.
+
 ## [0.8.12] - 2026-04-19
 
 ### Improved
