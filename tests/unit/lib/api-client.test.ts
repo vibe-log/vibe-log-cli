@@ -9,6 +9,13 @@ import { setupTestEnv, cleanupTestEnv, testData } from '../../test-utils';
 vi.mock('axios');
 vi.mock('../../../src/lib/config');
 
+function decodeUploadBody(body: any): any {
+  if (Buffer.isBuffer(body)) {
+    return JSON.parse(gunzipSync(body).toString('utf-8'));
+  }
+  return body;
+}
+
 describe('API Client Module', () => {
   let mockAxiosInstance: any;
   let apiClient: any;
@@ -447,11 +454,11 @@ describe('API Client Module', () => {
 
   describe('Batch Upload', () => {
     it('should handle large session batches', async () => {
-      // Create 25 sessions (should be split into 3 batches of 10, 10, and 5)
-      const sessions = Array.from({ length: 25 }, () => testData.createSession());
+      // Create 250 sessions (should be split into 3 batches of 100, 100, and 50)
+      const sessions = Array.from({ length: 250 }, () => testData.createSession());
 
       mockAxiosInstance.post.mockResolvedValue({
-        data: { success: true, created: 10, duplicates: 0 },
+        data: { success: true, created: 100, duplicates: 0 },
       });
 
       await apiClient.uploadSessions(sessions);
@@ -459,53 +466,57 @@ describe('API Client Module', () => {
       // Should make 3 calls for batches
       expect(mockAxiosInstance.post).toHaveBeenCalledTimes(3);
 
-      // First batch should have 10 sessions
-      expect(mockAxiosInstance.post.mock.calls[0][1].sessions).toHaveLength(10);
-      expect(mockAxiosInstance.post.mock.calls[0][1].batchNumber).toBe(1);
-      expect(mockAxiosInstance.post.mock.calls[0][1].totalBatches).toBe(3);
+      const firstPayload = decodeUploadBody(mockAxiosInstance.post.mock.calls[0][1]);
+      const secondPayload = decodeUploadBody(mockAxiosInstance.post.mock.calls[1][1]);
+      const thirdPayload = decodeUploadBody(mockAxiosInstance.post.mock.calls[2][1]);
 
-      // Second batch should have 10 sessions
-      expect(mockAxiosInstance.post.mock.calls[1][1].sessions).toHaveLength(10);
-      expect(mockAxiosInstance.post.mock.calls[1][1].batchNumber).toBe(2);
-      expect(mockAxiosInstance.post.mock.calls[1][1].totalBatches).toBe(3);
+      // First batch should have 100 sessions
+      expect(firstPayload.sessions).toHaveLength(100);
+      expect(firstPayload.batchNumber).toBe(1);
+      expect(firstPayload.totalBatches).toBe(3);
 
-      // Third batch should have the remaining 5 sessions
-      expect(mockAxiosInstance.post.mock.calls[2][1].sessions).toHaveLength(5);
-      expect(mockAxiosInstance.post.mock.calls[2][1].batchNumber).toBe(3);
-      expect(mockAxiosInstance.post.mock.calls[2][1].totalBatches).toBe(3);
+      // Second batch should have 100 sessions
+      expect(secondPayload.sessions).toHaveLength(100);
+      expect(secondPayload.batchNumber).toBe(2);
+      expect(secondPayload.totalBatches).toBe(3);
+
+      // Third batch should have the remaining 50 sessions
+      expect(thirdPayload.sessions).toHaveLength(50);
+      expect(thirdPayload.batchNumber).toBe(3);
+      expect(thirdPayload.totalBatches).toBe(3);
 
       for (const call of mockAxiosInstance.post.mock.calls) {
-        expect(call[1].sessions.length).toBeLessThanOrEqual(10);
+        expect(decodeUploadBody(call[1]).sessions.length).toBeLessThanOrEqual(100);
       }
     });
 
     it('should aggregate results from multiple batches', async () => {
-      const sessions = Array.from({ length: 25 }, () => testData.createSession());
+      const sessions = Array.from({ length: 250 }, () => testData.createSession());
 
       mockAxiosInstance.post
         .mockResolvedValueOnce({
-          data: { success: true, created: 8, duplicates: 2 },
+          data: { success: true, created: 80, duplicates: 20 },
         })
         .mockResolvedValueOnce({
-          data: { success: true, created: 7, duplicates: 3 },
+          data: { success: true, created: 75, duplicates: 25 },
         })
         .mockResolvedValueOnce({
-          data: { success: true, created: 4, duplicates: 1 },
+          data: { success: true, created: 40, duplicates: 10 },
         });
 
       const result = await apiClient.uploadSessions(sessions);
 
-      expect(result.created).toBe(19); // 8 + 7 + 4
-      expect(result.duplicates).toBe(6); // 2 + 3 + 1
-      expect(result.sessionsProcessed).toBe(25); // Total
+      expect(result.created).toBe(195); // 80 + 75 + 40
+      expect(result.duplicates).toBe(55); // 20 + 25 + 10
+      expect(result.sessionsProcessed).toBe(250); // Total
     });
 
     it('should call progress callback during batch upload', async () => {
-      const sessions = Array.from({ length: 25 }, () => testData.createSession());
+      const sessions = Array.from({ length: 250 }, () => testData.createSession());
       const progressCallback = vi.fn();
 
       mockAxiosInstance.post.mockResolvedValue({
-        data: { success: true, created: 10, duplicates: 0 },
+        data: { success: true, created: 100, duplicates: 0 },
       });
 
       await apiClient.uploadSessions(sessions, progressCallback);

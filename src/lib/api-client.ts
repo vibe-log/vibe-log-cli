@@ -404,8 +404,8 @@ class SecureApiClient {
     // Validate and sanitize sessions
     const sanitizedSessions = sessions.map(session => this.sanitizeSession(session));
 
-    // Keep upload batches small so a single request cannot overwhelm server-side processing.
-    const MAX_UPLOAD_BATCH_SIZE = 10;
+    // Keep request count low while gzip and server-side async queueing keep large uploads manageable.
+    const MAX_UPLOAD_BATCH_SIZE = 100;
     const chunks = [];
     
     for (let i = 0; i < sanitizedSessions.length; i += MAX_UPLOAD_BATCH_SIZE) {
