@@ -15,6 +15,7 @@ import { testHook, testAllHooks, displayTestResult } from '../hooks/hooks-tester
 import { showSuccess, showWarning, showError, showInfo } from '../ui';
 import { showProjectSelectorForHooks, getProjectInfo } from './project-selector-hooks';
 import { getClaudeProjectsPath } from '../claude-core';
+import { showCodexHooksManagementMenu } from './codex-hooks-menu';
 import path from 'path';
 import { sendWithTimeout } from '../../commands/send';
 import { parseProjectName } from './project-display';
@@ -24,6 +25,55 @@ import { parseProjectName } from './project-display';
  * @param guidedMode - If true, returns boolean indicating if hooks were installed
  */
 export async function showHooksManagementMenu(guidedMode: boolean = false): Promise<boolean | void> {
+  let hooksWereInstalled = false;
+
+  while (true) {
+    console.clear();
+    console.log(colors.accent('\n🔧 Auto-sync Configuration\n'));
+    console.log(colors.subdued('Choose which local coding engine should auto-sync with Vibe-Log.\n'));
+
+    const { provider } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'provider',
+        message: 'Configure auto-sync for:',
+        choices: [
+          { name: 'Claude Code hooks', value: 'claude' },
+          { name: 'Codex hooks (experimental)', value: 'codex' },
+          { name: 'Both Claude Code and Codex', value: 'both' },
+          new inquirer.Separator(),
+          { name: guidedMode ? '← Back' : 'Back to main menu', value: 'back' },
+        ],
+      },
+    ]);
+
+    if (provider === 'back') {
+      break;
+    }
+
+    if (provider === 'claude') {
+      const installed = await showClaudeHooksManagementMenu(guidedMode);
+      hooksWereInstalled = Boolean(hooksWereInstalled || installed);
+    } else if (provider === 'codex') {
+      const installed = await showCodexHooksManagementMenu(guidedMode);
+      hooksWereInstalled = Boolean(hooksWereInstalled || installed);
+    } else if (provider === 'both') {
+      const claudeInstalled = await showClaudeHooksManagementMenu(guidedMode);
+      const codexInstalled = await showCodexHooksManagementMenu(guidedMode);
+      hooksWereInstalled = Boolean(hooksWereInstalled || claudeInstalled || codexInstalled);
+    }
+
+    if (guidedMode && hooksWereInstalled) {
+      return true;
+    }
+  }
+
+  if (guidedMode) {
+    return hooksWereInstalled;
+  }
+}
+
+async function showClaudeHooksManagementMenu(guidedMode: boolean = false): Promise<boolean | void> {
   let shouldContinue = true;
   let hooksWereInstalled = false;
 
@@ -713,7 +763,7 @@ async function testHooksMenu(): Promise<void> {
       }
     }
   } else {
-    const result = await testHook(testChoice as 'sessionstart' | 'precompact', { verbose: true, record: false });
+    const result = await testHook(testChoice as 'sessionstart' | 'precompact' | 'sessionend', { verbose: true, record: false });
     displayTestResult(result);
   }
 }

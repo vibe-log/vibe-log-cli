@@ -217,16 +217,16 @@ flowchart TD
 ```
 ## Auto-Sync 
 ### What is Auto-Sync
-Claude Code Hooks allow Vibe-Log to automatically sync your Claude Code sessions. Codex sessions are supported through manual sync.
+Claude Code hooks and Codex hooks allow Vibe-Log to automatically sync local sessions in the background. Claude Code auto-sync is stable. Codex auto-sync is experimental and sync-only.
 
-What are Claude Code Hooks?
+What are hooks?
 
-  • Small commands that run at specific moments in Claude Code
+  • Small commands that run at specific moments in Claude Code or Codex
   
   • They work silently in the background (you won't notice them)
 
   
-Which hooks do we use?
+Which Claude Code hooks do we use?
 
   📍 SessionStart - Syncs previous sessions when you start/resume work
      (Triggers: startup, resume, clear commands)
@@ -240,6 +240,14 @@ Why we recommend both:
   ✓ SessionStart ensures nothing is lost between sessions
   
   ✓ PreCompact syncs everything before Claude compresses context
+
+Which Codex hooks do we use?
+
+  📍 SessionStart - Syncs recent Codex sessions when work starts
+
+  🔚 Stop - Syncs after Codex finishes responding
+
+  Codex hooks write Vibe-Log commands to Codex `hooks.json` and enable `[features].codex_hooks = true` in Codex `config.toml`. Vibe-Log does not install Codex prompt coach or statusline hooks.
     
 ### Setup Auto-sync
 1. Run `npx vibe-log-cli`
@@ -250,7 +258,7 @@ Why we recommend both:
 
 Currently supported:
 - ✅ Claude Code
-- ✅ Codex (manual cloud sync, local standups, local reports)
+- ✅ Codex (manual cloud sync, experimental auto-sync hooks, local standups, local reports)
 
 Future:
 - 🔜 Cursor

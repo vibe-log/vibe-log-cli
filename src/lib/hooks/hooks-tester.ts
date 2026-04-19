@@ -5,6 +5,7 @@ import ora from 'ora';
 import { logger } from '../../utils/logger';
 import { getCliPath } from '../config';
 import { getHooksStatus } from './hooks-controller';
+import { getCodexHooksStatus } from './codex-hooks-provider';
 import { recordHookExecution } from './hooks-stats';
 
 const execAsync = promisify(exec);
@@ -13,13 +14,16 @@ const execAsync = promisify(exec);
  * Test result for a single hook
  */
 export interface HookTestResult {
-  hookType: 'sessionstart' | 'precompact' | 'sessionend';
+  hookType: 'sessionstart' | 'precompact' | 'sessionend' | 'codex-sessionstart' | 'codex-stop';
   success: boolean;
   duration: number;
   output?: string;
   error?: string;
   steps: TestStep[];
 }
+
+type ClaudeHookTestType = 'sessionstart' | 'precompact' | 'sessionend';
+type CodexHookTestType = 'codex-sessionstart' | 'codex-stop';
 
 /**
  * Individual test step
@@ -35,7 +39,7 @@ export interface TestStep {
  * Test a specific hook
  */
 export async function testHook(
-  hookType: 'sessionstart' | 'precompact' | 'sessionend',
+  hookType: ClaudeHookTestType,
   options: { verbose?: boolean; record?: boolean } = {}
 ): Promise<HookTestResult> {
   const startTime = Date.now();
@@ -225,6 +229,169 @@ export async function testHook(
 }
 
 /**
+ * Test a specific Codex hook.
+ */
+export async function testCodexHook(
+  hookType: CodexHookTestType,
+  options: { verbose?: boolean; record?: boolean } = {}
+): Promise<HookTestResult> {
+  const startTime = Date.now();
+  const steps: TestStep[] = [];
+  const spinner = options.verbose ? null : ora(`Testing ${hookType} hook...`).start();
+
+  try {
+    const stepStart = Date.now();
+    const status = await getCodexHooksStatus();
+    const hookStatus = hookType === 'codex-sessionstart' ? status.sessionStartHook : status.stopHook;
+
+    if (status.unsupported) {
+      steps.push({
+        name: 'Check platform support',
+        success: false,
+        message: status.unsupportedReason,
+        duration: Date.now() - stepStart,
+      });
+
+      if (spinner) spinner.fail(status.unsupportedReason || 'Codex hooks unsupported');
+
+      return {
+        hookType,
+        success: false,
+        duration: Date.now() - startTime,
+        error: status.unsupportedReason || 'Codex hooks unsupported',
+        steps,
+      };
+    }
+
+    if (!hookStatus.installed) {
+      steps.push({
+        name: 'Check installation',
+        success: false,
+        message: 'Hook not installed',
+        duration: Date.now() - stepStart,
+      });
+
+      if (spinner) spinner.fail(`${hookType} hook not installed`);
+
+      return {
+        hookType,
+        success: false,
+        duration: Date.now() - startTime,
+        error: 'Hook not installed',
+        steps,
+      };
+    }
+
+    steps.push({
+      name: 'Check installation',
+      success: true,
+      message: `Hook found (v${hookStatus.version})`,
+      duration: Date.now() - stepStart,
+    });
+
+    const cliStepStart = Date.now();
+    const cliPath = getCliPath();
+
+    try {
+      await execAsync(`${cliPath} --version`, { timeout: 5000 });
+      steps.push({
+        name: 'Validate CLI path',
+        success: true,
+        message: `CLI found at ${cliPath}`,
+        duration: Date.now() - cliStepStart,
+      });
+    } catch (error) {
+      steps.push({
+        name: 'Validate CLI path',
+        success: false,
+        message: `CLI not found at ${cliPath}`,
+        duration: Date.now() - cliStepStart,
+      });
+
+      if (spinner) spinner.fail('CLI path validation failed');
+
+      return {
+        hookType,
+        success: false,
+        duration: Date.now() - startTime,
+        error: 'CLI path not valid',
+        steps,
+      };
+    }
+
+    const execStepStart = Date.now();
+    const testCommand = `${cliPath} send --dry --silent --source=codex --hook-trigger=${hookType} --test`;
+
+    if (options.verbose) {
+      console.log(chalk.gray(`Executing: ${testCommand}`));
+    }
+
+    try {
+      const { stdout, stderr } = await execAsync(testCommand, {
+        timeout: 30000,
+        env: { ...process.env },
+      });
+
+      steps.push({
+        name: 'Execute hook command',
+        success: true,
+        message: 'Command executed successfully',
+        duration: Date.now() - execStepStart,
+      });
+
+      const output = stdout || stderr || '';
+      steps.push({
+        name: 'Validate output',
+        success: output.length > 0 || output.toLowerCase().includes('dry run'),
+        message: output.length > 0 ? 'Output validated' : 'No output received',
+        duration: Date.now() - execStepStart,
+      });
+
+      const duration = Date.now() - startTime;
+      if (spinner) spinner.succeed(`${hookType} hook test completed (${(duration / 1000).toFixed(1)}s)`);
+
+      return {
+        hookType,
+        success: true,
+        duration,
+        output: options.verbose ? output : undefined,
+        steps,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      steps.push({
+        name: 'Execute hook command',
+        success: false,
+        message: errorMessage,
+        duration: Date.now() - execStepStart,
+      });
+
+      if (spinner) spinner.fail(`${hookType} hook test failed`);
+
+      return {
+        hookType,
+        success: false,
+        duration: Date.now() - startTime,
+        error: errorMessage,
+        steps,
+      };
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+    if (spinner) spinner.fail(`${hookType} hook test failed`);
+
+    return {
+      hookType,
+      success: false,
+      duration: Date.now() - startTime,
+      error: errorMessage,
+      steps,
+    };
+  }
+}
+
+/**
  * Test all installed hooks
  */
 export async function testAllHooks(
@@ -281,13 +448,52 @@ export async function testAllHooks(
   return results;
 }
 
+export async function testAllCodexHooks(
+  options: { verbose?: boolean; record?: boolean } = {}
+): Promise<HookTestResult[]> {
+  const results: HookTestResult[] = [];
+  const status = await getCodexHooksStatus();
+
+  if (status.sessionStartHook.installed) {
+    if (options.verbose) {
+      console.log(chalk.cyan('\nTesting Codex SessionStart Hook...'));
+    }
+    const result = await testCodexHook('codex-sessionstart', options);
+    results.push(result);
+
+    if (options.verbose) {
+      displayTestResult(result);
+    }
+  }
+
+  if (status.stopHook.installed) {
+    if (options.verbose) {
+      console.log(chalk.cyan('\nTesting Codex Stop Hook...'));
+    }
+    const result = await testCodexHook('codex-stop', options);
+    results.push(result);
+
+    if (options.verbose) {
+      displayTestResult(result);
+    }
+  }
+
+  if (results.length === 0 && options.verbose) {
+    console.log(chalk.yellow('No Codex hooks installed to test'));
+  }
+
+  return results;
+}
+
 /**
  * Display a test result with formatting
  */
 export function displayTestResult(result: HookTestResult): void {
   const hookName = result.hookType === 'sessionstart' ? 'SessionStart Hook' :
                    result.hookType === 'precompact' ? 'PreCompact Hook' :
-                   'SessionEnd Hook';
+                   result.hookType === 'sessionend' ? 'SessionEnd Hook' :
+                   result.hookType === 'codex-sessionstart' ? 'Codex SessionStart Hook' :
+                   'Codex Stop Hook';
   
   console.log('');
   if (result.success) {

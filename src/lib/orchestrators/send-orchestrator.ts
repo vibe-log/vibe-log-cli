@@ -192,6 +192,19 @@ export class SendOrchestrator {
   }
 
   private determineSinceDate(options: SendOptions): Date | undefined {
+    const source = this.resolveSyncSource(options.source);
+
+    if (source === 'codex' && this.isCodexHookTrigger(options.hookTrigger)) {
+      const projectSync = getProjectSyncData(this.getCodexHookSyncKey());
+
+      if (projectSync?.newestSyncedTimestamp) {
+        return new Date(projectSync.newestSyncedTimestamp);
+      }
+
+      // First Codex hook sync - default to the last 30 days.
+      return new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    }
+
     if (options.hookTrigger && options.claudeProjectDir) {
       const claudeFolderName = parseProjectName(options.claudeProjectDir);
       const projectSync = getProjectSyncData(claudeFolderName);
@@ -206,6 +219,14 @@ export class SendOrchestrator {
 
     // Manual sync - no date filter
     return undefined;
+  }
+
+  private isCodexHookTrigger(hookTrigger?: string): boolean {
+    return hookTrigger === 'codex-sessionstart' || hookTrigger === 'codex-stop';
+  }
+
+  private getCodexHookSyncKey(projectPath: string = process.cwd()): string {
+    return `codex:${path.normalize(projectPath)}`;
   }
 
   private async loadProjectSessions(claudeProjectDir: string, sinceDate?: Date): Promise<SessionData[]> {
@@ -467,7 +488,20 @@ export class SendOrchestrator {
     const newestSession = sortedSessions[sortedSessions.length - 1];
     
     if (source === 'codex') {
-      if (options.all) {
+      if (this.isCodexHookTrigger(options.hookTrigger)) {
+        const projectPath = path.normalize(process.cwd());
+        const projectName = parseProjectName(projectPath);
+
+        updateProjectSyncBoundaries(
+          this.getCodexHookSyncKey(projectPath),
+          oldestSession.timestamp.toISOString(),
+          newestSession.timestamp.toISOString(),
+          projectName,
+          sessions.length
+        );
+
+        setLastSyncSummary(`${projectName} Codex sessions`);
+      } else if (options.all) {
         setLastSyncSummary('all Codex projects');
       } else if (options.projectPaths && options.projectPaths.length > 0) {
         setLastSyncSummary(`${options.projectPaths.length} Codex project${options.projectPaths.length === 1 ? '' : 's'}`);

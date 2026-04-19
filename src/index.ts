@@ -182,7 +182,7 @@ program.addCommand(createTestPersonalityCommand());
 // Add install-auto-sync command for direct access to auto-sync configuration
 program
   .command('install-auto-sync')
-  .description('Configure automatic session sync (Claude Code hooks)')
+  .description('Configure automatic session sync (Claude Code or Codex hooks)')
   .action(async () => {
     try {
       await installAutoSync();
@@ -209,7 +209,8 @@ function showHelp(): void {
   console.log('  npx vibe-log-cli privacy            Preview what data gets sent (privacy first!)');
   console.log('');
   console.log('For hooks (automatic sync):');
-  console.log('  npx vibe-log-cli send --silent    Used by Claude Code hooks');
+  console.log('  npx vibe-log-cli send --silent                 Used by Claude Code hooks');
+  console.log('  npx vibe-log-cli send --source codex --silent  Used by Codex hooks');
   console.log('');
   console.log('Learn more at: https://vibe-log.dev');
   console.log('');

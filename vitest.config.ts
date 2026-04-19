@@ -9,6 +9,12 @@ export default defineConfig({
     testTimeout: 10000,
     coverage: {
       reporter: ['text', 'json', 'json-summary', 'html'],
+      thresholds: {
+        lines: 68,
+        statements: 68,
+        functions: 70,
+        branches: 80,
+      },
       exclude: [
         // Default exclusions
         'node_modules/',

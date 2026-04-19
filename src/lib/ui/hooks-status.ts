@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import { colors, box } from './styles';
 import { getHooksStatus, checkForHookUpdates } from '../hooks/hooks-controller';
+import { getCodexHooksStatus } from '../hooks/codex-hooks-provider';
 import { loadHookStats, formatDuration, formatRelativeTime, getTopProjects } from '../hooks/hooks-stats';
 import { validateHookCommands } from '../hooks-manager';
 
@@ -12,8 +13,10 @@ export async function showHooksStatus(): Promise<void> {
   
   // Get all status information
   const status = await getHooksStatus();
+  const codexStatus = await getCodexHooksStatus();
   const stats = await loadHookStats();
-  const validation = await validateHookCommands();
+  const hasClaudeHooks = status.sessionStartHook.installed || status.preCompactHook.installed || status.sessionEndHook.installed;
+  const validation = hasClaudeHooks ? await validateHookCommands() : { valid: true, errors: [] };
   const updateCheck = await checkForHookUpdates();
   const topProjects = await getTopProjects(5);
   
@@ -32,8 +35,21 @@ export async function showHooksStatus(): Promise<void> {
   );
   console.log(colors.primary(box.doubleTLeft + box.doubleHorizontal.repeat(width - 2) + box.doubleTRight));
   
-  // SessionStart Hook Section
+  // Claude Code hook sections
   console.log(colors.primary(box.doubleVertical) + ' '.repeat(width - 2) + colors.primary(box.doubleVertical));
+  console.log(
+    colors.primary(box.doubleVertical) +
+    colors.accent('  Claude Code Hooks') +
+    ' '.repeat(width - 22) +
+    colors.primary(box.doubleVertical)
+  );
+  console.log(
+    colors.primary(box.doubleVertical) +
+    colors.dim('  ─────────────────') +
+    ' '.repeat(width - 21) +
+    colors.primary(box.doubleVertical)
+  );
+
   console.log(
     colors.primary(box.doubleVertical) +
     colors.accent('  🚀 SessionStart Hook') +
@@ -65,6 +81,24 @@ export async function showHooksStatus(): Promise<void> {
   );
   
   displayHookDetails(status.preCompactHook, stats.preCompactHook, 'precompact', width);
+
+  // Codex Hook Section
+  console.log(colors.primary(box.doubleVertical) + ' '.repeat(width - 2) + colors.primary(box.doubleVertical));
+  console.log(
+    colors.primary(box.doubleVertical) +
+    colors.accent('  Codex Hooks (Experimental)') +
+    ' '.repeat(width - 30) +
+    colors.primary(box.doubleVertical)
+  );
+  console.log(
+    colors.primary(box.doubleVertical) +
+    colors.dim('  ───────────────────────────') +
+    ' '.repeat(width - 31) +
+    colors.primary(box.doubleVertical)
+  );
+
+  displayHookDetails(codexStatus.sessionStartHook, { totalExecutions: 0 }, 'codex-sessionstart', width);
+  displayHookDetails(codexStatus.stopHook, { totalExecutions: 0 }, 'codex-stop', width);
   
   // System Information Section
   console.log(colors.primary(box.doubleVertical) + ' '.repeat(width - 2) + colors.primary(box.doubleVertical));

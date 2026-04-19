@@ -55,6 +55,7 @@ describe('SendOrchestrator', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     // Restore original cwd
     Object.defineProperty(process, 'cwd', {
       value: () => originalCwd,
@@ -913,6 +914,76 @@ describe('SendOrchestrator', () => {
         [],
         undefined,
         'manual-upload-codex'
+      );
+    });
+
+    it('uses Codex hook sync boundary by normalized cwd', async () => {
+      const newest = new Date('2026-04-18T10:00:00.000Z');
+      mockGetProjectSyncData.mockReturnValue({
+        newestSyncedTimestamp: newest.toISOString(),
+        oldestSyncedTimestamp: new Date('2026-04-17T10:00:00.000Z').toISOString(),
+        lastSyncTime: new Date('2026-04-18T10:05:00.000Z').toISOString(),
+        projectName: 'my-app',
+        sessionCount: 2,
+      });
+      mockReadCodexSessions.mockResolvedValue([codexSession]);
+
+      const sessions = await orchestrator.loadSessions({
+        source: 'codex',
+        hookTrigger: 'codex-stop',
+      });
+
+      expect(sessions).toEqual([codexSession]);
+      expect(mockGetProjectSyncData).toHaveBeenCalledWith('codex:/home/user/projects/my-app');
+      expect(mockReadCodexSessions).toHaveBeenCalledWith({ since: newest });
+    });
+
+    it('defaults first Codex hook sync to last 30 days', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-04-19T00:00:00.000Z'));
+      mockGetProjectSyncData.mockReturnValue(undefined);
+      mockReadCodexSessions.mockResolvedValue([codexSession]);
+
+      const sessions = await orchestrator.loadSessions({
+        source: 'codex',
+        hookTrigger: 'codex-sessionstart',
+      });
+
+      expect(sessions).toEqual([codexSession]);
+      expect(mockGetProjectSyncData).toHaveBeenCalledWith('codex:/home/user/projects/my-app');
+      expect(mockReadCodexSessions).toHaveBeenCalledWith({
+        since: new Date('2026-03-20T00:00:00.000Z'),
+      });
+
+      vi.useRealTimers();
+    });
+
+    it('updates Codex hook sync boundaries by cwd', async () => {
+      await orchestrator.updateSyncState([codexSession], {
+        source: 'codex',
+        hookTrigger: 'codex-stop',
+      });
+
+      expect(mockUpdateProjectSyncBoundaries).toHaveBeenCalledWith(
+        'codex:/home/user/projects/my-app',
+        '2026-04-18T09:00:00.000Z',
+        '2026-04-18T09:00:00.000Z',
+        'my-app',
+        1
+      );
+      expect(mockSetLastSyncSummary).toHaveBeenCalledWith('my-app Codex sessions');
+    });
+
+    it('passes Codex hook origin to the API client', async () => {
+      await orchestrator.uploadSessions([], {
+        source: 'codex',
+        hookTrigger: 'codex-sessionstart',
+      });
+
+      expect(mockApiClient.uploadSessions).toHaveBeenCalledWith(
+        [],
+        undefined,
+        'hook-codex-sessionstart'
       );
     });
   });

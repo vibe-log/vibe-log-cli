@@ -11,6 +11,15 @@ import {
   getTrackedProjects as getTrackedProjectsFromReader,
   ClaudeSettings
 } from '../claude-settings-reader';
+import {
+  appendHookConfiguration as appendProviderHookConfiguration,
+  buildProviderHookCommand,
+  HookCommandSource,
+  isVibeLogCommand,
+  removeVibeLogHooks
+} from './hook-provider-utils';
+
+export { isVibeLogCommand } from './hook-provider-utils';
 
 /**
  * Hook selection configuration
@@ -76,15 +85,6 @@ const HOOK_MATCHERS = {
   PreCompact: 'auto',             // Only automatic compression (not manual)
   SessionEnd: 'clear|logout|prompt_input_exit|other'  // Capture on session end events
 } as const;
-
-/**
- * Check if a command is a vibe-log hook command
- * Matches both 'vibe-log' and '@vibe-log' patterns
- */
-export function isVibeLogCommand(command: string | undefined): boolean {
-  if (!command) return false;
-  return command.includes('vibe-log') || command.includes('@vibe-log');
-}
 
 /**
  * Read Claude settings (delegate to claude-settings-reader)
@@ -186,20 +186,18 @@ export function buildHookCommand(
   cliPath: string,
   hookTrigger: 'sessionstart' | 'precompact' | 'sessionend',
   mode?: 'all' | 'selected',
-  source?: 'claude' | 'cursor'
+  source?: HookCommandSource
 ): string {
   // Keep using --hook-trigger for backwards compatibility with existing installed hooks
   // The mapping to origin happens in index.ts action handler
-
-  const sourceFlag = source ? ` --source=${source}` : '';
-
-  // For global mode (track all), use --all flag instead of --claude-project-dir
-  if (mode === 'all') {
-    return `${cliPath} send --silent --background --hook-trigger=${hookTrigger}${sourceFlag} --hook-version=${HOOKS_VERSION} --all`;
-  }
-
-  // For selected mode or backward compatibility, use --claude-project-dir
-  return `${cliPath} send --silent --background --hook-trigger=${hookTrigger}${sourceFlag} --hook-version=${HOOKS_VERSION} --claude-project-dir="$CLAUDE_PROJECT_DIR"`;
+  return buildProviderHookCommand({
+    cliPath,
+    hookTrigger,
+    hookVersion: HOOKS_VERSION,
+    source,
+    mode,
+    selectedProjectFlag: '--claude-project-dir="$CLAUDE_PROJECT_DIR"',
+  });
 }
 
 /**
@@ -256,47 +254,7 @@ function appendHookConfiguration(
                       hookType === 'PreCompact' ? 'precompact' : 'sessionend';
   const command = buildHookCommand(cliPath, triggerType, mode);
   const matcher = HOOK_MATCHERS[hookType];
-
-  // Ensure hooks object exists
-  if (!settings.hooks) {
-    settings.hooks = {};
-  }
-
-  // Ensure hook structure exists
-  if (!settings.hooks[hookType]) {
-    settings.hooks[hookType] = [];
-  }
-
-  // Check if vibe-log hook already exists (prevent duplicates)
-  const existingHooks = settings.hooks[hookType];
-  if (existingHooks) {
-    for (const config of existingHooks) {
-      for (const hook of config.hooks || []) {
-        if (isVibeLogCommand(hook.command) && hook.command.includes(`--hook-trigger=${triggerType}`)) {
-          logger.debug(`${hookType} vibe-log hook already exists, skipping`);
-          return;
-        }
-      }
-    }
-  }
-
-  // Check if there's already a config with hooks array
-  if (existingHooks && existingHooks.length > 0 && existingHooks[0].hooks) {
-    // Append to existing hooks array - PRESERVES EXISTING HOOKS
-    existingHooks[0].hooks.push({
-      type: 'command',
-      command: command
-    });
-  } else if (existingHooks) {
-    // Create new config with hooks array
-    existingHooks.push({
-      matcher: matcher,
-      hooks: [{
-        type: 'command',
-        command: command
-      }]
-    });
-  }
+  appendProviderHookConfiguration(settings, hookType, matcher, command, triggerType);
 }
 
 /**
@@ -306,38 +264,7 @@ function removeVibeLogHook(
   settings: ClaudeSettings,
   hookType: 'SessionStart' | 'PreCompact' | 'SessionEnd'
 ): number {
-  if (!settings.hooks || !settings.hooks[hookType]) {
-    return 0;
-  }
-
-  const existingHooks = settings.hooks[hookType];
-  if (!existingHooks) {
-    return 0;
-  }
-
-  // Count total hooks before filtering
-  const totalBefore = existingHooks.reduce((sum: number, config: HookConfigWithMatcher) => sum + config.hooks.length, 0);
-
-  // Filter out vibe-log commands while preserving other hooks
-  const filteredConfigs = existingHooks
-    .map((config: HookConfigWithMatcher) => ({
-      ...config,
-      hooks: config.hooks.filter((hook: HookConfig) => !isVibeLogCommand(hook.command))
-    }))
-    .filter((config: HookConfigWithMatcher) => config.hooks.length > 0);
-
-  // Count total hooks after filtering
-  const totalAfter = filteredConfigs.reduce((sum: number, config: HookConfigWithMatcher) => sum + config.hooks.length, 0);
-
-  if (filteredConfigs.length > 0) {
-    settings.hooks[hookType] = filteredConfigs;
-  } else {
-    // No hooks left, delete the hook type
-    delete settings.hooks[hookType];
-  }
-
-  // Return number of removed hooks
-  return totalBefore - totalAfter;
+  return removeVibeLogHooks(settings, hookType);
 }
 
 /**
