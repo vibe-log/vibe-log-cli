@@ -22,6 +22,21 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Verify release ref is current origin/main
+        run: |
+          git fetch --no-tags --depth=1 origin main
+          RELEASE_SHA=$(git rev-parse HEAD)
+          MAIN_SHA=$(git rev-parse refs/remotes/origin/main)
+
+          echo "Release commit SHA: $RELEASE_SHA"
+          echo "origin/main SHA: $MAIN_SHA"
+
+          if [ "$RELEASE_SHA" != "$MAIN_SHA" ]; then
+            echo "Error: releases must be tagged from the current origin/main commit."
+            echo "Merge and push all release code to main first, then create/push the version tag."
+            exit 1
+          fi
         
       - name: Setup Node.js
         uses: actions/setup-node@v4
