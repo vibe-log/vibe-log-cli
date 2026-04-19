@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.14] - 2026-04-20
+
+### Added
+- Added experimental Codex auto-sync hook installation, status, and test flows.
+- Added Codex session sync boundaries so hook-triggered uploads avoid duplicate processing per project.
+
+### Improved
+- Tightened the GitHub Actions npm release workflow so version tags must point at the current `origin/main` commit.
+- Updated the release setup guide to require clean, pushed `main` before version commits and tags.
+
 ## [0.8.13] - 2026-04-19
 
 ### Fixed
