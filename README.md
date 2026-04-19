@@ -5,7 +5,7 @@
 
 
 <p></p>
-<h3>Open-source CLI for analyzing Claude Code sessions locally and generating productivity reports</h3>
+<h3>Open-source CLI for analyzing Claude Code and Codex sessions locally and generating productivity reports</h3>
 <p></p>
 
 <a href="https://vibe-log.dev"><img src="https://img.shields.io/badge/by-vibe--log.dev-16A34A" alt="by vibe-log.dev"></a>
@@ -34,7 +34,7 @@
 
 ## What is Vibe-Log?
 
-Vibe-log-cli is an open-source command-line tool that analyzes your Claude Code sessions to extract productivity insights and generate reports. All analyses can run completely locally on your machine using Claude Code's capabilities. It also encompasses a statusline that help you get more from your sessions.  
+Vibe-log-cli is an open-source command-line tool that analyzes your Claude Code and Codex sessions to extract productivity insights and generate reports. All analyses can run completely locally on your machine using your local AI coding tool through ACP. It also includes a Claude Code statusline that helps you get more from your sessions.  
 
 ## Getting Started fast
 Just run: 
@@ -49,8 +49,8 @@ New: Be prepared in 2-3 minutes for your daily standup meeting!
 <img width="1270" height="512" alt="Screenshot 2025-10-02 163102" src="https://github.com/user-attachments/assets/b0e2bd55-618e-4b9e-b1c0-f2d7069e76aa" />
 
 
-### 2. 📊 Claude Code Productivity Report Generation (Local) 
-Generate comprehensive productivity reports using Claude Code's sub-agents to analyze your sessions in parallel. No data leaves your machine.
+### 2. 📊 Claude Code and Codex Productivity Report Generation (Local) 
+Generate comprehensive productivity reports from Claude Code and Codex sessions using your local AI coding setup. No data leaves your machine.
 See example of locally generated report here: https://vibe-log.dev/example-daily-report
 <img width="869" height="968" alt="image" src="https://github.com/user-attachments/assets/8712e0ed-101d-4ba4-a243-8790ea409a5c" />
 
@@ -64,7 +64,7 @@ Strategic product advisor in Claude Code. Your prompts are analyzed locally (via
 
 ### What's New in v0.7.x
 #### Today's Standup ✨
-Get a personalized standup summary of your recent claude coding activity right from your terminal. Runs 100% locally using your own Claude Code installation 
+Get a personalized standup summary of your recent Claude Code and Codex activity right from your terminal. Runs 100% locally using your own AI coding setup.
 The standup feature analyzes your recent sessions and generates a concise summary of:
 * What you worked on
 * Key accomplishments
@@ -159,16 +159,16 @@ flowchart LR
 
 ## Local Report Generation Works
 
-Generate comprehensive productivity reports using Claude Code's sub-agents to analyze your sessions in parallel. No data leaves your machine.
-- Select timefrema
+Generate comprehensive productivity reports from Claude Code and Codex sessions. No data leaves your machine.
+- Select timeframe
 - Select projects
   
 ```mermaid
 flowchart TD
-    Start([📝 Claude Code Sessions]) --> Select[vibe-log-cli select time frame and projects]
+    Start([📝 Claude Code and Codex Sessions]) --> Select[vibe-log-cli select time frame and projects]
     Select --> Extract[Extracts & prepares session data]
-    Extract --> Launch[Launches Claude with instructions]
-    Launch --> Parallel{Parallel sub-agents<br/> session analysis}
+    Extract --> Launch[Launches local ACP analysis]
+    Launch --> Parallel{Session analysis}
     Parallel --> Gather[Gathers results &<br/>Generates report]
     Gather --> Output[📊 HTML Report in current folder]    
     style Start fill:#e1f5fe
@@ -193,7 +193,7 @@ Optionally sync your sanitized session data to the vibe-log dashboard for advanc
 ```mermaid
 flowchart TD
     subgraph Local ["🏠 Your Machine"]
-        Sessions[Claude Code Sessions] --> Select[Select sessions]
+        Sessions[Claude Code and Codex Sessions] --> Select[Select sessions]
         Select --> Privacy[🔒 Privacy Layer<br/>Removes code & secrets<br/>Keeps only patterns]
     end
     
@@ -217,7 +217,7 @@ flowchart TD
 ```
 ## Auto-Sync 
 ### What is Auto-Sync
-Claude Code Hooks allow Vibe-Log to automatically sync your Claude Code sessions.
+Claude Code Hooks allow Vibe-Log to automatically sync your Claude Code sessions. Codex sessions are supported through manual sync.
 
 What are Claude Code Hooks?
 
@@ -250,7 +250,7 @@ Why we recommend both:
 
 Currently supported:
 - ✅ Claude Code
-- ✅ Codex (manual cloud sync)
+- ✅ Codex (manual cloud sync, local standups, local reports)
 
 Future:
 - 🔜 Cursor
@@ -314,8 +314,9 @@ Try the following:
 - Re-authenticate via the CLI 
 
 ### No Sessions Found
-- Make sure Claude Code is installed
-- Check that you've used Claude Code recently
+- Make sure Claude Code or Codex is installed
+- Check that you've used Claude Code or Codex recently
+- For Codex cloud sync, use `send --source codex` or choose Codex from the manual sync menu
 
 ### Sessions Stuck in Analyzing
 - Please open a Github issue.
