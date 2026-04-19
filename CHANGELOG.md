@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.10] - 2026-04-19
+
+### Improved
+- Session uploads now gzip large payloads before sending them to the API.
+- Increased CLI upload batches to 100 sessions per request now that server-side analysis queueing is asynchronous.
+- Removed the artificial delay between successful upload batches.
+
 ## [0.8.9] - 2026-04-19
 
 ### Fixed
