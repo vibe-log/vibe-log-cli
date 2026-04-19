@@ -1,4 +1,5 @@
 import { executeClaude, ClaudeStreamEvent, ClaudeExecutorOptions } from '../utils/claude-executor';
+import { getLocalAgentProviderDisplayName, type LocalAgentProviderId } from '../utils/acp-executor';
 import { ReportGenerator } from './report-generator';
 import { colors, icons } from './ui/styles';
 import { Spinner } from './ui/progress';
@@ -31,12 +32,13 @@ export async function executeClaudePrompt(
   options?: {
     systemPrompt?: string;
     cwd?: string;
-    claudePath?: string;
+    provider?: LocalAgentProviderId;
     onStart?: () => void;
     onError?: (error: Error) => void;
     onComplete?: (code: number) => void;
   }
 ): Promise<void> {
+  const providerName = getLocalAgentProviderDisplayName(options?.provider);
   const reportGenerator = new ReportGenerator();
   let spinner: Spinner | null = null;
   let spinnerInterval: NodeJS.Timeout | null = null;
@@ -46,7 +48,7 @@ export async function executeClaudePrompt(
 
   console.log(colors.muted(`Prompt length: ${prompt.length} characters`));
   console.log();
-  console.log(colors.accent('Starting Claude analysis...'));
+  console.log(colors.accent(`Starting ${providerName} analysis via ACP...`));
   console.log(colors.muted('This will take approximately 4-5 minutes.'));
   console.log();
   console.log(colors.highlight('━'.repeat(60)));
@@ -59,7 +61,7 @@ export async function executeClaudePrompt(
     switch (event.type) {
       case 'system':
         if (event.subtype === 'init') {
-          console.log(colors.dim(formatTimestamp(now)) + ' ' + colors.muted('Claude is initializing...'));
+          console.log(colors.dim(formatTimestamp(now)) + ' ' + colors.muted(`${providerName} is initializing...`));
           
           // Start spinner on a new line
           spinner = new Spinner('dots2', 'Processing...', colors.primary);
@@ -129,7 +131,7 @@ export async function executeClaudePrompt(
               }
               
               if (!hasShownThinking) {
-                console.log(timeInfo + ' ' + colors.muted('Claude is responding...'));
+                console.log(timeInfo + ' ' + colors.muted(`${providerName} is responding...`));
                 hasShownThinking = true;
               }
               
@@ -231,7 +233,7 @@ export async function executeClaudePrompt(
         if (spinnerInterval) {
           process.stdout.write('\r' + ' '.repeat(80) + '\r');
         }
-        console.log(colors.dim(formatTimestamp(now)) + ' ' + colors.muted('Claude is starting...'));
+        console.log(colors.dim(formatTimestamp(now)) + ' ' + colors.muted(`${providerName} is starting...`));
         if (spinnerInterval && spinner) {
           process.stdout.write(spinner.next() + '   ');
         }
@@ -242,7 +244,7 @@ export async function executeClaudePrompt(
           if (spinnerInterval) {
             process.stdout.write('\r' + ' '.repeat(80) + '\r');
           }
-          console.log(colors.dim(formatTimestamp(now)) + ' ' + colors.muted('Claude is thinking...'));
+          console.log(colors.dim(formatTimestamp(now)) + ' ' + colors.muted(`${providerName} is thinking...`));
           hasShownThinking = true;
           if (spinnerInterval && spinner) {
             process.stdout.write(spinner.next() + '   ');
@@ -298,7 +300,7 @@ export async function executeClaudePrompt(
   const claudeOptions: ClaudeExecutorOptions = {
     systemPrompt: options?.systemPrompt,
     cwd: options?.cwd,
-    claudePath: options?.claudePath,
+    provider: options?.provider,
     onStreamEvent: handleStreamEvent,
     onStart: options?.onStart,
     onError: options?.onError,

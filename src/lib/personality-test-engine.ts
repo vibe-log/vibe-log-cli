@@ -46,7 +46,7 @@ function getScoreEmoji(score: number): string {
 
 
 /**
- * Run personality test with real Claude SDK calls
+ * Run personality test with real ACP provider calls
  * This is the single source of truth for testing personalities
  */
 export async function runPersonalityTest(
@@ -71,7 +71,7 @@ export async function runPersonalityTest(
         onProgress(`Analyzing: "${testPrompt.text.substring(0, 50)}..."`);
       }
       
-      // Get real analysis from Claude
+      // Get real analysis from the configured local ACP provider
       const analysis: PromptAnalysis = await analyzer.analyze(testPrompt.text, {
         verbose,
         timeout: 15000 // 15 second timeout

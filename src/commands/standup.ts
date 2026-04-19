@@ -4,9 +4,15 @@ import { createSpinner } from '../lib/ui';
 import { VibelogError } from '../utils/errors';
 import { logger } from '../utils/logger';
 import { readClaudeSessions } from '../lib/readers/claude';
+import { readCodexSessions } from '../lib/readers/codex';
 import { isClaudeTempProject } from '../lib/temp-directories';
 import { SessionData } from '../lib/readers/types';
-import { executeClaude, checkClaudeInstalled } from '../utils/claude-executor';
+import { executeClaude } from '../utils/claude-executor';
+import {
+  checkLocalAgentInstalled,
+  getConfiguredLocalAgentProvider,
+  type LocalAgentProviderId,
+} from '../utils/acp-executor';
 import { extractProjectName } from '../lib/claude-project-parser';
 import {
   getYesterdayWorkingDay,
@@ -34,39 +40,94 @@ interface StandupData {
   blockers?: string[];
 }
 
+function localDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+async function readStandupSessions(since: Date): Promise<SessionData[]> {
+  const sessions: SessionData[] = [];
+
+  try {
+    sessions.push(...await readClaudeSessions({ since }));
+  } catch (error) {
+    logger.debug(`Could not read Claude Code sessions for standup: ${error}`);
+  }
+
+  try {
+    sessions.push(...await readCodexSessions({ since }));
+  } catch (error) {
+    logger.debug(`Could not read Codex sessions for standup: ${error}`);
+  }
+
+  return sessions
+    .filter(session => !isClaudeTempProject(session.projectPath))
+    .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+}
+
+function countSessionsBySource(sessions: SessionData[]): { claude: number; codex: number } {
+  return sessions.reduce((counts, session) => {
+    if (session.source === 'codex' || session.tool === 'codex') {
+      counts.codex++;
+    } else {
+      counts.claude++;
+    }
+    return counts;
+  }, { claude: 0, codex: 0 });
+}
+
+function formatSourceCounts(sessions: SessionData[]): string {
+  const counts = countSessionsBySource(sessions);
+  const parts: string[] = [];
+  if (counts.claude > 0) parts.push(`${counts.claude} Claude Code`);
+  if (counts.codex > 0) parts.push(`${counts.codex} Codex`);
+  return parts.join(', ');
+}
+
+function chooseStandupProvider(targetSessions: SessionData[]): LocalAgentProviderId {
+  const explicitProvider = process.env.VIBELOG_LOCAL_AGENT_PROVIDER || process.env.VIBELOG_AGENT_PROVIDER;
+  if (explicitProvider) {
+    return getConfiguredLocalAgentProvider();
+  }
+
+  const counts = countSessionsBySource(targetSessions);
+  if (counts.codex > 0) {
+    return 'codex';
+  }
+
+  return 'claude';
+}
+
 export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
   // Skip auth check if explicitly requested (for first-time onboarding)
   if (!options?.skipAuth) {
     await requireAuth();
   }
 
-  const spinner = createSpinner('Reading your local Claude Code sessions...').start();
+  const spinner = createSpinner('Reading your local Claude Code and Codex sessions...').start();
 
   try {
-    logger.debug('Starting Claude-powered standup generation...');
+    logger.debug('Starting local ACP-powered standup generation...');
 
-    // Read local Claude sessions for the last 3 days (relevant for standup)
+    // Read local supported sessions for the last 3 days (relevant for standup)
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 3);
 
     logger.debug(`Reading sessions from ${startDate.toISOString()} to ${endDate.toISOString()}`);
-    const claudeSessions = await readClaudeSessions({ since: startDate });
-
-    // Filter out temp projects used for automated analysis (like standup itself)
-    const filteredSessions = claudeSessions?.filter(s =>
-      !isClaudeTempProject(s.projectPath)
-    ) || [];
+    const filteredSessions = await readStandupSessions(startDate);
 
     if (!filteredSessions || filteredSessions.length === 0) {
       spinner.fail('No sessions found');
-      console.log(chalk.yellow('\nNo Claude Code sessions found in the last 3 days.'));
-      console.log(chalk.gray('Start coding with Claude Code and then run this command again!'));
+      console.log(chalk.yellow('\nNo Claude Code or Codex sessions found in the last 3 days.'));
+      console.log(chalk.gray('Start coding with Claude Code or Codex and then run this command again!'));
       return;
     }
 
-    spinner.succeed(`Found ${filteredSessions.length} sessions from the last 3 days`);
-    logger.debug(`Found ${filteredSessions.length} Claude sessions`);
+    spinner.succeed(`Found ${filteredSessions.length} sessions from the last 3 days (${formatSourceCounts(filteredSessions)})`);
+    logger.debug(`Found ${filteredSessions.length} local sessions for standup`);
 
     // Prepare temp directory with session data
     const tempManager = new StandupTempManager();
@@ -74,9 +135,9 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
 
     // CRITICAL: Filter out today's sessions - only show PAST work
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = localDateKey(today);
     const pastSessions = filteredSessions.filter(s =>
-      s.timestamp.toISOString().split('T')[0] !== todayStr
+      localDateKey(s.timestamp) !== todayStr
     );
 
     // If no past sessions, show "nothing" message
@@ -88,9 +149,9 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
     }
 
     // Find actual date with sessions (might not be yesterday)
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayStr = localDateKey(yesterday);
     const yesterdaySessions = pastSessions.filter(s =>
-      s.timestamp.toISOString().split('T')[0] === yesterdayStr
+      localDateKey(s.timestamp) === yesterdayStr
     );
 
     let actualTargetDate = yesterday;
@@ -109,10 +170,18 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
     // Create the standup analysis prompt with actual date
     const standupPrompt = buildStandupPrompt(tempDir, actualTargetDate);
 
-    // Check for Claude Code installation
-    const claudeCheck = await checkClaudeInstalled();
-    if (!claudeCheck.installed) {
-      console.log(chalk.yellow('\n⚠️  Claude Code is not installed'));
+    // Show accurate count for actual target date
+    const actualDateStr = localDateKey(actualTargetDate);
+    const actualSessions = pastSessions.filter(s =>
+      localDateKey(s.timestamp) === actualDateStr
+    );
+
+    // Check for local ACP agent availability after source detection. If Codex
+    // sessions are present, standup uses Codex ACP instead of falling back to Claude.
+    const localAgentProvider = chooseStandupProvider(actualSessions);
+    const localAgentCheck = await checkLocalAgentInstalled(localAgentProvider);
+    if (!localAgentCheck.installed) {
+      console.log(chalk.yellow(`\n⚠️  ${localAgentCheck.name} ACP adapter is not available`));
       console.log(chalk.gray('Using basic analysis instead...'));
       const standupData = await fallbackAnalysis(pastSessions, actualTargetDate);
       displayStandupSummary(standupData);
@@ -124,16 +193,11 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
 
     // Show analysis is starting
     console.log();
-    console.log(chalk.cyan('🤖 Analyzing your work with Claude Code...'));
-
-    // Show accurate count for actual target date
-    const actualDateStr = actualTargetDate.toISOString().split('T')[0];
-    const actualSessions = pastSessions.filter(s =>
-      s.timestamp.toISOString().split('T')[0] === actualDateStr
-    );
+    console.log(chalk.cyan(`🤖 Analyzing your work with ${localAgentCheck.name} via ACP...`));
 
     const actualSessionsByProject = groupSessionsByProject(actualSessions);
-    console.log(chalk.gray(`📁 Analyzing ${actualSessions.length} sessions from ${Object.keys(actualSessionsByProject).length} projects (${actualTargetDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })})`));
+    const sourceSummary = formatSourceCounts(actualSessions);
+    console.log(chalk.gray(`📁 Analyzing ${actualSessions.length} sessions from ${Object.keys(actualSessionsByProject).length} projects (${sourceSummary}; ${actualTargetDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })})`));
     console.log();
 
     // Read custom instructions if available
@@ -158,7 +222,7 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
       analysisSpinner.start();
     }, 4000);
 
-    // Execute Claude to analyze the sessions
+    // Execute the selected local ACP provider to analyze the sessions
     let standupData: StandupData | null = null;
 
     const claudeMessages: string[] = [];
@@ -167,7 +231,7 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
       await executeClaude(standupPrompt, {
         systemPrompt: getClaudeSystemPrompt(customInstructions || undefined),
         cwd: tempDir,  // Use temp directory so Claude can access the session files
-        claudePath: claudeCheck.path,  // Use the found Claude path
+        provider: localAgentProvider,
         onStreamEvent: (event) => {
           // Capture what Claude is saying
           if (event.type === 'assistant' && event.message?.content) {
@@ -214,7 +278,7 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
 
                 // Stop spinner and show completion
                 clearInterval(tipInterval);
-                analysisSpinner.succeed('Claude Code analysis complete!');
+                analysisSpinner.succeed(`${localAgentCheck.name} analysis complete!`);
                 logger.debug('Successfully parsed standup data from Claude response');
               } else {
                 clearInterval(tipInterval);
@@ -309,17 +373,17 @@ export async function standup(options?: { skipAuth?: boolean }): Promise<void> {
 
 async function fallbackAnalysis(sessions: SessionData[], targetDate: Date): Promise<StandupData> {
   // Enhanced fallback analysis when Claude isn't available
-  const yesterday = targetDate.toISOString().split('T')[0];
-  const today = new Date().toISOString().split('T')[0];
+  const yesterday = localDateKey(targetDate);
+  const today = localDateKey(new Date());
 
   // CRITICAL: Filter out today's sessions to avoid showing current work
   const pastSessions = sessions.filter(s => {
-    const sessionDate = s.timestamp.toISOString().split('T')[0];
+    const sessionDate = localDateKey(s.timestamp);
     return sessionDate !== today;  // Exclude today's sessions
   });
 
   const yesterdaySessions = pastSessions.filter(s =>
-    s.timestamp.toISOString().split('T')[0] === yesterday
+    localDateKey(s.timestamp) === yesterday
   );
 
   // If no work yesterday, find the most recent PAST work (not today)
@@ -331,9 +395,9 @@ async function fallbackAnalysis(sessions: SessionData[], targetDate: Date): Prom
     const sortedSessions = pastSessions.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
     if (sortedSessions.length > 0) {
       actualDate = sortedSessions[0].timestamp;
-      const recentDay = actualDate.toISOString().split('T')[0];
+      const recentDay = localDateKey(actualDate);
       recentSessions = pastSessions.filter(s =>
-        s.timestamp.toISOString().split('T')[0] === recentDay
+        localDateKey(s.timestamp) === recentDay
       );
     }
   }
@@ -505,9 +569,9 @@ function enrichWithLocalDurations(
   targetDate: Date
 ): StandupData {
   // Filter sessions for the target date
-  const targetDateStr = targetDate.toISOString().split('T')[0];
+  const targetDateStr = localDateKey(targetDate);
   const targetSessions = sessions.filter(s =>
-    s.timestamp.toISOString().split('T')[0] === targetDateStr
+    localDateKey(s.timestamp) === targetDateStr
   );
 
   // Group sessions by project and handle parallel sessions

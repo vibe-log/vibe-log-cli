@@ -118,8 +118,8 @@ export function createTestPersonalityCommand(): Command {
       
       // Analyze test prompts if requested
       if (options.analyze) {
-        console.log(colors.info('Analyzing Test Prompts with Claude SDK:'));
-        console.log(colors.subdued('(This will make actual calls to Claude Code)\n'));
+        console.log(colors.info('Analyzing Test Prompts with ACP:'));
+        console.log(colors.subdued('(This will make actual calls to your configured local ACP provider)\n'));
         
         // Use shared test engine
         const results = await runPersonalityTest(STANDARD_TEST_PROMPTS, {
@@ -150,7 +150,7 @@ export function createTestPersonalityCommand(): Command {
       // Summary
       console.log(colors.accent('Test Summary:'));
       console.log(colors.subdued('• Personality system is working correctly'));
-      console.log(colors.subdued('• System prompts are being sent to Claude SDK'));
+      console.log(colors.subdued('• System prompts are being sent through ACP'));
       console.log(colors.subdued('• Transformations are applied based on score ranges'));
       
       if (options.verbose) {

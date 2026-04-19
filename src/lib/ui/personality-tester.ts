@@ -43,23 +43,23 @@ function displayPersonalityHeader(): void {
 }
 
 /**
- * Test with sample prompts using real Claude SDK
+ * Test with sample prompts using the configured local ACP provider
  */
 async function testSamplePrompts(): Promise<void> {
   console.log(colors.info('Testing with Claude AI (Real Analysis):\n'));
-  console.log(colors.subdued('This will make actual calls to your local Claude Code...\n'));
+  console.log(colors.subdued('This will make actual calls to your configured local ACP provider...\n'));
   
   const config = getStatusLinePersonality();
   const personalityIcon = getPersonalityIcon(config.personality);
   
   // Create spinner
   const spinner = ora({
-    text: 'Initializing Claude SDK...',
+    text: 'Initializing ACP provider...',
     color: 'cyan'
   });
   
   try {
-    // Run tests with real Claude
+    // Run tests with the configured local ACP provider
     spinner.start();
     const results = await runPersonalityTest(STANDARD_TEST_PROMPTS, {
       verbose: false,
@@ -108,7 +108,7 @@ async function testSamplePrompts(): Promise<void> {
 }
 
 /**
- * Test with custom prompt using real Claude SDK
+ * Test with custom prompt using the configured local ACP provider
  */
 async function testCustomPrompt(): Promise<void> {
   console.log(colors.info('Test with Your Own Prompt:\n'));
@@ -134,12 +134,12 @@ async function testCustomPrompt(): Promise<void> {
   
   // Create spinner
   const spinner = ora({
-    text: 'Analyzing with Claude...',
+    text: 'Analyzing with ACP...',
     color: 'cyan'
   }).start();
   
   try {
-    // Analyze with real Claude
+    // Analyze with the configured local ACP provider
     const analyzer = new PromptAnalyzer();
     const startTime = Date.now();
     

@@ -5,8 +5,12 @@ import { SelectableProject } from './project-selector';
 import { interactiveProjectSelector } from './interactive-project-selector';
 import { buildOrchestratedPrompt, getExecutableCommand } from '../prompts/orchestrator';
 import { PromptContext } from '../../types/prompts';
-import { checkClaudeInstalled } from '../../utils/claude-executor';
 import { executeClaudePrompt } from '../report-executor';
+import {
+  checkLocalAgentInstalled,
+  getConfiguredLocalAgentProvider,
+  type LocalAgentProviderId,
+} from '../../utils/acp-executor';
 import { getStatusLineStatus } from '../status-line-manager';
 import { readInstructions } from '../instructions';
 import { promises as fs } from 'fs';
@@ -390,13 +394,23 @@ export async function generateLocalReportInteractive(): Promise<void> {
   }
   console.log();
   
-  // Check if Claude is installed for the recommended option
-  const claudeCheck = await checkClaudeInstalled();
+  // Check local ACP agent availability for the recommended execution option
+  const configuredProvider = getConfiguredLocalAgentProvider();
+  const providerOrder: LocalAgentProviderId[] = configuredProvider === 'claude'
+    ? ['claude', 'codex']
+    : ['codex', 'claude'];
+  const localAgentChecks = await Promise.all(providerOrder.map((provider) => checkLocalAgentInstalled(provider)));
+  const configuredAgentCheck = localAgentChecks.find((check) => check.provider === configuredProvider) || localAgentChecks[0];
   
-  // Build choices based on Claude availability
+  // Build choices based on local ACP agent availability
   const choices = [];
-  if (claudeCheck.installed) {
-    choices.push({ name: '🚀 Generate with Claude (Recommended)', value: 'execute' });
+  for (const check of localAgentChecks) {
+    if (!check.installed) continue;
+    const recommended = check.provider === configuredProvider ? ' (Recommended)' : '';
+    choices.push({
+      name: `🚀 Generate with ${check.name} via ACP${recommended}`,
+      value: `execute:${check.provider}`,
+    });
   }
   choices.push(
     { name: '📋 Copy command to clipboard', value: 'copy-full' },
@@ -404,9 +418,9 @@ export async function generateLocalReportInteractive(): Promise<void> {
     { name: '↩️  Return to menu', value: 'return' }
   );
   
-  // Show Claude not installed message if needed  
-  if (!claudeCheck.installed) {
-    console.log(colors.muted('Claude CLI not available - using copy-to-clipboard method'));
+  // Show local agent unavailable message if needed  
+  if (!localAgentChecks.some((check) => check.installed)) {
+    console.log(colors.muted(`${configuredAgentCheck.name} ACP adapter not available - using copy-to-clipboard method`));
     console.log();
   }
   
@@ -420,7 +434,9 @@ export async function generateLocalReportInteractive(): Promise<void> {
     }
   ]);
   
-  if (action === 'execute') {
+  if (typeof action === 'string' && action.startsWith('execute:')) {
+    const selectedProvider = action.split(':')[1] as LocalAgentProviderId;
+    const selectedAgentCheck = localAgentChecks.find((check) => check.provider === selectedProvider) || configuredAgentCheck;
     // Pre-fetch session files before executing Claude
     console.log();
     console.log(colors.accent('Pre-fetching session data...'));
@@ -576,9 +592,9 @@ export async function generateLocalReportInteractive(): Promise<void> {
       await executeClaudePrompt(updatedPrompt, {
         systemPrompt: orchestrated.systemPrompt,  // Pass the system prompt
         cwd: tempReportDir,  // Use temp directory to isolate report generation sessions
-        claudePath: claudeCheck.path,  // Pass the found Claude path
+        provider: selectedProvider,
         onComplete: async (code) => {
-          console.log(colors.muted(`Claude completed with exit code: ${code}`));
+          console.log(colors.muted(`${selectedAgentCheck.name} completed with exit code: ${code}`));
           
           // Clean up temp directory
           try {
@@ -591,7 +607,7 @@ export async function generateLocalReportInteractive(): Promise<void> {
         },
         onError: (error) => {
           console.log();
-          console.log(colors.error(`${icons.error} Failed to execute Claude: ${error.message}`));
+          console.log(colors.error(`${icons.error} Failed to execute ${selectedAgentCheck.name}: ${error.message}`));
           
           // Show detailed error for debugging
           if (process.env.VIBELOG_DEBUG || error.stack) {

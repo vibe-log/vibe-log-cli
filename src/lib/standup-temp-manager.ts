@@ -34,6 +34,9 @@ export class StandupTempManager {
     this.tempDir = path.join(this.baseDir, `session-${timestamp}`);
     await fs.mkdir(this.tempDir, { recursive: true });
 
+    // Copy session files first so the manifest points at the exact temp filenames.
+    const copiedFiles = await this.copySessionFiles(sessions);
+
     // Group sessions by project
     const sessionsByProject = groupSessionsByProject(sessions);
 
@@ -51,11 +54,14 @@ export class StandupTempManager {
       }),
       dayOfWeek: getDayName(targetDate),
       totalSessions: sessions.length,
+      copiedSessions: copiedFiles.length,
       projects: Object.keys(sessionsByProject),
       sessionsPerProject: Object.entries(sessionsByProject).map(([project, sessions]) => ({
         project,
         count: sessions.length,
-        files: sessions.map(s => `${s.id}.jsonl`)
+        files: sessions
+          .map(s => copiedFiles.find(file => file.sessionId === s.id)?.filename)
+          .filter(Boolean)
       }))
     };
 
@@ -63,38 +69,43 @@ export class StandupTempManager {
       path.join(this.tempDir, 'standup-manifest.json'),
       JSON.stringify(manifest, null, 2)
     );
-
-    // Copy session files
-    await this.copySessionFiles(sessions);
-
     return this.tempDir;
+  }
+
+  private getTempSessionFilename(session: SessionData, index: number): string {
+    const source = session.source || (session.tool === 'codex' ? 'codex' : 'claude');
+    const originalFilename = session.sourceFile?.sessionFile || `${session.id}.jsonl`;
+    const safeFilename = path.basename(originalFilename).replace(/[^a-zA-Z0-9._-]/g, '_');
+    const prefix = String(index + 1).padStart(3, '0');
+    return `${prefix}-${source}-${safeFilename}`;
   }
 
   /**
    * Copy session files to temp directory
    */
-  private async copySessionFiles(sessions: SessionData[]): Promise<number> {
-    if (!this.tempDir) return 0;
+  private async copySessionFiles(sessions: SessionData[]): Promise<Array<{ sessionId: string; filename: string }>> {
+    if (!this.tempDir) return [];
 
-    let copiedCount = 0;
-    for (const session of sessions) {
+    const copiedFiles: Array<{ sessionId: string; filename: string }> = [];
+    for (const [index, session] of sessions.entries()) {
       // Use the sourceFile info if available, otherwise fall back to id
-      const filename = (session as any).sourceFile?.sessionFile || `${session.id}.jsonl`;
-      const projectPath = (session as any).sourceFile?.claudeProjectPath || session.projectPath;
+      const filename = session.sourceFile?.sessionFile || `${session.id}.jsonl`;
+      const projectPath = session.sourceFile?.claudeProjectPath || session.projectPath;
 
-      const sourcePath = path.join(projectPath, filename);
-      const destPath = path.join(this.tempDir, filename);
+      const sourcePath = session.sourceFile?.fullPath || path.join(projectPath, filename);
+      const tempFilename = this.getTempSessionFilename(session, index);
+      const destPath = path.join(this.tempDir, tempFilename);
 
       try {
         await fs.copyFile(sourcePath, destPath);
-        copiedCount++;
+        copiedFiles.push({ sessionId: session.id, filename: tempFilename });
       } catch (err) {
         logger.debug(`Could not copy session file ${filename}: ${err}`);
       }
     }
 
-    logger.debug(`Copied ${copiedCount} of ${sessions.length} session files`);
-    return copiedCount;
+    logger.debug(`Copied ${copiedFiles.length} of ${sessions.length} session files`);
+    return copiedFiles;
   }
 
   /**

@@ -7,6 +7,7 @@ import { getToken } from './config';
 import { LoadingState, getLoadingMessage } from '../types/loading-state';
 import { generatePromotionalTip } from './promotional-tips';
 import { getTempDirectoryPath } from './temp-directories';
+import { executeClaude } from '../utils/claude-executor';
 
 /**
  * Analysis result for a prompt
@@ -50,26 +51,10 @@ export interface AnalysisOptions {
   sessionMetadata?: SessionMetadata; // Rich metadata about the session
 }
 
-// Cache the SDK import to avoid re-importing on every analysis
-let cachedSDK: { query: any } | null = null;
-
 // Removed session-based recursion tracker - now using loading state detection
 
 /**
- * Get the Claude SDK, caching it after first import
- */
-async function getClaudeSDK(): Promise<{ query: any }> {
-  if (!cachedSDK) {
-    logger.debug('Loading Claude SDK for first time...');
-    cachedSDK = await import('@anthropic-ai/claude-agent-sdk');
-  } else {
-    logger.debug('Using cached Claude SDK');
-  }
-  return cachedSDK;
-}
-
-/**
- * Analyzes prompt quality using Claude SDK
+ * Analyzes prompt quality using the configured local ACP provider
  * Provides concise feedback on what's missing and how to improve
  */
 export class PromptAnalyzer {
@@ -155,7 +140,7 @@ Emoji selection:
   } */
 
   /**
-   * Analyze a prompt and return quality feedback using Claude SDK
+   * Analyze a prompt and return quality feedback using ACP
    */
   public async analyze(
     promptText: string,
@@ -337,64 +322,43 @@ Respond with JSON only, no explanation.`;
     let rawResponse = '';
 
     try {
-      // Get Claude SDK (cached after first import)
-      logger.debug('Getting Claude SDK...');
-      await this.logToDebugFile(`Getting Claude SDK for session ${sessionId}...`);
-      const { query } = await getClaudeSDK();
-      logger.debug('SDK loaded successfully');
-      await this.logToDebugFile(`SDK loaded successfully for session ${sessionId}`);
-      
       // Use model from options or default to haiku for speed
       const selectedModel = options.model || 'haiku';
-      logger.debug(`Using Claude SDK with ${selectedModel} model for analysis`);
-      
-      // No timeout - let the SDK complete naturally
-      logger.debug('Starting SDK query with prompt length:', analysisPrompt.length);
+      logger.debug(`Using ACP local provider with requested ${selectedModel} model for analysis`);
+      logger.debug('Starting ACP analysis with prompt length:', analysisPrompt.length);
       
       // Create temp directory for analysis sessions to avoid polluting project history
       const tempAnalysisDir = getTempDirectoryPath('PROMPT_ANALYSIS');
       await fs.mkdir(tempAnalysisDir, { recursive: true }).catch(() => {});
       
-      // Simplified options - optimize for speed in hook mode.
-      // maxThinkingTokens: 0 disables thinking regardless of the user's Claude
-      // Code settings (e.g. alwaysThinkingEnabled). Haiku does not support
-      // thinking, so without this the API returns 400 when the global setting
-      // is on. Analysis does not need thinking anyway; it only emits JSON.
-      const queryOptions = {
-        maxTurns: 1,                    // Single turn only
-        model: selectedModel,           // Use selected model (haiku by default)
-        disallowedTools: ['*'],         // No tools needed for JSON response
-        maxThinkingTokens: 0,           // Required for Haiku compatibility
-        cwd: tempAnalysisDir            // Use temp directory to isolate analysis sessions
-      };
-      
-      logger.debug('Query options:', queryOptions);
-      await this.logToDebugFile(`Starting SDK query for session ${sessionId} with model ${selectedModel} in temp dir: ${tempAnalysisDir}`);
-        
-        for await (const message of query({
-          prompt: analysisPrompt,
-          options: queryOptions
-        })) {
-          // Log every message type we receive
-          logger.debug(`Received message type: ${message.type}`, message.type === 'result' ? message : '');
-          
+      await this.logToDebugFile(`Starting ACP analysis for session ${sessionId} with requested model ${selectedModel} in temp dir: ${tempAnalysisDir}`);
+
+      await executeClaude(analysisPrompt, {
+        cwd: tempAnalysisDir,
+        model: selectedModel,
+        timeout: options.timeout,
+        allowFileWrite: false,
+        allowTerminal: false,
+        onStreamEvent: (message) => {
+          logger.debug(`Received ACP compatibility message type: ${message.type}`, message.type === 'result' ? message : '');
+
           if (message.type === 'assistant' && message.message?.content) {
             const textContent = message.message.content.find((c: any) => c.type === 'text');
             if (textContent?.text) {
               rawResponse = textContent.text;
-              logger.debug('Got raw response from SDK:', rawResponse.substring(0, 200));
-              await this.logToDebugFile(`Raw SDK response: ${rawResponse.substring(0, 500)}`);
+              logger.debug('Got raw response from ACP:', rawResponse.substring(0, 200));
             }
           } else if (message.type === 'result' && verbose) {
             logger.debug('Analysis metrics:', {
               duration_ms: message.duration_ms,
               cost_usd: message.total_cost_usd,
-              model_used: message.model || selectedModel
+              model_used: selectedModel
             });
           }
-        }
+        },
+      });
 
-      await this.logToDebugFile(`SDK query completed for session ${sessionId}, got response: ${rawResponse ? 'YES' : 'NO'}`);
+      await this.logToDebugFile(`ACP analysis completed for session ${sessionId}, got response: ${rawResponse ? 'YES' : 'NO'}`);
 
       // Parse the response
       if (rawResponse) {
@@ -407,9 +371,9 @@ Respond with JSON only, no explanation.`;
             // Validate and normalize the response - NO FALLBACKS!
             // If SDK doesn't return proper data, we should fail and fix it
             if (!parsed.quality || !parsed.suggestion || typeof parsed.score !== 'number') {
-              logger.error('SDK response missing required fields:', parsed);
-              await this.logToDebugFile(`INCOMPLETE SDK RESPONSE: ${JSON.stringify(parsed)}`);
-              throw new Error(`SDK response missing required fields: quality=${parsed.quality}, suggestion=${parsed.suggestion}, score=${parsed.score}`);
+              logger.error('ACP response missing required fields:', parsed);
+              await this.logToDebugFile(`INCOMPLETE ACP RESPONSE: ${JSON.stringify(parsed)}`);
+              throw new Error(`ACP response missing required fields: quality=${parsed.quality}, suggestion=${parsed.suggestion}, score=${parsed.score}`);
             }
             
             analysisResult = {
@@ -424,21 +388,21 @@ Respond with JSON only, no explanation.`;
               originalPrompt: promptText  // Add the original prompt for debugging
             };
 
-            logger.debug('Parsed SDK analysis result:', analysisResult);
+            logger.debug('Parsed ACP analysis result:', analysisResult);
           } else {
-            throw new Error('No JSON found in SDK response');
+            throw new Error('No JSON found in ACP response');
           }
         } catch (parseError) {
-          logger.error('Failed to parse SDK response:', parseError);
-          logger.debug('Raw SDK response was:', rawResponse);
+          logger.error('Failed to parse ACP response:', parseError);
+          logger.debug('Raw ACP response was:', rawResponse);
           throw new Error(`Failed to parse analysis response: ${parseError}`);
         }
       } else {
-        throw new Error('No response received from Claude SDK - please try again');
+        throw new Error('No response received from local ACP provider - please try again');
       }
 
     } catch (error) {
-      logger.error('Error during SDK prompt analysis:', error);
+      logger.error('Error during ACP prompt analysis:', error);
       
       // Check if it's an abort/timeout
       if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('abort'))) {

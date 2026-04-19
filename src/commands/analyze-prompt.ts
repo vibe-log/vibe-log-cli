@@ -175,10 +175,10 @@ export function createAnalyzePromptCommand(): Command {
           hasContext: !!conversationContext
         });
 
-        // Create analyzer instance (no Claude CLI check needed - using SDK)
+        // Create analyzer instance (local provider is called through ACP)
         const analyzer = new PromptAnalyzer();
 
-        // Analyze the prompt using Claude SDK
+        // Analyze the prompt using the configured ACP provider
         const startTime = Date.now();
         
         if (!silent && verbose) {
