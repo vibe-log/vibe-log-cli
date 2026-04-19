@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.9] - 2026-04-19
+
+### Fixed
+- Local productivity reports now discover and display Codex projects grouped by their actual `cwd`.
+- Today's standup and local report analysis now route through ACP for local Claude Code and Codex analysis instead of direct local CLI execution paths.
+
+### Improved
+- Report generation preserves Claude Code and Codex source metadata when preparing selected project sessions for analysis.
+- Codex-selected report flows prefer the local Codex ACP client unless explicitly overridden by environment configuration.
+
 ## [0.8.8] - 2026-04-18
 
 ### Added
