@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.12] - 2026-04-19
+
+### Improved
+- CLI session uploads now send batch metadata headers so the server can acknowledge queued uploads without parsing large request bodies.
+
 ## [0.8.11] - 2026-04-19
 
 ### Fixed
